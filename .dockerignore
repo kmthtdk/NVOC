@@ -1,0 +1,16 @@
+node_modules
+dist
+backend
+database
+npm-debug.log
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+*.md
+assets/**/*.psd
+.vscode
+.idea
+docker-compose.yml
+scripts

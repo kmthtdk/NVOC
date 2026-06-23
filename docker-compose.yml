@@ -1,0 +1,108 @@
+# ============================================================================
+# N-VOC Request System — full stack orchestration
+#   db       (voc-db)       MySQL 8.4, schema+seed auto-init, persistent volume
+#   backend  (voc-backend)  Express/TS API on :4000, waits for a healthy DB
+#   frontend (voc-frontend) Nginx-served SPA on :3000, proxies /api -> backend
+#
+# Usage:
+#   cp .env.example .env   # then edit secrets
+#   docker compose up -d --build
+# ============================================================================
+
+services:
+  # --------------------------------------------------------------------------
+  # Database — MySQL 8.4
+  # --------------------------------------------------------------------------
+  db:
+    image: mysql:8.4
+    container_name: voc-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${DB_NAME:-voc_system}
+      MYSQL_USER: ${DB_USER:-voc_app}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    ports:
+      # Host:Container — exposed for local DB tooling; remove to keep DB internal.
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - voc-db-data:/var/lib/mysql
+      # *.sql here run once, in filename order, only when the data dir is empty.
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      # Backend fails fast on connect, so gate it on a genuinely-ready DB.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - voc-net
+
+  # --------------------------------------------------------------------------
+  # Backend — Express + TypeScript API
+  # --------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: voc-backend:latest
+    container_name: voc-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-voc_system}
+      DB_USER: ${DB_USER:-voc_app}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      DB_CONNECTION_LIMIT: ${DB_CONNECTION_LIMIT:-10}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (>=16 chars) in .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      UPLOAD_DIR: /app/uploads
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-10485760}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    ports:
+      # Optional direct access; the SPA reaches it via the Nginx /api proxy.
+      - "${API_PORT:-4000}:4000"
+    volumes:
+      - voc-uploads:/app/uploads
+    networks:
+      - voc-net
+
+  # --------------------------------------------------------------------------
+  # Frontend — Nginx-served React/Vite SPA
+  # --------------------------------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        # Leave empty to use the relative "/api" default + Nginx proxy.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+        VITE_APP_NAME: ${VITE_APP_NAME:-N-VOC Request System}
+    image: voc-frontend:latest
+    container_name: voc-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    networks:
+      - voc-net
+
+networks:
+  voc-net:
+    driver: bridge
+
+volumes:
+  voc-db-data:
+  voc-uploads:

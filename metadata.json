@@ -1,0 +1,6 @@
+{
+  "name": "N-VOC System Service Portal",
+  "description": "Interactive workspace for raising, tracking, and managing IT service and technical requests with dynamic form specifications.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

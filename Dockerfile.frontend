@@ -1,0 +1,47 @@
+# ============================================================================
+# N-VOC Frontend — multi-stage build
+#   Stage 1: build the React/Vite SPA into static assets (dist/)
+#   Stage 2: serve those assets with Nginx and reverse-proxy /api -> backend
+#
+# Note on VITE_API_BASE_URL: Vite inlines env vars at BUILD time, not runtime.
+# The app defaults to a relative "/api" base, and Nginx proxies /api/ to the
+# backend below — so frontend<->backend is same-origin in the browser and no
+# build-arg is required for the standard compose setup. An optional ARG is
+# provided for deployments that must point at an absolute backend URL.
+# ============================================================================
+
+# ---- Stage 1: build (Vite -> dist) ----
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Install all deps (incl. dev) needed for the Vite build.
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Optional override; leave unset to keep the relative "/api" default.
+ARG VITE_API_BASE_URL
+ARG VITE_APP_NAME="N-VOC Request System"
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_APP_NAME=$VITE_APP_NAME
+
+# Copy source and build.
+COPY . .
+RUN npm run build
+
+# ---- Stage 2: runtime (Nginx) ----
+FROM nginx:1.27-alpine AS runtime
+
+# Replace the default server block with our SPA + reverse-proxy config.
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Static assets produced by Vite.
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Container listens on 3000 (matches docker-compose / task spec).
+EXPOSE 3000
+
+# Simple healthcheck against the SPA entrypoint.
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=5 \
+  CMD wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]
