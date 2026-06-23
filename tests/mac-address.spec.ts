@@ -23,8 +23,8 @@ import { test, expect, Page, APIResponse } from '@playwright/test';
 // Configuration & Utilities
 // ============================================================================
 
-const API_BASE = 'http://localhost:4000/api';
-const FRONTEND_BASE = 'http://localhost:3000';
+const API_BASE = 'http://localhost:4001/api';
+const FRONTEND_BASE = 'http://localhost:3001';
 
 // Seeded test credentials (from database/init/02_seed.sql)
 const TEST_USERS = {

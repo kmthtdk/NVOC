@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { deviceRepo } from '../models/device.repo.js';
 import { AppError } from '../utils/AppError.js';
 import { withTransaction } from '../config/db.js';
-import type { DeviceStatus, MacAddressType } from '../types/index.js';
+import type { DeviceStatus } from '../types/index.js';
 
 // ----------------------------------------------------------------------------
 // Validation schemas — mirror the `devices` table / Device domain type.
