@@ -95,3 +95,19 @@ export interface RequestTypeRow extends RowDataPacket {
   period_required: PeriodFlag;
   sort_order: number;
 }
+
+export interface DeviceRow extends RowDataPacket {
+  id: number;
+  code: string;
+  device_type: string;
+  model: string;
+  serial_number: string;
+  status: string;
+  assigned_to: string | null;
+  department: string | null;
+  purchase_date: string | null;
+  warranty_expiry: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}

@@ -23,6 +23,7 @@ import TicketDetailModal from './components/TicketDetailModal';
 import AdminSimulation from './components/AdminSimulation';
 import StatusDashboard from './components/StatusDashboard';
 import ConfirmationModal from './components/ConfirmationModal';
+import DeviceManagement from './components/DeviceManagement';
 import { LoadingPanel, ErrorState } from './components/ui/Spinner';
 
 import {
@@ -35,6 +36,7 @@ import {
   AlertCircle,
   Moon,
   Sun,
+  Cpu,
 } from 'lucide-react';
 
 type PortalView = 'user' | 'admin';
@@ -49,6 +51,7 @@ export default function App() {
   const toast = useToast();
 
   const [view, setView] = useState<PortalView>('user');
+  const [adminTab, setAdminTab] = useState<'tickets' | 'devices'>('tickets');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [showAdminSimulation, setShowAdminSimulation] = useState(true);
   const [currentTime, setCurrentTime] = useState('');
@@ -187,6 +190,8 @@ export default function App() {
         ) : (
           <AdminWorkspace
             reloadKey={reloadKey}
+            adminTab={adminTab}
+            onAdminTabChange={setAdminTab}
             showSim={showAdminSimulation}
             onToggleSim={() => setShowAdminSimulation((s) => !s)}
             onMutated={handleMutated}
@@ -350,16 +355,20 @@ function UserPortal({
 }
 
 // ---------------------------------------------------------------------------
-// Admin workspace: dashboard metrics, dispatch console, full queue.
+// Admin workspace: dashboard metrics, dispatch console, full queue, device inventory.
 // ---------------------------------------------------------------------------
 function AdminWorkspace({
   reloadKey,
+  adminTab,
+  onAdminTabChange,
   showSim,
   onToggleSim,
   onMutated,
   onSelectTicket,
 }: {
   reloadKey: number;
+  adminTab: 'tickets' | 'devices';
+  onAdminTabChange: (tab: 'tickets' | 'devices') => void;
   showSim: boolean;
   onToggleSim: () => void;
   onMutated: () => void;
@@ -386,45 +395,83 @@ function AdminWorkspace({
 
   return (
     <div className="space-y-6">
-      {/* Banner */}
-      <div className="bg-slate-900 dark:bg-slate-900 border border-slate-800 rounded-xl p-6 sm:p-7 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="space-y-1.5">
-          <h2 className="text-xl sm:text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-200 tracking-tight flex items-center gap-2">
-            <Terminal className="w-5 h-5 text-amber-500" />
-            Operator Dispatch Console (IT Support Admin)
-          </h2>
-          <p className="text-xs sm:text-[13px] text-slate-400 leading-relaxed">
-            Manage the queue, allocate engineers, resolve tickets, and post official technical audit logs.
-          </p>
-        </div>
+      {/* Admin Tab Switcher */}
+      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
         <button
-          type="button"
-          onClick={onToggleSim}
-          className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-            showSim
-              ? 'bg-amber-500/25 border-amber-500/40 text-amber-400 hover:bg-amber-500/35'
-              : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+          onClick={() => onAdminTabChange('tickets')}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all ${
+            adminTab === 'tickets'
+              ? 'border-amber-500 text-amber-600 dark:text-amber-400'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
-          <Terminal className="w-3.5 h-3.5" />
-          {showSim ? 'Minimize Console' : 'Expand Console'}
+          <Terminal className="w-4 h-4" />
+          Ticket Queue
+        </button>
+        <button
+          onClick={() => onAdminTabChange('devices')}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all ${
+            adminTab === 'devices'
+              ? 'border-amber-500 text-amber-600 dark:text-amber-400'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <Cpu className="w-4 h-4" />
+          Device Inventory
         </button>
       </div>
 
-      {/* Dashboard metrics (whole-set) */}
-      <StatusDashboard tickets={metricsTickets} total={metricsTotal} />
+      {/* Tickets Tab Content */}
+      {adminTab === 'tickets' && (
+        <>
+          {/* Banner */}
+          <div className="bg-slate-900 dark:bg-slate-900 border border-slate-800 rounded-xl p-6 sm:p-7 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-1.5">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-200 tracking-tight flex items-center gap-2">
+                <Terminal className="w-5 h-5 text-amber-500" />
+                Operator Dispatch Console (IT Support Admin)
+              </h2>
+              <p className="text-xs sm:text-[13px] text-slate-400 leading-relaxed">
+                Manage the queue, allocate engineers, resolve tickets, and post official technical audit logs.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onToggleSim}
+              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                showSim
+                  ? 'bg-amber-500/25 border-amber-500/40 text-amber-400 hover:bg-amber-500/35'
+                  : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+              }`}
+            >
+              <Terminal className="w-3.5 h-3.5" />
+              {showSim ? 'Minimize Console' : 'Expand Console'}
+            </button>
+          </div>
 
-      {/* Dispatch console */}
-      {showSim && (
-        <div className="animate-fadeIn">
-          <AdminSimulation tickets={metricsTickets} onMutated={onMutated} />
-        </div>
+          {/* Dashboard metrics (whole-set) */}
+          <StatusDashboard tickets={metricsTickets} total={metricsTotal} />
+
+          {/* Dispatch console */}
+          {showSim && (
+            <div className="animate-fadeIn">
+              <AdminSimulation tickets={metricsTickets} onMutated={onMutated} />
+            </div>
+          )}
+
+          {/* Master queue: server-side search / filter / sort / pagination */}
+          <div className="animate-fadeIn">
+            <TicketList reloadKey={reloadKey} onSelectTicket={onSelectTicket} />
+          </div>
+        </>
       )}
 
-      {/* Master queue: server-side search / filter / sort / pagination */}
-      <div className="animate-fadeIn">
-        <TicketList reloadKey={reloadKey} onSelectTicket={onSelectTicket} />
-      </div>
+      {/* Devices Tab Content */}
+      {adminTab === 'devices' && (
+        <div className="animate-fadeIn">
+          <DeviceManagement user={{ role: 'admin' }} />
+        </div>
+      )}
     </div>
   );
 }

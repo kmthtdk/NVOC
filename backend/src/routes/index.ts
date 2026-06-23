@@ -4,6 +4,7 @@ import { categoryRoutes } from './category.routes.js';
 import { ticketRoutes } from './ticket.routes.js';
 import { attachmentRoutes } from './attachment.routes.js';
 import { aiRoutes } from './ai.routes.js';
+import { deviceRoutes } from './device.routes.js';
 import { isDbUp } from '../config/db.js';
 import { asyncHandler } from '../utils/helpers.js';
 
@@ -23,3 +24,4 @@ apiRouter.use('/categories', categoryRoutes);
 apiRouter.use('/tickets', ticketRoutes);
 apiRouter.use('/attachments', attachmentRoutes);
 apiRouter.use('/ai', aiRoutes);
+apiRouter.use('/devices', deviceRoutes);

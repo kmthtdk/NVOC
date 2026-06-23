@@ -6,6 +6,8 @@ import type {
   TicketHistoryItem,
   AttachmentMeta,
   PublicUser,
+  Device,
+  LinkedTicket,
 } from '../types/index.js';
 import type {
   UserRow,
@@ -13,6 +15,7 @@ import type {
   CommentRow,
   HistoryRow,
   AttachmentRow,
+  DeviceRow,
 } from './rows.js';
 
 export function mapComment(r: CommentRow): TicketComment {
@@ -90,5 +93,31 @@ export function mapTicket(
     history,
     ...(attachments ? { attachments } : {}),
     details: parseJsonColumn(r.details),
+  };
+}
+
+/**
+ * Build the full Device API object. Linked tickets are passed in (they come
+ * from a separate query) so this mapper stays pure and reusable.
+ */
+export function mapDevice(
+  r: DeviceRow,
+  linkedTickets: LinkedTicket[] = [],
+): Device {
+  return {
+    id: r.id,
+    code: r.code,
+    deviceType: r.device_type,
+    model: r.model,
+    serialNumber: r.serial_number,
+    status: r.status as any, // DeviceStatus type
+    assignedTo: r.assigned_to,
+    department: r.department,
+    purchaseDate: toDateOnly(r.purchase_date),
+    warrantyExpiry: toDateOnly(r.warranty_expiry),
+    notes: r.notes,
+    createdAt: toIso(r.created_at)!,
+    updatedAt: toIso(r.updated_at)!,
+    linkedTickets,
   };
 }

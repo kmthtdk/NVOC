@@ -11,6 +11,8 @@ export type TicketStatus =
   | 'resolved'
   | 'rejected';
 
+export type DeviceStatus = 'Active' | 'In Repair' | 'Retired' | 'Lost';
+
 export type UserRole = 'requester' | 'it_support' | 'admin';
 export type CommentRole = 'requester' | 'it_support';
 export type PeriodFlag = 'Apply' | 'Non Apply';
@@ -66,6 +68,28 @@ export interface Ticket {
   history: TicketHistoryItem[];
   attachments?: AttachmentMeta[];
   details: TicketDetails;
+}
+
+export interface LinkedTicket {
+  ticketId: number;
+  actionType: 'related' | 'resolved' | 'affected';
+}
+
+export interface Device {
+  id: number;
+  code: string;
+  deviceType: string;
+  model: string;
+  serialNumber: string;
+  status: DeviceStatus;
+  assignedTo: string | null;
+  department: string | null;
+  purchaseDate: string | null;
+  warrantyExpiry: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  linkedTickets: LinkedTicket[];
 }
 
 // ---- Taxonomy (matches CategorySpec on the frontend) ----
