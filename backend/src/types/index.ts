@@ -75,6 +75,22 @@ export interface LinkedTicket {
   actionType: 'related' | 'resolved' | 'affected';
 }
 
+export type MacAddressType = 'Ethernet' | 'WiFi' | 'Bluetooth' | 'Other';
+
+export interface MacAddress {
+  id: number;
+  deviceId: number;
+  macType: MacAddressType;
+  macAddress: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MacAddressInput {
+  macType: MacAddressType;
+  macAddress: string;
+}
+
 export interface Device {
   id: number;
   code: string;
@@ -90,6 +106,7 @@ export interface Device {
   createdAt: string;
   updatedAt: string;
   linkedTickets: LinkedTicket[];
+  macAddresses?: MacAddress[];
 }
 
 // ---- Taxonomy (matches CategorySpec on the frontend) ----

@@ -8,6 +8,7 @@ import type {
   PublicUser,
   Device,
   LinkedTicket,
+  MacAddress,
 } from '../types/index.js';
 import type {
   UserRow,
@@ -16,6 +17,7 @@ import type {
   HistoryRow,
   AttachmentRow,
   DeviceRow,
+  MacAddressRow,
 } from './rows.js';
 
 export function mapComment(r: CommentRow): TicketComment {
@@ -96,13 +98,25 @@ export function mapTicket(
   };
 }
 
+export function mapMacAddress(r: MacAddressRow): MacAddress {
+  return {
+    id: r.id,
+    deviceId: r.device_id,
+    macType: r.mac_type as any, // MacAddressType
+    macAddress: r.mac_address,
+    createdAt: toIso(r.created_at)!,
+    updatedAt: toIso(r.updated_at)!,
+  };
+}
+
 /**
- * Build the full Device API object. Linked tickets are passed in (they come
- * from a separate query) so this mapper stays pure and reusable.
+ * Build the full Device API object. Linked tickets and MAC addresses are passed in
+ * (they come from separate queries) so this mapper stays pure and reusable.
  */
 export function mapDevice(
   r: DeviceRow,
   linkedTickets: LinkedTicket[] = [],
+  macAddresses: MacAddress[] = [],
 ): Device {
   return {
     id: r.id,
@@ -119,5 +133,6 @@ export function mapDevice(
     createdAt: toIso(r.created_at)!,
     updatedAt: toIso(r.updated_at)!,
     linkedTickets,
+    ...(macAddresses.length > 0 ? { macAddresses } : {}),
   };
 }

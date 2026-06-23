@@ -111,3 +111,12 @@ export interface DeviceRow extends RowDataPacket {
   created_at: string;
   updated_at: string;
 }
+
+export interface MacAddressRow extends RowDataPacket {
+  id: number;
+  device_id: number;
+  mac_type: string;
+  mac_address: string;
+  created_at: string;
+  updated_at: string;
+}

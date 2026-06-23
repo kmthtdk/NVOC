@@ -97,3 +97,39 @@ FROM dual
 WHERE EXISTS (SELECT 1 FROM tickets WHERE id = 4)
   AND EXISTS (SELECT 1 FROM devices WHERE id = 1)
 ON DUPLICATE KEY UPDATE action_type = VALUES(action_type);
+
+-- ============================================================================
+-- mac_addresses
+-- Storage for multiple MAC addresses per device (wireless, wired, ethernet,
+-- bluetooth, etc.). Supports soft-delete via is_active flag with generated
+-- column to maintain uniqueness constraint across only active entries.
+-- Foreign key references devices.id (INT UNSIGNED to match FK constraint).
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS mac_addresses (
+  id                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  device_id         INT UNSIGNED NOT NULL,
+  mac_address       VARCHAR(17) NOT NULL COLLATE utf8mb4_unicode_ci,
+  mac_type          VARCHAR(50) NOT NULL COLLATE utf8mb4_unicode_ci,
+  is_active         BOOLEAN NOT NULL DEFAULT TRUE,
+  active_mac        VARCHAR(17) GENERATED ALWAYS AS (IF(is_active=1, mac_address, NULL)) STORED NULL,
+  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_mac_active (active_mac),
+  KEY idx_mac_device (device_id),
+  KEY idx_mac_type (mac_type),
+  KEY idx_mac_active (is_active),
+  CONSTRAINT fk_mac_device FOREIGN KEY (device_id) REFERENCES devices (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- Seed: MAC addresses for demo laptops (ITA-2026-0001 and ITA-2026-0005)
+-- ============================================================================
+INSERT INTO mac_addresses (device_id, mac_address, mac_type, is_active)
+VALUES
+  (1, '00:1A:2B:3C:4D:5E', 'wireless',  TRUE),
+  (1, '00:1A:2B:3C:4D:5F', 'wired',     TRUE),
+  (5, '00:1A:2B:3C:4D:60', 'wireless',  TRUE),
+  (5, '00:1A:2B:3C:4D:61', 'ethernet',  TRUE),
+  (1, '00:1A:2B:3C:4D:62', 'bluetooth', FALSE)
+ON DUPLICATE KEY UPDATE is_active = VALUES(is_active);

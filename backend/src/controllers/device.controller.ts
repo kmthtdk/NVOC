@@ -2,19 +2,30 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { deviceRepo } from '../models/device.repo.js';
 import { AppError } from '../utils/AppError.js';
-import type { DeviceStatus } from '../types/index.js';
+import { withTransaction } from '../config/db.js';
+import type { DeviceStatus, MacAddressType } from '../types/index.js';
 
 // ----------------------------------------------------------------------------
 // Validation schemas — mirror the `devices` table / Device domain type.
 // status uses the VOC Title-Case enum: Active | In Repair | Retired | Lost.
+// MAC address format: 00:00:00:00:00:00 (12 hex pairs separated by colons)
 // ----------------------------------------------------------------------------
 const DEVICE_STATUSES = ['Active', 'In Repair', 'Retired', 'Lost'] as const;
+const MAC_ADDRESS_TYPES = ['Ethernet', 'WiFi', 'Bluetooth', 'Other'] as const;
+const MAC_ADDRESS_REGEX = /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/;
 
 const nullableDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
   .nullable()
   .optional();
+
+const macAddressSchema = z.object({
+  macType: z.enum(MAC_ADDRESS_TYPES),
+  macAddress: z
+    .string()
+    .regex(MAC_ADDRESS_REGEX, 'MAC address must be in format 00:00:00:00:00:00'),
+});
 
 export const createDeviceSchema = z.object({
   deviceType: z.string().min(1, 'Device type is required').max(50),
@@ -26,12 +37,25 @@ export const createDeviceSchema = z.object({
   purchaseDate: nullableDate.default(null),
   warrantyExpiry: nullableDate.default(null),
   notes: z.string().max(2000).nullable().optional().default(null),
+  macAddresses: z.array(macAddressSchema).optional(),
 });
 
 export const updateDeviceSchema = createDeviceSchema.partial();
 
+export const updateMacSchema = z.object({
+  macType: z.enum(MAC_ADDRESS_TYPES).optional(),
+  macAddress: z
+    .string()
+    .regex(MAC_ADDRESS_REGEX, 'MAC address must be in format 00:00:00:00:00:00')
+    .optional(),
+});
+
+// Export macAddressSchema for use in route validation
+export { macAddressSchema };
+
 export type CreateDeviceBody = z.infer<typeof createDeviceSchema>;
 export type UpdateDeviceBody = z.infer<typeof updateDeviceSchema>;
+export type UpdateMacBody = z.infer<typeof updateMacSchema>;
 
 function parsePositiveInt(value: string | undefined, fieldName: string): number {
   const n = Number(value);
@@ -125,6 +149,7 @@ export const deviceController = {
       purchaseDate: body.purchaseDate ?? null,
       warrantyExpiry: body.warrantyExpiry ?? null,
       notes: body.notes ?? null,
+      macAddresses: body.macAddresses,
     });
 
     res.status(201).json({ data: device });
@@ -159,6 +184,81 @@ export const deviceController = {
     if (!ok) {
       throw AppError.notFound('Device not found');
     }
+    res.status(204).send();
+  },
+
+  /** POST /devices/:id/mac — create a new MAC address for a device. it_support / admin only. */
+  async createMac(req: Request, res: Response): Promise<void> {
+    const deviceId = parsePositiveInt(req.params.id, 'device id');
+    const body = req.body as z.infer<typeof macAddressSchema>;
+
+    // Verify the device exists
+    const device = await deviceRepo.getByIdFull(deviceId);
+    if (!device) {
+      throw AppError.notFound('Device not found');
+    }
+
+    // Create within a transaction
+    const created = await withTransaction(async (conn) => {
+      return deviceRepo.addMacAddress(conn, deviceId, body.macType, body.macAddress);
+    });
+
+    res.status(201).json({ data: created });
+  },
+
+  /** PUT /devices/:id/mac/:macId — update a specific MAC address. it_support / admin only. */
+  async updateMac(req: Request, res: Response): Promise<void> {
+    const deviceId = parsePositiveInt(req.params.id, 'device id');
+    const macId = parsePositiveInt(req.params.macId, 'MAC id');
+    const body = req.body as UpdateMacBody;
+
+    // Verify the device exists
+    const device = await deviceRepo.getByIdFull(deviceId);
+    if (!device) {
+      throw AppError.notFound('Device not found');
+    }
+
+    // Verify the MAC address belongs to this device
+    const macs = await deviceRepo.getMacsByDeviceId(deviceId);
+    const mac = macs.find((m) => m.id === macId);
+    if (!mac) {
+      throw AppError.notFound('MAC address not found on this device');
+    }
+
+    // Update within a transaction
+    const updated = await withTransaction(async (conn) => {
+      return deviceRepo.updateMacAddress(conn, macId, {
+        macType: body.macType,
+        macAddress: body.macAddress,
+      });
+    });
+
+    res.json({ data: updated });
+  },
+
+  /** DELETE /devices/:id/mac/:macId — remove a MAC address from a device. it_support / admin only. */
+  async removeMac(req: Request, res: Response): Promise<void> {
+    const deviceId = parsePositiveInt(req.params.id, 'device id');
+    const macId = parsePositiveInt(req.params.macId, 'MAC id');
+
+    // Verify the device exists
+    const device = await deviceRepo.getByIdFull(deviceId);
+    if (!device) {
+      throw AppError.notFound('Device not found');
+    }
+
+    // Verify the MAC address belongs to this device
+    const macs = await deviceRepo.getMacsByDeviceId(deviceId);
+    const mac = macs.find((m) => m.id === macId);
+    if (!mac) {
+      throw AppError.notFound('MAC address not found on this device');
+    }
+
+    // Delete within a transaction
+    await withTransaction(async (conn) => {
+      await deviceRepo.removeMacAddress(conn, macId);
+    });
+
     res.status(204).send();
   },
 };

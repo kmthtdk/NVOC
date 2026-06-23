@@ -1,8 +1,8 @@
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { pool, withTransaction } from '../config/db.js';
-import type { DeviceRow } from './rows.js';
-import { mapDevice } from './mappers.js';
-import type { Device, DeviceStatus } from '../types/index.js';
+import type { DeviceRow, MacAddressRow } from './rows.js';
+import { mapDevice, mapMacAddress } from './mappers.js';
+import type { Device, DeviceStatus, MacAddress, MacAddressInput } from '../types/index.js';
 
 export interface DeviceListFilters {
   deviceType?: string;
@@ -25,6 +25,7 @@ export interface CreateDeviceInput {
   purchaseDate: string | null;
   warrantyExpiry: string | null;
   notes: string | null;
+  macAddresses?: MacAddressInput[];
 }
 
 export interface UpdateDeviceInput {
@@ -66,6 +67,92 @@ async function nextDeviceCode(conn: PoolConnection, year: number): Promise<strin
 }
 
 export const deviceRepo = {
+  /** Fetch all MAC addresses for a device. */
+  async getMacsByDeviceId(deviceId: number): Promise<MacAddress[]> {
+    const [rows] = await pool.query<MacAddressRow[]>(
+      'SELECT * FROM mac_addresses WHERE device_id = ? ORDER BY created_at DESC',
+      [deviceId],
+    );
+    return rows.map(mapMacAddress);
+  },
+
+  /**
+   * Add a MAC address to a device.
+   * conn is required to support transactional inserts (e.g., during device creation).
+   */
+  async addMacAddress(
+    conn: PoolConnection,
+    deviceId: number,
+    macType: string,
+    macAddress: string,
+  ): Promise<MacAddress> {
+    const [result] = await conn.execute(
+      'INSERT INTO mac_addresses (device_id, mac_type, mac_address) VALUES (?, ?, ?)',
+      [deviceId, macType, macAddress],
+    );
+    const macId = (result as { insertId: number }).insertId;
+
+    // Read back the inserted row to return
+    const [rows] = await conn.query<MacAddressRow[]>(
+      'SELECT * FROM mac_addresses WHERE id = ? LIMIT 1',
+      [macId],
+    );
+    const row = rows[0];
+    if (!row) throw new Error('Failed to read inserted MAC address');
+    return mapMacAddress(row);
+  },
+
+  /**
+   * Update a MAC address record.
+   * conn is required for transactional safety.
+   * Only device_id stays fixed; mac_type and mac_address can be updated.
+   */
+  async updateMacAddress(
+    conn: PoolConnection,
+    macId: number,
+    updates: { macType?: string; macAddress?: string },
+  ): Promise<MacAddress> {
+    const sets: string[] = [];
+    const params: (string | number)[] = [];
+
+    if (updates.macType !== undefined) {
+      sets.push('mac_type = ?');
+      params.push(updates.macType);
+    }
+    if (updates.macAddress !== undefined) {
+      sets.push('mac_address = ?');
+      params.push(updates.macAddress);
+    }
+
+    if (sets.length > 0) {
+      params.push(macId);
+      const [result] = await conn.execute(
+        `UPDATE mac_addresses SET ${sets.join(', ')} WHERE id = ?`,
+        params,
+      );
+      if ((result as { affectedRows: number }).affectedRows === 0) {
+        throw new Error('MAC address not found or not updated');
+      }
+    }
+
+    // Read back the updated row
+    const [rows] = await conn.query<MacAddressRow[]>(
+      'SELECT * FROM mac_addresses WHERE id = ? LIMIT 1',
+      [macId],
+    );
+    const row = rows[0];
+    if (!row) throw new Error('Failed to read updated MAC address');
+    return mapMacAddress(row);
+  },
+
+  /**
+   * Delete a MAC address.
+   * conn is required for transactional safety.
+   */
+  async removeMacAddress(conn: PoolConnection, macId: number): Promise<void> {
+    await conn.execute('DELETE FROM mac_addresses WHERE id = ?', [macId]);
+  },
+
   /** Paginated, filtered list. Summary rows only. */
   async list(filters: DeviceListFilters): Promise<{ data: Device[]; total: number }> {
     const where: string[] = [];
@@ -112,7 +199,7 @@ export const deviceRepo = {
     return { data, total };
   },
 
-  /** Full device with linked tickets. */
+  /** Full device with linked tickets and MAC addresses. */
   async getByIdFull(id: number): Promise<Device | null> {
     const [rows] = await pool.query<DeviceRow[]>('SELECT * FROM devices WHERE id = ? LIMIT 1', [id]);
     const row = rows[0];
@@ -129,7 +216,10 @@ export const deviceRepo = {
       actionType: link.action_type as 'related' | 'resolved' | 'affected',
     }));
 
-    return mapDevice(row, linkedTickets);
+    // Fetch MAC addresses
+    const macAddresses = await this.getMacsByDeviceId(id);
+
+    return mapDevice(row, linkedTickets, macAddresses);
   },
 
   /** Quick lookup by serial number (may return null). */
@@ -157,6 +247,7 @@ export const deviceRepo = {
 
   /**
    * Create a device atomically, generating the ITA code inside the transaction.
+   * Optionally insert MAC addresses in the same transaction.
    * conn parameter is optional; if not provided, the function creates its own transaction.
    */
   async create(input: CreateDeviceInput, conn?: PoolConnection): Promise<Device> {
@@ -182,7 +273,19 @@ export const deviceRepo = {
           input.notes,
         ],
       );
-      return (result as { insertId: number }).insertId;
+      const deviceId = (result as { insertId: number }).insertId;
+
+      // Insert MAC addresses if provided
+      if (input.macAddresses && input.macAddresses.length > 0) {
+        for (const mac of input.macAddresses) {
+          await connection.execute(
+            'INSERT INTO mac_addresses (device_id, mac_type, mac_address) VALUES (?, ?, ?)',
+            [deviceId, mac.macType, mac.macAddress],
+          );
+        }
+      }
+
+      return deviceId;
     };
 
     const newId = conn
