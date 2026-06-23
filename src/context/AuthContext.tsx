@@ -46,6 +46,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     setAuthToken(null);
     setUser(null);
+    // Force clear all storage to prevent token persistence
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch (e) {
+        // Ignore storage clear errors (may be restricted)
+      }
+    }
   }, []);
 
   // Any 401 anywhere in the app clears the session.

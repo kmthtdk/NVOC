@@ -80,8 +80,14 @@ export default function App() {
 
   // If a requester is somehow on the admin view (e.g. role changed), snap back.
   useEffect(() => {
-    if (view === 'admin' && !isITSupport) setView('user');
-  }, [view, isITSupport]);
+    if (view === 'admin' && !isITSupport) {
+      console.warn('Security: Requester attempted admin view, redirecting to user portal', {
+        userEmail: user?.email,
+        userRole: user?.role,
+      });
+      setView('user');
+    }
+  }, [view, isITSupport, user?.role]);
 
   const handleCreated = useCallback(
     (ticket: Ticket) => {
@@ -148,7 +154,7 @@ export default function App() {
                   <User className="w-3.5 h-3.5" />
                   <span>Employee Portal</span>
                 </button>
-                {isITSupport && (
+                {isITSupport && user?.role !== 'requester' && (
                   <button
                     onClick={() => setView('admin')}
                     className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer select-none ${
