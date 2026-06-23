@@ -59,8 +59,8 @@ CREATE TABLE IF NOT EXISTS devices (
 -- duplicate links. ON DELETE CASCADE keeps links consistent with both parents.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ticket_device_links (
-  id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  ticket_id    INT UNSIGNED NOT NULL,
+  id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  ticket_id    BIGINT UNSIGNED NOT NULL,
   device_id    INT UNSIGNED NOT NULL,
   action_type  ENUM('related','resolved','affected') NOT NULL DEFAULT 'related',
   created_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
