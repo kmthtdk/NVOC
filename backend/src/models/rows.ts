@@ -108,6 +108,12 @@ export interface DeviceRow extends RowDataPacket {
   purchase_date: string | null;
   warranty_expiry: string | null;
   notes: string | null;
+  cpu: string | null;
+  ram_gb: number | null;
+  storage_gb: number | null;
+  gpu: string | null;
+  psu_watts: number | null;
+  specs_json: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -9,6 +9,7 @@ import type {
   Device,
   LinkedTicket,
   MacAddress,
+  DeviceSpecifications,
 } from '../types/index.js';
 import type {
   UserRow,
@@ -110,7 +111,7 @@ export function mapMacAddress(r: MacAddressRow): MacAddress {
 }
 
 /**
- * Build the full Device API object. Linked tickets and MAC addresses are passed in
+ * Build the full Device API object. Linked tickets, MAC addresses, and specifications are passed in
  * (they come from separate queries) so this mapper stays pure and reusable.
  */
 export function mapDevice(
@@ -118,6 +119,17 @@ export function mapDevice(
   linkedTickets: LinkedTicket[] = [],
   macAddresses: MacAddress[] = [],
 ): Device {
+  const specifications: DeviceSpecifications = {
+    cpu: r.cpu,
+    ramGb: r.ram_gb,
+    storageGb: r.storage_gb,
+    gpu: r.gpu,
+    psuWatts: r.psu_watts,
+    additionalSpecs: r.specs_json ? JSON.parse(r.specs_json) : undefined,
+  };
+
+  const hasSpecs = Object.values(specifications).some(v => v !== null && v !== undefined);
+
   return {
     id: r.id,
     code: r.code,
@@ -134,5 +146,6 @@ export function mapDevice(
     updatedAt: toIso(r.updated_at)!,
     linkedTickets,
     ...(macAddresses.length > 0 ? { macAddresses } : {}),
+    ...(hasSpecs ? { specifications } : {}),
   };
 }

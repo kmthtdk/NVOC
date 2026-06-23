@@ -2,7 +2,7 @@ import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { pool, withTransaction } from '../config/db.js';
 import type { DeviceRow, MacAddressRow } from './rows.js';
 import { mapDevice, mapMacAddress } from './mappers.js';
-import type { Device, DeviceStatus, MacAddress, MacAddressInput } from '../types/index.js';
+import type { Device, DeviceStatus, MacAddress, MacAddressInput, DeviceSpecifications } from '../types/index.js';
 
 export interface DeviceListFilters {
   deviceType?: string;
@@ -26,6 +26,7 @@ export interface CreateDeviceInput {
   warrantyExpiry: string | null;
   notes: string | null;
   macAddresses?: MacAddressInput[];
+  specifications?: DeviceSpecifications;
 }
 
 export interface UpdateDeviceInput {
@@ -38,6 +39,7 @@ export interface UpdateDeviceInput {
   purchaseDate?: string | null;
   warrantyExpiry?: string | null;
   notes?: string | null;
+  specifications?: Partial<DeviceSpecifications>;
 }
 
 export interface TicketDeviceLinkInput {
@@ -256,10 +258,14 @@ export const deviceRepo = {
     const createWithConnection = async (connection: PoolConnection): Promise<number> => {
       const code = await nextDeviceCode(connection, year);
 
+      const specsJson = input.specifications?.additionalSpecs
+        ? JSON.stringify(input.specifications.additionalSpecs)
+        : null;
+
       const [result] = await connection.execute(
         `INSERT INTO devices
-          (code, device_type, model, serial_number, status, assigned_to, department, purchase_date, warranty_expiry, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (code, device_type, model, serial_number, status, assigned_to, department, purchase_date, warranty_expiry, notes, cpu, ram_gb, storage_gb, gpu, psu_watts, specs_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           code,
           input.deviceType,
@@ -271,6 +277,12 @@ export const deviceRepo = {
           input.purchaseDate,
           input.warrantyExpiry,
           input.notes,
+          input.specifications?.cpu ?? null,
+          input.specifications?.ramGb ?? null,
+          input.specifications?.storageGb ?? null,
+          input.specifications?.gpu ?? null,
+          input.specifications?.psuWatts ?? null,
+          specsJson,
         ],
       );
       const deviceId = (result as { insertId: number }).insertId;
@@ -337,6 +349,34 @@ export const deviceRepo = {
     if (input.notes !== undefined) {
       sets.push('notes = ?');
       params.push(input.notes);
+    }
+
+    // Specifications
+    if (input.specifications) {
+      if (input.specifications.cpu !== undefined) {
+        sets.push('cpu = ?');
+        params.push(input.specifications.cpu);
+      }
+      if (input.specifications.ramGb !== undefined) {
+        sets.push('ram_gb = ?');
+        params.push(input.specifications.ramGb);
+      }
+      if (input.specifications.storageGb !== undefined) {
+        sets.push('storage_gb = ?');
+        params.push(input.specifications.storageGb);
+      }
+      if (input.specifications.gpu !== undefined) {
+        sets.push('gpu = ?');
+        params.push(input.specifications.gpu);
+      }
+      if (input.specifications.psuWatts !== undefined) {
+        sets.push('psu_watts = ?');
+        params.push(input.specifications.psuWatts);
+      }
+      if (input.specifications.additionalSpecs !== undefined) {
+        sets.push('specs_json = ?');
+        params.push(input.specifications.additionalSpecs ? JSON.stringify(input.specifications.additionalSpecs) : null);
+      }
     }
 
     if (sets.length > 0) {

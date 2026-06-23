@@ -133,3 +133,66 @@ VALUES
   (5, '00:1A:2B:3C:4D:61', 'ethernet',  TRUE),
   (1, '00:1A:2B:3C:4D:62', 'bluetooth', FALSE)
 ON DUPLICATE KEY UPDATE is_active = VALUES(is_active);
+
+-- ============================================================================
+-- device_specifications
+-- Add hardware specification columns to track CPU, RAM, Storage, GPU, PSU
+-- Hybrid design: core specs as columns (indexed), additional specs as JSON
+-- ============================================================================
+ALTER TABLE devices
+ADD COLUMN cpu VARCHAR(255) NULL AFTER notes COMMENT 'CPU model and specs',
+ADD COLUMN ram_gb INT UNSIGNED NULL AFTER cpu COMMENT 'RAM in gigabytes',
+ADD COLUMN storage_gb INT UNSIGNED NULL AFTER ram_gb COMMENT 'Storage in gigabytes',
+ADD COLUMN gpu VARCHAR(255) NULL AFTER storage_gb COMMENT 'GPU/Graphics processor',
+ADD COLUMN psu_watts INT UNSIGNED NULL AFTER gpu COMMENT 'Power supply unit in watts',
+ADD COLUMN specs_json JSON NULL AFTER psu_watts COMMENT 'Additional specs as JSON key-value pairs',
+ADD INDEX idx_devices_cpu (cpu),
+ADD INDEX idx_devices_ram (ram_gb),
+ADD INDEX idx_devices_storage (storage_gb),
+ADD INDEX idx_devices_gpu (gpu),
+ADD INDEX idx_devices_psu (psu_watts),
+ADD FULLTEXT KEY ft_devices_specs (cpu, gpu);
+
+-- ============================================================================
+-- Seed: Device specifications for demo devices
+-- ============================================================================
+UPDATE devices SET
+  cpu = 'Intel i7-10700K, 8 cores, 3.8 GHz',
+  ram_gb = 16,
+  storage_gb = 512,
+  gpu = 'Integrated Intel UHD Graphics',
+  psu_watts = 130
+WHERE id = 1;
+
+UPDATE devices SET
+  cpu = 'Intel i5-9400, 6 cores, 2.9 GHz',
+  ram_gb = 8,
+  storage_gb = 256,
+  gpu = 'Integrated Intel UHD Graphics 630',
+  psu_watts = 180
+WHERE id = 2;
+
+UPDATE devices SET
+  cpu = NULL,
+  ram_gb = NULL,
+  storage_gb = NULL,
+  gpu = NULL,
+  psu_watts = NULL
+WHERE id = 3;
+
+UPDATE devices SET
+  cpu = 'Apple A15 Bionic',
+  ram_gb = 4,
+  storage_gb = 128,
+  gpu = '5-core GPU',
+  psu_watts = NULL
+WHERE id = 4;
+
+UPDATE devices SET
+  cpu = 'AMD Ryzen 7 5700U, 8 cores, 3.8 GHz',
+  ram_gb = 32,
+  storage_gb = 1024,
+  gpu = 'NVIDIA RTX 3050',
+  psu_watts = 100,
+  specs_json = JSON_OBJECT('ssd_type', 'NVMe', 'display_size', '13.3 inch', 'battery_wh', '63')
+WHERE id = 5;

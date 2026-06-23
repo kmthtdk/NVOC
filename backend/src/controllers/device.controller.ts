@@ -27,6 +27,15 @@ const macAddressSchema = z.object({
     .regex(MAC_ADDRESS_REGEX, 'MAC address must be in format 00:00:00:00:00:00'),
 });
 
+const specificationSchema = z.object({
+  cpu: z.string().max(255).nullable().optional(),
+  ramGb: z.number().int().min(1).max(1024).nullable().optional(),
+  storageGb: z.number().int().min(1).max(10000).nullable().optional(),
+  gpu: z.string().max(255).nullable().optional(),
+  psuWatts: z.number().int().min(0).max(2000).nullable().optional(),
+  additionalSpecs: z.record(z.string()).nullable().optional(),
+});
+
 export const createDeviceSchema = z.object({
   deviceType: z.string().min(1, 'Device type is required').max(50),
   model: z.string().min(1, 'Model is required').max(150),
@@ -38,6 +47,7 @@ export const createDeviceSchema = z.object({
   warrantyExpiry: nullableDate.default(null),
   notes: z.string().max(2000).nullable().optional().default(null),
   macAddresses: z.array(macAddressSchema).optional(),
+  specifications: specificationSchema.optional(),
 });
 
 export const updateDeviceSchema = createDeviceSchema.partial();
@@ -150,6 +160,7 @@ export const deviceController = {
       warrantyExpiry: body.warrantyExpiry ?? null,
       notes: body.notes ?? null,
       macAddresses: body.macAddresses,
+      specifications: body.specifications,
     });
 
     res.status(201).json({ data: device });

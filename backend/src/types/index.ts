@@ -91,6 +91,15 @@ export interface MacAddressInput {
   macAddress: string;
 }
 
+export interface DeviceSpecifications {
+  cpu?: string | null;
+  ramGb?: number | null;
+  storageGb?: number | null;
+  gpu?: string | null;
+  psuWatts?: number | null;
+  additionalSpecs?: Record<string, string> | null;
+}
+
 export interface Device {
   id: number;
   code: string;
@@ -107,6 +116,7 @@ export interface Device {
   updatedAt: string;
   linkedTickets: LinkedTicket[];
   macAddresses?: MacAddress[];
+  specifications?: DeviceSpecifications;
 }
 
 // ---- Taxonomy (matches CategorySpec on the frontend) ----
