@@ -17,6 +17,8 @@ import { api, ApiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Spinner, LoadingPanel, ErrorState } from './ui/Spinner';
+import DeviceAssignmentModal from './DeviceAssignmentModal';
+import DeviceCheckoutModal from './DeviceCheckoutModal';
 import {
   X, Clock, User, Send, Building, Server, MessageSquare, History, Paperclip,
   Download, Settings2, Save,
@@ -75,6 +77,21 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
 
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  // Device workflow state
+  const [deviceWorkflow, setDeviceWorkflow] = useState<{
+    ticketCode: string;
+    deviceActionType: 'new' | 'replace' | 'return';
+    requesterName?: string;
+    requesterEmail?: string;
+    requesterDept?: string;
+  } | null>(null);
+  const [pendingUpdate, setPendingUpdate] = useState<{
+    status: TicketStatus;
+    priority: TicketPriority;
+    assignedTo: string;
+    notes: string;
+  } | null>(null);
+
   const load = useCallback(
     (signal?: AbortSignal) => {
       setLoading(true);
@@ -132,9 +149,45 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ticket) return;
+
+    // Check if this is a hardware request being resolved with device workflow
+    const deviceActionType = ticket.details?.deviceActionType as 'new' | 'replace' | 'return' | undefined;
+
+    // Debug logging
+    console.log('[Device Workflow Debug]', {
+      editStatus,
+      category: ticket.category,
+      deviceActionType,
+      details: ticket.details,
+      shouldTrigger: editStatus === 'resolved' && ticket.category === 'hardware_request' && deviceActionType && ['new', 'replace', 'return'].includes(deviceActionType),
+    });
+
+    if (
+      editStatus === 'resolved' &&
+      ticket.category === 'hardware_request' &&
+      deviceActionType &&
+      ['new', 'replace', 'return'].includes(deviceActionType)
+    ) {
+      // Show device workflow modal instead of saving directly
+      setDeviceWorkflow({
+        ticketCode: ticket.code,
+        deviceActionType,
+        requesterName: ticket.requesterName,
+        requesterEmail: ticket.requesterEmail,
+        requesterDept: ticket.requesterDept,
+      });
+      setPendingUpdate({
+        status: editStatus,
+        priority: editPriority,
+        assignedTo: editAssignee.trim() || 'Unassigned',
+        notes: editNotes.trim() || undefined,
+      });
+      return;
+    }
+
+    // Standard update without device workflow
     setSavingEdit(true);
     try {
-      // PUT returns 204; refetch to get the new state + appended history.
       await api.updateTicket(ticket.id, {
         status: editStatus,
         priority: editPriority,
@@ -144,6 +197,31 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
       setEditNotes('');
       setShowEdit(false);
       toast.success('Ticket updated.');
+      await load();
+      onMutated();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not update the ticket.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeviceWorkflowComplete = async () => {
+    if (!ticket || !pendingUpdate) return;
+    setSavingEdit(true);
+    try {
+      // Save the ticket update
+      await api.updateTicket(ticket.id, {
+        status: pendingUpdate.status,
+        priority: pendingUpdate.priority,
+        assignedTo: pendingUpdate.assignedTo,
+        notes: pendingUpdate.notes,
+      });
+      setEditNotes('');
+      setShowEdit(false);
+      setDeviceWorkflow(null);
+      setPendingUpdate(null);
+      toast.success('Ticket resolved and device assigned.');
       await load();
       onMutated();
     } catch (err) {
@@ -442,6 +520,36 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
           </button>
         </div>
       </div>
+
+      {/* Device Assignment Modal */}
+      {deviceWorkflow && deviceWorkflow.deviceActionType === 'new' && (
+        <DeviceAssignmentModal
+          ticketCode={deviceWorkflow.ticketCode}
+          requesterName={deviceWorkflow.requesterName}
+          requesterEmail={deviceWorkflow.requesterEmail}
+          requesterDept={deviceWorkflow.requesterDept}
+          onComplete={handleDeviceWorkflowComplete}
+          onCancel={() => {
+            setDeviceWorkflow(null);
+            setPendingUpdate(null);
+          }}
+          isLoading={savingEdit}
+        />
+      )}
+
+      {/* Device Checkout Modal */}
+      {deviceWorkflow && (deviceWorkflow.deviceActionType === 'return' || deviceWorkflow.deviceActionType === 'replace') && (
+        <DeviceCheckoutModal
+          ticketCode={deviceWorkflow.ticketCode}
+          deviceActionType={deviceWorkflow.deviceActionType}
+          onComplete={handleDeviceWorkflowComplete}
+          onCancel={() => {
+            setDeviceWorkflow(null);
+            setPendingUpdate(null);
+          }}
+          isLoading={savingEdit}
+        />
+      )}
     </div>
   );
 }
