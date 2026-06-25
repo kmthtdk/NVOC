@@ -218,11 +218,18 @@ export default function DeviceFormModal({
     setErrors({});
   }, [device]);
 
-  // Focus management + Escape to close (accessibility).
+  // Focus management on mount (accessibility) - run once only
   useEffect(() => {
-    closeRef.current?.focus();
+    closeRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  // Escape to close - separate effect to prevent per-second re-runs
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      // Don't close if user is dismissing a dropdown or typing in a field
+      if (e.key === 'Escape' && e.defaultPrevented === false) {
+        onClose();
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);

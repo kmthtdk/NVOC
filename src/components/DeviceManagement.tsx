@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, AlertCircle } from 'lucide-react';
 import { api, ApiError, getAuthToken } from '../api/client';
 import { useToast } from '../context/ToastContext';
@@ -77,6 +77,10 @@ export default function DeviceManagement({ user }: DeviceManagementProps) {
     }
   };
 
+  // Memoize callbacks to prevent re-creation on every render from parent clock tick
+  const handleCloseModal = useCallback(() => setShowFormModal(false), []);
+  const handleOpenModal = useCallback(() => setShowFormModal(true), []);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -85,7 +89,7 @@ export default function DeviceManagement({ user }: DeviceManagementProps) {
           <p className="text-gray-600 dark:text-gray-400 mt-2">Manage IT devices and track assignments</p>
         </div>
         <button
-          onClick={() => setShowFormModal(true)}
+          onClick={handleOpenModal}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
         >
           <Plus className="w-5 h-5" />
@@ -175,7 +179,7 @@ export default function DeviceManagement({ user }: DeviceManagementProps) {
 
       {showFormModal && (
         <DeviceFormModal
-          onClose={() => setShowFormModal(false)}
+          onClose={handleCloseModal}
           onSaved={handleDeviceSaved}
           authToken={getAuthToken() || undefined}
         />
