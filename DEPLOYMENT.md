@@ -1,315 +1,474 @@
-# 🚀 N-VOC Request System — LIVE DEPLOYMENT
+# N-VOC System Deployment Guide
 
-**Status:** ✅ **DEPLOYED & RUNNING**  
-**Deployment Date:** 2026-06-23  
-**All Services:** HEALTHY
+## Critical: Deploy Security Fixes via Docker Rebuild
 
----
-
-## 🌐 ACCESS INFORMATION
-
-### **Frontend (React/Vite SPA)**
-```
-URL: http://localhost:3001
-Service: voc-frontend (Nginx)
-Status: ✅ Healthy
-Docker Port: 3000 → Host Port: 3001
-```
-
-### **Backend API (Express.js)**
-```
-URL: http://localhost:4001/api
-Health: http://localhost:4001/health → {"status":"ok","db":"up"}
-Service: voc-backend (Node.js)
-Status: ✅ Healthy
-Docker Port: 4000 → Host Port: 4001
-```
-
-### **Database (MySQL 8.4)**
-```
-Host: localhost
-Port: 3307 (Host) / 3306 (Container)
-Database: voc_system
-User: voc_app
-Status: ✅ Healthy
-Schema: ✅ Loaded (01_schema.sql)
-Seed Data: ✅ Loaded (02_seed.sql)
-```
+The source code contains authorization and rate-limiting fixes that are **not active in running containers** until images are rebuilt. Any deployment must follow the full rebuild procedure below. Restarting containers without rebuilding will continue running the old, unpatched code.
 
 ---
 
-## 👤 TEST LOGIN CREDENTIALS
+## Architecture Overview
 
-All demo passwords: `Passw0rd!`
+```
+                       +-------------------+
+    Browser :3000 ---> |  Nginx (frontend) |
+                       |  static SPA +     |
+                       |  /api/ proxy      |
+                       +--------+----------+
+                                |
+                       +--------v----------+
+                       |  Express (backend) |
+                       |  :4000 /api/*      |
+                       +--------+----------+
+                                |
+                       +--------v----------+
+                       |  MySQL 8.4 (db)   |
+                       |  :3306             |
+                       +-------------------+
+```
 
-| Email | Role | Department |
-|-------|------|-----------|
-| **admin@company.com** | Admin | IT Operations |
-| **marcus.vance@company.com** | IT Support | IT Operations |
-| **alex.mercer@company.com** | Requester | R&D / Software Engineering |
+Three Docker containers on a shared bridge network (`voc-net`):
 
----
-
-## ✨ WHAT'S DEPLOYED
-
-### **Database (MySQL)**
-- ✅ 8 tables (users, categories, subcategories, request_types, tickets, comments, history, attachments)
-- ✅ 3 demo users (admin, it_support, requester)
-- ✅ 6 request categories (General, Network, Security, Server, Hardware, etc.)
-- ✅ 20+ subcategories with hierarchical structure
-- ✅ 40+ request types (Firewall, Folder, Permission, AI, USB, Decryption, etc.)
-- ✅ Fulltext search on title/description
-- ✅ Transaction-safe ticket code generation (REQ-2026-NNNN)
-
-### **Backend API (Express/TypeScript)**
-- ✅ Authentication: POST /api/auth/login + JWT validation
-- ✅ Tickets: GET/POST/PUT/DELETE /api/tickets
-- ✅ Comments: POST /api/tickets/:id/comments
-- ✅ Categories: GET /api/categories (live taxonomy)
-- ✅ Attachments: POST /api/tickets/:id/attachments (multipart upload)
-- ✅ AI Triage: GET /api/ai/triage (Gemini optional)
-- ✅ Health: GET /api/health
-- ✅ Role-based access control (requester, it_support, admin)
-- ✅ Structured logging (Pino)
-- ✅ Error handling + validation (Zod schemas)
-
-### **Frontend (React/Vite)**
-- ✅ RequestForm.tsx — VOC submission wizard with cascading selectors
-- ✅ TicketList.tsx — Master queue (search, filter, pagination)
-- ✅ TicketDetailModal.tsx — Ticket view + comments + history
-- ✅ AdminSimulation.tsx — Admin processing dashboard
-- ✅ Login.tsx — JWT-based authentication
-- ✅ StatusDashboard.tsx — Statistics & KPIs
-- ✅ Dark/light theme toggle
-- ✅ Toast notifications
-- ✅ Responsive design (works on desktop, tablet, mobile)
-
-### **Docker Infrastructure**
-- ✅ docker-compose.yml (3 services orchestration)
-- ✅ Multi-stage Backend Dockerfile (Node 20-alpine, 2 stages)
-- ✅ Multi-stage Frontend Dockerfile (Node 20 → Nginx 1.27-alpine)
-- ✅ nginx.conf (reverse-proxy /api → backend, SPA fallback)
-- ✅ Health checks on all 3 services
-- ✅ Persistent volumes (DB data + file uploads)
-- ✅ Network isolation (voc-net bridge)
-- ✅ Non-root container user (node)
+| Service    | Image              | Port | Purpose                              |
+|------------|--------------------|------|--------------------------------------|
+| `frontend` | `voc-frontend`     | 3000 | Nginx-served React SPA + API proxy   |
+| `backend`  | `voc-backend`      | 4000 | Express/TypeScript REST API          |
+| `db`       | `mysql:8.4`        | 3306 | MySQL database, persistent volume    |
 
 ---
 
-## 🎯 USER WORKFLOWS
+## Prerequisites
 
-### **1. Submit VOC Request**
-1. Login with requester credentials
-2. Click "New Request"
-3. Select Category → Subcategory → Type
-4. Set Priority, Title, Description
-5. [Optional] Add date range (if applicable)
-6. [Optional] Fill dynamic fields (OS, IP, USB, etc.)
-7. [Optional] Upload attachments
-8. Submit → System generates REQ-2026-XXXX code
-
-### **2. Track Request Status**
-1. Login
-2. View "My Tickets" list
-3. Search by title/description
-4. Filter by status/category/priority
-5. Click ticket to view details
-6. See comments + history timeline
-7. Download attachments
-
-### **3. Process Ticket (IT Support)**
-1. Login as IT Support
-2. View "Assigned Tickets" list
-3. Click ticket
-4. Update status (submitted → processing → pending_user → resolved/rejected)
-5. Add internal comments
-6. Assign to self or another staff
-7. Mark resolved with notes
-
-### **4. Admin Management**
-1. Login as Admin
-2. View all tickets (no filtering)
-3. Create/edit/delete users
-4. Manage ticket assignments
-5. View system statistics
+- Docker Engine 24+ and Docker Compose v2
+- At least 2 GB free RAM (MySQL alone needs ~512 MB)
+- Ports 3000, 4000, 3306 available (configurable via `.env`)
 
 ---
 
-## 🔧 COMMON OPERATIONS
+## Environment Variables
 
-### **View Service Logs**
+Copy the template and fill in all `change_me` values before first deployment:
+
 ```bash
-cd C:\CLAUDE\Main\projects\n-voc-system-service-portal
+cp .env.example .env
+```
 
-# All services
+### Required Variables (compose will refuse to start without these)
+
+| Variable              | Description                                | Example                              |
+|-----------------------|--------------------------------------------|--------------------------------------|
+| `MYSQL_ROOT_PASSWORD` | MySQL root password                        | `$(openssl rand -hex 16)`            |
+| `DB_PASSWORD`         | Application database user password         | `$(openssl rand -hex 16)`            |
+| `JWT_SECRET`          | JWT signing key, minimum 16 characters     | `$(openssl rand -hex 32)`            |
+
+### Optional Variables (have safe defaults)
+
+| Variable              | Default                  | Description                                 |
+|-----------------------|--------------------------|---------------------------------------------|
+| `NODE_ENV`            | `production`             | Runtime mode                                |
+| `DB_NAME`             | `voc_system`             | Database name                               |
+| `DB_USER`             | `voc_app`                | Database application user                   |
+| `DB_PORT`             | `3306`                   | Host port published for DB tooling          |
+| `DB_CONNECTION_LIMIT` | `10`                     | MySQL connection pool size                  |
+| `API_PORT`            | `4000`                   | Host port for direct backend access         |
+| `CORS_ORIGIN`         | `http://localhost:3000`  | Allowed CORS origin                         |
+| `JWT_EXPIRES_IN`      | `8h`                     | JWT token lifetime                          |
+| `MAX_UPLOAD_BYTES`    | `10485760` (10 MB)       | Max file upload size                        |
+| `VITE_API_BASE_URL`   | _(empty = relative /api)_| Frontend API base URL (build-time)          |
+| `VITE_APP_NAME`       | `N-VOC Request System`   | Application title (build-time)              |
+| `FRONTEND_PORT`       | `3000`                   | Host port for the SPA                       |
+| `GEMINI_API_KEY`      | _(empty)_                | Optional: enables AI ticket triage          |
+
+---
+
+## Initial Deployment
+
+### Step 1: Configure environment
+
+```bash
+cp .env.example .env
+
+# Generate secure secrets
+sed -i "s/change_me_root/$(openssl rand -hex 16)/" .env
+sed -i "s/change_me_app/$(openssl rand -hex 16)/" .env
+sed -i "s/change_me_to_a_long_random_secret_min_16/$(openssl rand -hex 32)/" .env
+```
+
+### Step 2: Build and start all services
+
+```bash
+docker compose up -d --build
+```
+
+This will:
+1. Build the backend image (multi-stage: TypeScript compile, prune dev deps)
+2. Build the frontend image (multi-stage: Vite build, copy to Nginx)
+3. Start MySQL and wait for its healthcheck to pass
+4. Start the backend (depends on healthy DB)
+5. Start the frontend (depends on backend)
+
+### Step 3: Verify services are healthy
+
+```bash
+# Check all containers are running
+docker compose ps
+
+# Check health status
+docker inspect --format='{{.State.Health.Status}}' voc-db
+docker inspect --format='{{.State.Health.Status}}' voc-backend
+docker inspect --format='{{.State.Health.Status}}' voc-frontend
+```
+
+### Step 4: Verify the health endpoint
+
+```bash
+# Via Nginx proxy (production path)
+curl -s http://localhost:3000/health | jq .
+# Expected: {"status":"ok","db":"up"}
+
+# Direct backend access
+curl -s http://localhost:4000/health | jq .
+# Expected: {"status":"ok","db":"up"}
+```
+
+---
+
+## Database Initialization
+
+Database schema and seed data are applied automatically on first startup from SQL files in `database/init/`:
+
+| File                   | Purpose                                            |
+|------------------------|----------------------------------------------------|
+| `01_schema.sql`        | Core schema: users, tickets, comments, history     |
+| `02_seed.sql`          | Demo data: users, categories, sample tickets       |
+| `03_it_devices.sql`    | Device inventory tables, specifications, MAC addresses, device history |
+| `04_mac_addresses.sql` | Additional MAC address data                        |
+
+These scripts run **once** when the MySQL data volume is empty. To re-initialize:
+
+```bash
+# WARNING: This destroys all data
+docker compose down -v          # remove containers AND volumes
+docker compose up -d --build    # rebuild and start fresh
+```
+
+To run a migration against an existing database without destroying data:
+
+```bash
+docker exec -i voc-db mysql -u root -p"$MYSQL_ROOT_PASSWORD" voc_system < database/init/03_it_devices.sql
+```
+
+---
+
+## Health Check Endpoints
+
+### Backend: `GET /health` (no authentication required)
+
+```bash
+curl -s http://localhost:4000/health
+```
+
+| Response Code | Body                              | Meaning                    |
+|---------------|-----------------------------------|----------------------------|
+| `200`         | `{"status":"ok","db":"up"}`       | All systems operational    |
+| `503`         | `{"status":"degraded","db":"down"}` | DB connection failed     |
+
+### Frontend: `GET /` (Nginx)
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/
+# Expected: 200
+```
+
+### Docker-level healthchecks
+
+- **Backend**: Node.js fetch to `http://127.0.0.1:4000/health` every 15s
+- **Frontend**: `wget` to `http://127.0.0.1:3000/` every 15s
+- **Database**: `mysqladmin ping` every 10s
+
+---
+
+## Port Configuration
+
+| Service   | Container Port | Host Port Variable | Default |
+|-----------|----------------|--------------------|---------|
+| Frontend  | 3000           | `FRONTEND_PORT`    | 3000    |
+| Backend   | 4000           | `API_PORT`         | 4000    |
+| Database  | 3306           | `DB_PORT`          | 3306    |
+
+To use non-default ports:
+
+```bash
+FRONTEND_PORT=8080 API_PORT=8081 DB_PORT=3307 docker compose up -d --build
+```
+
+---
+
+## Deploying Updates (Rolling Deployment)
+
+### Standard update procedure
+
+```bash
+# 1. Pull latest source code
+git pull origin main
+
+# 2. Rebuild images with new source code (--no-cache ensures all layers are fresh)
+docker compose build --no-cache
+
+# 3. Rolling restart: backend first, then frontend
+docker compose up -d --no-deps backend
+docker compose up -d --no-deps frontend
+
+# 4. Verify health
+curl -s http://localhost:3000/health | jq .
+
+# 5. Verify authorization is enforced (should return 401 for unauthenticated)
+curl -s -o /dev/null -w "%{http_code}" http://localhost:4000/api/devices
+# Expected: 401
+
+# 6. Verify role-based access (should return 403 for requester on admin-only reports)
+TOKEN=$(curl -s -X POST http://localhost:4000/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"requester@example.com","password":"password"}' | jq -r '.token')
+
+curl -s -o /dev/null -w "%{http_code}" \
+  -H "Authorization: Bearer $TOKEN" \
+  http://localhost:4000/api/devices/reports/summary
+# Expected: 403
+```
+
+### Deploying database migrations
+
+If the update includes new SQL migration files:
+
+```bash
+# After rebuilding and before restarting the backend
+docker exec -i voc-db mysql -u root -p"$MYSQL_ROOT_PASSWORD" voc_system < database/init/NEW_MIGRATION.sql
+
+# Then restart backend
+docker compose up -d --no-deps backend
+```
+
+### Zero-downtime considerations
+
+The current single-host Docker Compose setup does not support true zero-downtime deployments. For production environments requiring zero downtime:
+
+1. Deploy behind a load balancer (e.g., Nginx, Traefik, AWS ALB)
+2. Use blue-green deployment: spin up new containers on different ports, health-check them, then swap traffic
+3. Consider Docker Swarm or Kubernetes for orchestrated rolling updates
+
+---
+
+## Rollback Procedures
+
+### Quick rollback (restore previous images)
+
+```bash
+# 1. Stop current containers
+docker compose down
+
+# 2. Checkout the previous known-good commit
+git log --oneline -5   # identify the target commit
+git checkout <commit-hash>
+
+# 3. Rebuild and restart
+docker compose up -d --build
+
+# 4. Verify health
+curl -s http://localhost:3000/health | jq .
+```
+
+### Database rollback
+
+If a migration introduced breaking schema changes:
+
+```bash
+# 1. Stop the application
+docker compose stop backend frontend
+
+# 2. Restore from backup
+docker exec -i voc-db mysql -u root -p"$MYSQL_ROOT_PASSWORD" voc_system < /path/to/backup.sql
+
+# 3. Checkout previous code and rebuild
+git checkout <previous-commit>
+docker compose up -d --build
+```
+
+### Emergency: full volume restore
+
+```bash
+docker compose down
+docker volume rm n-voc-system-service-portal_voc-db-data
+# Restore volume from your backup tool/snapshot
+docker compose up -d --build
+```
+
+---
+
+## Backup Procedures
+
+### Database backup (automated)
+
+```bash
+# Full dump
+docker exec voc-db mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" \
+  --single-transaction --routines --triggers \
+  voc_system > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# Compressed backup
+docker exec voc-db mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" \
+  --single-transaction voc_system | gzip > backup_$(date +%Y%m%d).sql.gz
+```
+
+### Upload volume backup
+
+```bash
+docker cp voc-backend:/app/uploads ./uploads_backup_$(date +%Y%m%d)
+```
+
+### Crontab example
+
+```cron
+# Daily database backup at 2 AM
+0 2 * * * cd /path/to/project && docker exec voc-db mysqldump -u root -p"$(grep MYSQL_ROOT_PASSWORD .env | cut -d= -f2)" --single-transaction voc_system | gzip > /backups/voc_$(date +\%Y\%m\%d).sql.gz
+
+# Weekly uploads backup
+0 3 * * 0 docker cp voc-backend:/app/uploads /backups/uploads_$(date +\%Y\%m\%d)
+
+# Retain 30 days of backups
+0 4 * * * find /backups -name "voc_*.sql.gz" -mtime +30 -delete
+```
+
+---
+
+## Monitoring Recommendations
+
+### Log aggregation
+
+```bash
+# Follow all service logs
 docker compose logs -f
 
-# Specific service
+# Follow specific service
 docker compose logs -f backend
-docker compose logs -f frontend
-docker compose logs -f db
+
+# Export logs for analysis
+docker compose logs --no-color backend > backend.log 2>&1
 ```
 
-### **Access Database (MySQL CLI)**
-```bash
-docker compose exec db mysql -uroot -p"vocRootSecret2026!" voc_system
+### Key metrics to watch
 
-# Example queries
-SELECT * FROM users;
-SELECT * FROM tickets LIMIT 5;
-SELECT COUNT(*) FROM tickets WHERE status='submitted';
+| Metric                        | Threshold         | Action                          |
+|-------------------------------|--------------------|---------------------------------|
+| Backend health endpoint       | != 200             | Alert, check DB connectivity    |
+| HTTP 429 (rate limit) count   | > 50/hour          | Investigate source IPs          |
+| HTTP 401/403 count            | Sudden spike       | Possible attack, review logs    |
+| Container restart count       | > 0                | Check `docker inspect` logs     |
+| MySQL connection count        | > 80% of pool      | Increase `DB_CONNECTION_LIMIT`  |
+| Disk usage (db volume)        | > 80%              | Expand storage, archive data    |
+| Upload volume size            | > 5 GB             | Archive old attachments         |
+| Response time (p95)           | > 2s               | Profile slow queries            |
+
+### Rate limiter monitoring
+
+The application returns `RateLimit-*` standard headers on rate-limited endpoints:
+
+| Endpoint Pattern                    | Window   | Max Requests | Purpose                |
+|-------------------------------------|----------|--------------|------------------------|
+| `POST /api/auth/login`              | 15 min   | 10           | Brute-force prevention |
+| `POST /api/ai/triage`              | 15 min   | 10           | External API cost control |
+| `POST /api/devices/:id/assign`     | 15 min   | 30           | DoS prevention         |
+| `POST /api/devices/:id/checkout`   | 15 min   | 30           | DoS prevention         |
+| `POST /api/tickets`               | 15 min   | 30           | DoS prevention         |
+| `POST /api/tickets/:id/comments`   | 15 min   | 50           | DoS prevention         |
+| `POST /api/tickets/:id/attachments`| 15 min   | 30           | DoS prevention         |
+
+A sustained 429 spike from a single IP may indicate an attack. A broad 429 spike across many IPs may indicate the limits are too restrictive for legitimate traffic.
+
+### Recommended alert thresholds
+
+```
+# Health check failure
+IF health_check != 200 FOR 3 consecutive checks (45s) THEN page oncall
+
+# Rate limiter abuse
+IF count(status=429) > 100 IN 15 minutes THEN alert security
+
+# Error rate
+IF count(status>=500) / count(all_requests) > 5% IN 5 minutes THEN page oncall
+
+# Database connection exhaustion
+IF active_connections > 8 (80% of default pool=10) THEN warn ops
 ```
 
-### **Restart Services**
-```bash
-# All services
-docker compose restart
+### External monitoring
 
-# Single service
-docker compose restart backend
+Configure an uptime monitor against:
+
 ```
-
-### **Rebuild a Service**
-```bash
-docker compose up -d --build backend
-docker compose up -d --build frontend
-```
-
-### **View Service Status**
-```bash
-docker compose ps
-docker compose ps -a  # include stopped containers
-```
-
-### **Stop All Services** (keep volumes)
-```bash
-docker compose stop
-```
-
-### **Stop & Remove Everything** (delete volumes = fresh start)
-```bash
-docker compose down -v
+GET http://<host>:3000/health
+Expected: HTTP 200, body contains "ok"
+Alert if: 3 consecutive failures within 5 minutes
 ```
 
 ---
 
-## 📊 SYSTEM INFORMATION
+## Troubleshooting
 
-### **Container Status**
-```
-Frontend:   voc-frontend:latest  | Healthy | Port 3001
-Backend:    voc-backend:latest   | Healthy | Port 4001
-Database:   mysql:8.4            | Healthy | Port 3307
-Network:    voc-net (bridge)     | Active
-Volumes:    voc-db-data (12 GB)  | Mounted
-            voc-uploads (empty)   | Mounted
-```
+### Backend won't start
 
-### **Performance Baselines**
-- Frontend Bundle: ~150 KB (minified + gzipped)
-- API Response Time: <100ms (local)
-- DB Query Time: <50ms (filtered list)
-- File Upload: 1-5 MB/s
-
-### **Security**
-- ✅ Passwords: bcrypt hashed (cost=10)
-- ✅ API: JWT signed (HS256)
-- ✅ Database: No plaintext secrets
-- ✅ Headers: Helmet security middleware
-- ✅ CORS: Restricted to frontend origin
-- ✅ SQL: Parameterized queries (no injection)
-
----
-
-## ⚠️ TROUBLESHOOTING
-
-### **Service keeps restarting**
 ```bash
 # Check logs
 docker compose logs backend
 
-# Usually: DB not ready, credentials mismatch, or build error
-# Solution: docker compose down -v && docker compose up -d --build
+# Common causes:
+# 1. DB not ready - backend waits for db healthcheck
+docker compose logs db
+
+# 2. Missing environment variables
+docker compose config  # validates .env against compose file
+
+# 3. JWT_SECRET too short (zod-validated at boot, must be >= 16 chars)
+echo ${JWT_SECRET} | wc -c
 ```
 
-### **Cannot connect to backend from frontend**
-```bash
-# Check backend is healthy
-docker compose logs backend
+### Database connection refused
 
-# Check Nginx proxy is configured
-docker compose exec frontend cat /etc/nginx/conf.d/default.conf | grep -A5 'location /api'
+```bash
+# Verify DB is healthy
+docker exec voc-db mysqladmin -u root -p"$MYSQL_ROOT_PASSWORD" status
+
+# Check if init scripts ran successfully
+docker exec voc-db mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "SHOW TABLES" voc_system
 ```
 
-### **Database connection refused**
+### Frontend shows blank page
+
 ```bash
-# Verify credentials in .env match what was initialized
-# If you changed DB_PASSWORD after first boot, reset volumes:
-docker compose down -v
-docker compose up -d --build
+# Check Nginx logs
+docker compose logs frontend
+
+# Verify static files exist in the container
+docker exec voc-frontend ls /usr/share/nginx/html/
+
+# Verify API proxy works from inside the frontend container
+docker exec voc-frontend wget -q -O- http://backend:4000/health
 ```
 
-### **Files uploaded but can't be accessed**
-```bash
-# Check volume is mounted
-docker compose exec backend ls -la /app/uploads
+### Permission denied on uploads
 
-# Check permissions
-docker compose exec backend stat /app/uploads
+```bash
+# The backend runs as the `node` user (UID 1000)
+docker exec voc-backend ls -la /app/uploads
+docker exec voc-backend whoami  # expected: "node"
 ```
 
 ---
 
-## 🔐 ENVIRONMENT (.env)
+## Known Limitations
 
-**Current Configuration:**
-```
-MYSQL_ROOT_PASSWORD=vocRootSecret2026!
-DB_NAME=voc_system
-DB_USER=voc_app
-DB_PASSWORD=vocAppSecret2026!
-DB_PORT=3307
-
-API_PORT=4001
-CORS_ORIGIN=http://localhost:3001
-
-JWT_SECRET=voc_demo_secret_key_2026_at_least_16_chars_long
-JWT_EXPIRES_IN=8h
-
-FRONTEND_PORT=3001
-VITE_APP_NAME=N-VOC Request System
-```
-
-**Production Notes:**
-- ⚠️ Never commit `.env` to version control
-- ⚠️ Use strong, unique `JWT_SECRET` (min 16 chars)
-- ⚠️ Generate with: `openssl rand -hex 32`
-- ⚠️ Set `NODE_ENV=production` in production
-- ⚠️ Remove `DB_PORT` from docker-compose to keep DB internal
-
----
-
-## 📈 NEXT STEPS
-
-1. **Test the system** → http://localhost:3001
-2. **Create sample tickets** → Submit VOC requests as requester
-3. **Process tickets** → Login as IT Support to manage
-4. **Verify attachments** → Upload files and download them
-5. **Check comments** → Add comments and verify threading
-6. **Admin panel** → Login as admin to view all data
-
-## 🔗 INTEGRATION WITH IT DASHBOARD
-
-To link the VOC system into the existing IT Dashboard:
-
-1. Add menu item in sidebar → `/pages/dashboard.html#voc`
-2. Update API endpoints in dashboard to use:
-   - `http://localhost:4001/api/tickets` (instead of internal API)
-   - JWT auth header: `Authorization: Bearer {token}`
-3. Use same login session or implement SSO
-
----
-
-**Deployment completed successfully! 🎉**
-
-All services are running, healthy, and ready to use.
+1. **Single-host only**: Docker Compose is designed for a single server. For HA, migrate to Docker Swarm or Kubernetes.
+2. **Pivot table pagination**: Device report endpoints return full result sets without server-side pagination. Large inventories (1000+ devices) may experience slower responses.
+3. **Device assignment response timing**: Assign/checkout endpoints perform multiple database operations in a transaction. Under high concurrency, response times may increase.
+4. **Build-time frontend config**: `VITE_API_BASE_URL` and `VITE_APP_NAME` are baked into the frontend image at build time. Changing them requires a rebuild.
+5. **No HTTPS termination**: Nginx serves plain HTTP on port 3000. Deploy behind a TLS-terminating proxy (Traefik, Caddy, AWS ALB) for production.
+6. **Init scripts are one-shot**: Database migrations in `database/init/` only run when the MySQL data volume is empty. Schema changes to an existing database must be applied manually.
