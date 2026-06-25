@@ -92,6 +92,16 @@ export default function App() {
     }
   }, [view, isITSupport, user?.role]);
 
+  // Scroll to top when switching admin tabs to prevent layout jitter
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [adminTab]);
+
+  // Scroll to top when switching device sub-tabs
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [deviceSubTab]);
+
   const handleCreated = useCallback(
     (ticket: Ticket) => {
       setCreatedTicket(ticket);
@@ -188,7 +198,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8 space-y-6 flex-1 w-full animate-fadeIn">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8 space-y-6 flex-1 w-full animate-fade-in-smooth">
         {view === 'user' ? (
           <UserPortal
             reloadKey={reloadKey}

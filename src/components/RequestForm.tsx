@@ -460,7 +460,7 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
       </div>
 
       {success && (
-        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-3 text-emerald-800 animate-fadeIn">
+        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-3 text-emerald-800 animate-fade-in-smooth">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
           <div>
             <h4 className="font-semibold text-sm">Request Submitted Successfully!</h4>
@@ -593,7 +593,7 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
 
         {/* Period Selection form (Only shown when period format is "Apply") */}
         {currentTypeObj?.period === 'Apply' && (
-          <div className="p-4 bg-violet-50/30 border border-violet-100 rounded-xl space-y-3.5 animate-fadeIn">
+          <div className="p-4 bg-violet-50/30 border border-violet-100 rounded-xl space-y-3.5 animate-fade-in-smooth">
             <div className="flex items-center gap-1.5 text-[10px] font-bold text-violet-800 uppercase tracking-widest font-mono">
               📅 Period Constraints Validation (Target Period)
             </div>
@@ -652,7 +652,7 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
 
           {/* 1. General Request */}
           {selectedCategory === 'general_request' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fadeIn">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-smooth">
               {selectedSubcategory === 'troubleshooting' ? (
                 <>
                   <div>
@@ -690,7 +690,7 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
 
           {/* 2. Network Request */}
           {selectedCategory === 'network_request' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fadeIn">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-smooth">
               {selectedSubcategory === 'network_registration' ? (
                 <>
                   <div>
@@ -755,7 +755,7 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
 
           {/* 3. Network Security */}
           {selectedCategory === 'network_security' && (
-            <div className="space-y-3 animate-fadeIn">
+            <div className="space-y-3 animate-fade-in-smooth">
               {selectedSubcategory === 'firewall' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   <div>
@@ -815,9 +815,9 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
 
           {/* 4. Server Request */}
           {selectedCategory === 'server_request' && (
-            <div className="space-y-4 animate-fadeIn">
+            <div className="space-y-4 animate-fade-in-smooth">
               {selectedSubcategory === 'folder' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fadeIn">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-smooth">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1 font-sans">Folder Action</label>
                     <select
@@ -844,7 +844,7 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
               )}
 
               {selectedSubcategory === 'permission' && (
-                <div className="space-y-4 animate-fadeIn">
+                <div className="space-y-4 animate-fade-in-smooth">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 mb-1">Target End-User Account Username</label>
@@ -900,7 +900,7 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
               )}
 
               {selectedSubcategory === 'ai' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fadeIn">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-smooth">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1 font-sans">AI Workspace Subscription / Model Type</label>
                     <input
@@ -928,7 +928,7 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
 
           {/* 5. Security Request */}
           {selectedCategory === 'security_request' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fadeIn">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-smooth">
               {selectedSubcategory === 'e' ? (
                 <>
                   <div>
@@ -998,7 +998,7 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
 
           {/* 6. Hardware Request */}
           {selectedCategory === 'hardware_request' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fadeIn">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in-smooth">
               <div>
                 <label className="block text-xs font-semibold text-slate-755 mb-1">Request Purpose / Action</label>
                 <select

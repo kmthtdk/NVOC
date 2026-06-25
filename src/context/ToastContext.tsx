@@ -81,7 +81,7 @@ function ToastCard({ toast, onClose }: { toast: ToastItem; onClose: () => void }
   return (
     <div
       role="status"
-      className={`flex items-start gap-2.5 p-3.5 rounded-xl border shadow-lg animate-fadeIn ${palette}`}
+      className={`flex items-start gap-2.5 p-3.5 rounded-xl border shadow-lg animate-fade-in-smooth ${palette}`}
     >
       <Icon className="w-4.5 h-4.5 shrink-0 mt-0.5" />
       <p className="text-xs font-semibold leading-relaxed flex-1">{toast.message}</p>

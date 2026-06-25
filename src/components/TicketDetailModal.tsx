@@ -332,7 +332,7 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
 
               {/* Admin edit panel */}
               {showEdit && isITSupport && (
-                <form onSubmit={handleSaveEdit} className="p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-xl space-y-3 animate-fadeIn">
+                <form onSubmit={handleSaveEdit} className="p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-xl space-y-3 animate-fade-in-smooth">
                   <h4 className="text-[10px] font-extrabold text-amber-700 dark:text-amber-400 uppercase tracking-widest font-mono">Manage Ticket</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
