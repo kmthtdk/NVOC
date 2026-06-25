@@ -175,6 +175,7 @@ export default function DeviceFormModal({
     macAddress: '',
   });
   const [newMacErrors, setNewMacErrors] = useState<Record<string, string>>({});
+  const [showNewMacForm, setShowNewMacForm] = useState(false);
 
   // Device specifications management
   const [specifications, setSpecifications] = useState<DeviceSpecifications>(() =>
@@ -255,6 +256,7 @@ export default function DeviceFormModal({
   const handleAddMacClick = () => {
     setNewMacForm({ macType: 'Ethernet', macAddress: '' });
     setNewMacErrors({});
+    setShowNewMacForm(true);
   };
 
   const handleNewMacChange = (field: keyof MacAddressFormState, value: string) => {
@@ -293,6 +295,7 @@ export default function DeviceFormModal({
     ]);
     setNewMacForm({ macType: 'Ethernet', macAddress: '' });
     setNewMacErrors({});
+    setShowNewMacForm(false);
   };
 
   const handleEditMacClick = (mac: MacAddressState) => {
@@ -811,7 +814,7 @@ export default function DeviceFormModal({
             {/* New MAC Address Form */}
             {editingMacId === null && (
               <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 p-3">
-                {newMacForm.macAddress || Object.keys(newMacErrors).length > 0 ? (
+                {showNewMacForm || newMacForm.macAddress || Object.keys(newMacErrors).length > 0 ? (
                   // Form Visible
                   <div className="space-y-2">
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -853,6 +856,7 @@ export default function DeviceFormModal({
                         onClick={() => {
                           setNewMacForm({ macType: 'Ethernet', macAddress: '' });
                           setNewMacErrors({});
+                          setShowNewMacForm(false);
                         }}
                         className="rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
                       >
