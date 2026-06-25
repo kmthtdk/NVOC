@@ -338,6 +338,7 @@ export interface DeviceReportFilters {
   department?: string;
   deviceType?: string;
   status?: string;
+  [key: string]: string | undefined;
 }
 
 export interface CreateTicketPayload {

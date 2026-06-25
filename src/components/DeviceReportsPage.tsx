@@ -142,7 +142,7 @@ export default function DeviceReportsPage() {
           <button
             key={id}
             onClick={() => handleTabChange(id as TabType)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all ${
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === id
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-600 hover:text-gray-900'
@@ -171,7 +171,7 @@ export default function DeviceReportsPage() {
       )}
 
       {!loading && !error && (
-        <div className="transition-opacity duration-200">
+        <div className="transition-opacity duration-200 min-h-96">
           {/* Summary Tab */}
           {activeTab === 'summary' && summary && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

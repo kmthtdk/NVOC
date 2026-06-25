@@ -414,7 +414,7 @@ function AdminWorkspace({
       <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
         <button
           onClick={() => onAdminTabChange('tickets')}
-          className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-colors ${
             adminTab === 'tickets'
               ? 'border-amber-500 text-amber-600 dark:text-amber-400'
               : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -425,7 +425,7 @@ function AdminWorkspace({
         </button>
         <button
           onClick={() => onAdminTabChange('devices')}
-          className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-colors ${
             adminTab === 'devices'
               ? 'border-amber-500 text-amber-600 dark:text-amber-400'
               : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -484,7 +484,7 @@ function AdminWorkspace({
           <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
             <button
               onClick={() => onDeviceSubTabChange('management')}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-all ${
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 deviceSubTab === 'management'
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                   : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -494,7 +494,7 @@ function AdminWorkspace({
             </button>
             <button
               onClick={() => onDeviceSubTabChange('reports')}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-all ${
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 deviceSubTab === 'reports'
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                   : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
