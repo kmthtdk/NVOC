@@ -70,8 +70,9 @@ async function nextDeviceCode(conn: PoolConnection, year: number): Promise<strin
 
 export const deviceRepo = {
   /** Fetch all MAC addresses for a device. */
-  async getMacsByDeviceId(deviceId: number): Promise<MacAddress[]> {
-    const [rows] = await pool.query<MacAddressRow[]>(
+  async getMacsByDeviceId(deviceId: number, conn?: PoolConnection): Promise<MacAddress[]> {
+    const db = conn ?? pool;
+    const [rows] = await db.query<MacAddressRow[]>(
       'SELECT * FROM mac_addresses WHERE device_id = ? ORDER BY created_at DESC',
       [deviceId],
     );
@@ -202,13 +203,14 @@ export const deviceRepo = {
   },
 
   /** Full device with linked tickets and MAC addresses. */
-  async getByIdFull(id: number): Promise<Device | null> {
-    const [rows] = await pool.query<DeviceRow[]>('SELECT * FROM devices WHERE id = ? LIMIT 1', [id]);
+  async getByIdFull(id: number, conn?: PoolConnection): Promise<Device | null> {
+    const db = conn ?? pool;
+    const [rows] = await db.query<DeviceRow[]>('SELECT * FROM devices WHERE id = ? LIMIT 1', [id]);
     const row = rows[0];
     if (!row) return null;
 
     // Fetch linked tickets
-    const [ticketLinks] = await pool.query<RowDataPacket[]>(
+    const [ticketLinks] = await db.query<RowDataPacket[]>(
       `SELECT ticket_id, action_type FROM ticket_device_links WHERE device_id = ? ORDER BY created_at DESC`,
       [id],
     );
@@ -218,8 +220,8 @@ export const deviceRepo = {
       actionType: link.action_type as 'related' | 'resolved' | 'affected',
     }));
 
-    // Fetch MAC addresses
-    const macAddresses = await this.getMacsByDeviceId(id);
+    // Fetch MAC addresses — use conn if available for transactional consistency
+    const macAddresses = await this.getMacsByDeviceId(id, conn);
 
     return mapDevice(row, linkedTickets, macAddresses);
   },
@@ -453,7 +455,7 @@ export const deviceRepo = {
         [deviceId, ticketId, 'assigned', userName, userDept || null, reason || `Assigned to ${userName}`, 'System'],
       );
 
-      const device = await this.getByIdFull(deviceId);
+      const device = await this.getByIdFull(deviceId, conn);
       if (!device) throw new Error('Device not found after assignment');
       return device;
     });
@@ -483,7 +485,7 @@ export const deviceRepo = {
         [deviceId, 'returned', condition, notes || null, createdBy],
       );
 
-      const device = await this.getByIdFull(deviceId);
+      const device = await this.getByIdFull(deviceId, conn);
       if (!device) throw new Error('Device not found after checkout');
       return device;
     });

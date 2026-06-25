@@ -21,8 +21,21 @@ export default function DeviceInventoryPivotTable() {
     const loadDevices = async () => {
       try {
         setLoading(true);
-        const res = await api.listDevices(1, 500);
-        setDevices(res.data || []);
+        // Backend caps pageSize at 100, so paginate until all devices are loaded
+        const allDevices: Device[] = [];
+        let page = 1;
+        const pageSize = 100;
+        let hasMore = true;
+
+        while (hasMore) {
+          const res = await api.listDevices(page, pageSize);
+          const batch = res.data || [];
+          allDevices.push(...batch);
+          hasMore = batch.length === pageSize && allDevices.length < res.total;
+          page += 1;
+        }
+
+        setDevices(allDevices);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load devices');
       } finally {

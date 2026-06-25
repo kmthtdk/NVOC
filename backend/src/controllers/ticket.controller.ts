@@ -321,7 +321,7 @@ export const ticketController = {
       .slice(0, 5);
 
     const pending = allTickets
-      .filter(t => ['submitted', 'processing', 'pending_user'].includes(t.status))
+      .filter(t => t.status === 'submitted')
       .filter(t => !t.assignedTo || t.assignedTo === 'Unassigned')
       .slice(0, 5);
 

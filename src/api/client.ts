@@ -116,6 +116,21 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const payload = isJson ? await res.json().catch(() => null) : null;
 
   if (!res.ok) {
+    // Rate-limit responses (429) from express-rate-limit return text/html,
+    // not JSON. Handle non-JSON error bodies gracefully.
+    if (!isJson) {
+      const textBody = await res.text().catch(() => '');
+      const apiErr = new ApiError(
+        res.status,
+        res.status === 429 ? 'RATE_LIMITED' : 'ERROR',
+        res.status === 429
+          ? 'Too many requests. Please wait a moment and try again.'
+          : textBody || `Request failed (${res.status})`,
+      );
+      if (apiErr.isAuthError && onUnauthorized) onUnauthorized();
+      throw apiErr;
+    }
+
     const envelope = (payload as { error?: { code?: string; message?: string; details?: ApiErrorDetail[] } } | null)?.error;
     const apiErr = new ApiError(
       res.status,
