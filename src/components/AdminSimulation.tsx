@@ -38,8 +38,12 @@ interface PendingDeviceWorkflow {
   ticketId: string;
   ticketCode: string;
   deviceActionType: 'new' | 'replace' | 'return';
+  deviceId?: number;
   assignedTo: string;
   notes: string;
+  requesterName?: string;
+  requesterEmail?: string;
+  requesterDept?: string;
 }
 
 export default function AdminSimulation({ tickets, onMutated }: AdminSimulationProps) {
@@ -99,12 +103,31 @@ export default function AdminSimulation({ tickets, onMutated }: AdminSimulationP
     // ---- Device workflow branch ----
     if (shouldTriggerDeviceWorkflow()) {
       const actionType = activeTicket.details?.deviceActionType as 'new' | 'replace' | 'return';
+
+      // Extract device ID from linked devices for return/replace actions
+      let deviceId: number | undefined;
+      if (actionType === 'new') {
+        // For new devices, no device ID yet (will be created in modal)
+        deviceId = undefined;
+      } else if (actionType === 'return' || actionType === 'replace') {
+        // For return/replace, device ID must exist
+        deviceId = activeTicket.linkedDevices?.[0]?.deviceId;
+        if (!deviceId) {
+          toast.error('No device linked to this request. Cannot proceed with checkout.');
+          return;
+        }
+      }
+
       setDeviceWorkflow({
         ticketId: selectedTicketId,
         ticketCode: activeTicket.code,
         deviceActionType: actionType,
+        deviceId,
         assignedTo,
         notes: notes.trim() || 'Device assignment completed by IT engineer.',
+        requesterName: activeTicket.requesterName,
+        requesterEmail: activeTicket.requesterEmail,
+        requesterDept: activeTicket.requesterDept,
       });
       // Don't call updateTicket yet; the modal's onComplete will do it.
       return;
@@ -296,18 +319,24 @@ export default function AdminSimulation({ tickets, onMutated }: AdminSimulationP
       </div>
 
       {/* ---- Device workflow modals ---- */}
-      {deviceWorkflow && deviceWorkflow.deviceActionType === 'new' && (
+      {deviceWorkflow && deviceWorkflow.deviceActionType === 'new' && activeTicket && (
         <DeviceAssignmentModal
           ticketCode={deviceWorkflow.ticketCode}
+          ticketId={deviceWorkflow.ticketId}
+          deviceType={activeTicket.details?.deviceType as string}
+          requesterName={deviceWorkflow.requesterName}
+          requesterEmail={deviceWorkflow.requesterEmail}
+          requesterDept={deviceWorkflow.requesterDept}
           onComplete={handleDeviceWorkflowComplete}
           onCancel={() => setDeviceWorkflow(null)}
           isLoading={saving}
         />
       )}
 
-      {deviceWorkflow && (deviceWorkflow.deviceActionType === 'return' || deviceWorkflow.deviceActionType === 'replace') && (
+      {deviceWorkflow && (deviceWorkflow.deviceActionType === 'return' || deviceWorkflow.deviceActionType === 'replace') && deviceWorkflow.deviceId && (
         <DeviceCheckoutModal
           ticketCode={deviceWorkflow.ticketCode}
+          deviceId={deviceWorkflow.deviceId}
           deviceActionType={deviceWorkflow.deviceActionType}
           onComplete={handleDeviceWorkflowComplete}
           onCancel={() => setDeviceWorkflow(null)}

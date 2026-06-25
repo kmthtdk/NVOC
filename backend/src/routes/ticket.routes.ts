@@ -4,6 +4,7 @@ import {
   createTicketSchema,
   updateTicketSchema,
   createCommentSchema,
+  linkDeviceSchema,
 } from '../controllers/ticket.controller.js';
 import { attachmentController } from '../controllers/attachment.controller.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
@@ -16,6 +17,12 @@ export const ticketRoutes = Router();
 // All ticket routes require a valid session.
 ticketRoutes.use(authenticate);
 
+ticketRoutes.get('/stats/summary', asyncHandler(ticketController.getStatsSummary));
+ticketRoutes.get('/stats/recent', asyncHandler(ticketController.getStatsRecent));
+ticketRoutes.get('/reports/pending-hardware', asyncHandler(ticketController.getPendingHardwareReport));
+ticketRoutes.get('/reports/fulfillment-time', asyncHandler(ticketController.getFulfillmentTimeReport));
+ticketRoutes.get('/reports/age-buckets', asyncHandler(ticketController.getAgeBucketsReport));
+ticketRoutes.get('/reports/category-trend', asyncHandler(ticketController.getCategoryTrendReport));
 ticketRoutes.get('/', asyncHandler(ticketController.list));
 ticketRoutes.get('/:id', asyncHandler(ticketController.get));
 ticketRoutes.post('/', validateBody(createTicketSchema), asyncHandler(ticketController.create));
@@ -36,6 +43,14 @@ ticketRoutes.post(
   '/:id/comments',
   validateBody(createCommentSchema),
   asyncHandler(ticketController.addComment),
+);
+
+// Link device to ticket (create ticket_device_link)
+ticketRoutes.post(
+  '/:id/link-device',
+  requireRole('it_support', 'admin'),
+  validateBody(linkDeviceSchema),
+  asyncHandler(ticketController.linkDevice),
 );
 
 // Attachments (multipart). `upload.array` runs before the handler.

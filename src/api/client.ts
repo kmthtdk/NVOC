@@ -266,4 +266,68 @@ export const api = {
   triage(title: string, description: string): Promise<TriageResponse> {
     return request<TriageResponse>('/ai/triage', { method: 'POST', body: { title, description } });
   },
+
+  // Device management
+  listAvailableDevices(page = 1, pageSize = 100): Promise<any> {
+    return request<any>(`/devices?page=${page}&pageSize=${pageSize}&status=In%20Stock`);
+  },
+  listDevices(page = 1, pageSize = 100, status?: string): Promise<any> {
+    const statusParam = status ? `&status=${encodeURIComponent(status)}` : '';
+    return request<any>(`/devices?page=${page}&pageSize=${pageSize}${statusParam}`);
+  },
+  getDevice(id: number): Promise<any> {
+    return request<any>(`/devices/${id}`);
+  },
+  assignDevice(id: number, userName: string, userEmail: string, userDept?: string, ticketId?: number, reason?: string): Promise<any> {
+    return request<any>(`/devices/${id}/assign`, {
+      method: 'POST',
+      body: { userName, userEmail, userDept, ticketId, reason },
+    });
+  },
+  checkoutDevice(id: number, condition?: string, notes?: string, actionType?: 'return' | 'replace'): Promise<any> {
+    return request<any>(`/devices/${id}/checkout`, {
+      method: 'POST',
+      body: { condition: condition || 'good', notes: notes || '', actionType: actionType || 'return' },
+    });
+  },
+
+  // Device reports
+  getDeviceSummary(): Promise<any> {
+    return request<any>('/devices/reports/summary');
+  },
+  getDeviceAssignments(): Promise<any> {
+    return request<any>('/devices/reports/assignments');
+  },
+  getDeviceAging(): Promise<any> {
+    return request<any>('/devices/reports/aging');
+  },
+  getDeviceDepartment(): Promise<any> {
+    return request<any>('/devices/reports/department');
+  },
+  getDeviceAvailability(): Promise<any> {
+    return request<any>('/devices/reports/availability');
+  },
+  getDeviceHistory(): Promise<any> {
+    return request<any>('/devices/reports/history');
+  },
+  getStockMovement(): Promise<any> {
+    return request<any>('/devices/reports/stock-movement');
+  },
+  getStockByType(): Promise<any> {
+    return request<any>('/devices/reports/stock-by-type');
+  },
+  getUnassignedDevices(): Promise<any> {
+    return request<any>('/devices/reports/unassigned');
+  },
+  getDevicesByUser(): Promise<any> {
+    return request<any>('/devices/reports/by-user');
+  },
+
+  // Device-ticket linking
+  createDeviceLink(ticketId: string, deviceId: number, actionType: 'new' | 'related' | 'resolved' | 'affected'): Promise<any> {
+    return request<any>(`/tickets/${ticketId}/link-device`, {
+      method: 'POST',
+      body: { deviceId, actionType },
+    });
+  },
 };

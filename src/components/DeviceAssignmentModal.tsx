@@ -8,10 +8,26 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, X, Package, AlertCircle } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import { api, ApiError } from '../api/client';
 import { Spinner } from './ui/Spinner';
+
+interface Device {
+  id: number;
+  code: string;
+  model: string;
+  serialNumber: string;
+  status: string;
+  deviceType: string;
+}
 
 interface DeviceAssignmentModalProps {
   ticketCode: string;
+  ticketId?: string | number;
+  ticketDescription?: string;
+  deviceType?: string;
+  requesterName?: string;
+  requesterEmail?: string;
+  requesterDept?: string;
   onComplete: () => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
@@ -19,6 +35,12 @@ interface DeviceAssignmentModalProps {
 
 export default function DeviceAssignmentModal({
   ticketCode,
+  ticketId,
+  ticketDescription,
+  deviceType,
+  requesterName = 'Employee',
+  requesterEmail = 'employee@company.com',
+  requesterDept,
   onComplete,
   onCancel,
   isLoading = false,
@@ -26,14 +48,37 @@ export default function DeviceAssignmentModal({
   const toast = useToast();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [completing, setCompleting] = useState(false);
-  const [selectedDeviceId, setSelectedDeviceId] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<number | null>(null);
+  const [availableDevices, setAvailableDevices] = useState<Device[]>([]);
 
-  // Placeholder device inventory (in real implementation, fetch from API)
-  const availableDevices = [
-    { id: 'DEV-2026-0451', model: 'Dell XPS 13', serialNo: 'DXP-2026-0451', status: 'Ready' },
-    { id: 'DEV-2026-0452', model: 'ThinkPad X1 Carbon', serialNo: 'TPC-2026-0452', status: 'Ready' },
-    { id: 'DEV-2026-0453', model: 'MacBook Pro 14"', serialNo: 'MBP-2026-0453', status: 'Ready' },
-  ];
+  // Fetch available devices (only "In Stock" status + matching deviceType if specified)
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        // Only fetch devices with "In Stock" status - devices available for assignment
+        const result = await api.listAvailableDevices();
+        let devices = result.data || [];
+
+        // Filter by deviceType if specified
+        if (deviceType) {
+          devices = devices.filter((d: Device) =>
+            d.deviceType?.toLowerCase() === deviceType.toLowerCase()
+          );
+        }
+
+        setAvailableDevices(devices);
+        if (devices.length > 0) {
+          setSelectedDeviceId(devices[0].id);
+        }
+      } catch (err) {
+        toast.error('Failed to load available devices');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDevices();
+  }, [toast, deviceType]);
 
   // Focus management + Escape to close (accessibility)
   useEffect(() => {
@@ -53,17 +98,32 @@ export default function DeviceAssignmentModal({
 
     setCompleting(true);
     try {
-      // TODO: Call device assignment API when implemented
-      // const device = availableDevices.find(d => d.id === selectedDeviceId);
-      // await api.assignDevice(device.id, { ticketCode, ... });
+      const selected = availableDevices.find((d) => d.id === selectedDeviceId);
+      if (!selected) {
+        toast.error('Device not found');
+        return;
+      }
 
-      // For now, simulate the completion
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Assign device to requester with reason and ticket tracking
+      const reason = ticketDescription || `Assigned via ${ticketCode}`;
+      await api.assignDevice(selectedDeviceId, requesterName, requesterEmail, requesterDept, ticketId, reason);
+
+      // Create ticket-device link if ticketId provided
+      if (ticketId) {
+        try {
+          await api.createDeviceLink(ticketId.toString(), selectedDeviceId, 'new');
+        } catch (linkErr) {
+          // Log but don't block on link creation failure
+          console.error('Failed to create device link:', linkErr);
+        }
+      }
 
       await onComplete();
-      toast.success(`Device ${selectedDeviceId} assigned to ${ticketCode}.`);
+      const deviceCode = selected.code || `Device #${selectedDeviceId}`;
+      toast.success(`${deviceCode} assigned to ${requesterName}.`);
     } catch (err) {
-      toast.error('Failed to assign device. Please try again.');
+      const msg = err instanceof ApiError ? err.message : 'Failed to assign device';
+      toast.error(msg);
     } finally {
       setCompleting(false);
     }
@@ -97,40 +157,64 @@ export default function DeviceAssignmentModal({
           </div>
 
           <h3 id="device-assign-title" className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight text-center">
-            Assign Device to {ticketCode}
+            Assign Device — {ticketCode}
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center leading-relaxed">
-            Select an available device from inventory to complete this hardware request.
+            Select an available device for <strong>{requesterName}</strong>
+            {requesterDept && <> from {requesterDept}</>}
           </p>
+          <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded-lg text-blue-700 dark:text-blue-300 text-xs">
+            <strong>Device Status:</strong> Only devices with "In Stock" status can be assigned. Once assigned, status changes to "Active".
+          </div>
 
           <div className="mt-6 space-y-2">
             <label className="block text-[10px] font-bold uppercase text-slate-700 dark:text-slate-300 mb-2 font-mono">
-              Available Devices
+              Available Devices (In Stock)
             </label>
-            <div className="space-y-2">
-              {availableDevices.length === 0 ? (
-                <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-lg text-amber-700 dark:text-amber-300 text-xs">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  No devices available in inventory.
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {loading ? (
+                <div className="flex items-center justify-center p-6">
+                  <Spinner label="Loading devices…" />
+                </div>
+              ) : availableDevices.length === 0 ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-lg text-amber-700 dark:text-amber-300 text-xs">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <div>
+                      <strong>No devices available</strong>
+                      <p className="mt-1">All devices are currently assigned. Check if any can be returned to inventory.</p>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 availableDevices.map((device) => (
-                  <label key={device.id} className="flex items-start gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
+                  <label
+                    key={device.id}
+                    className="flex items-start gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/20 cursor-pointer transition-colors"
+                  >
                     <input
                       type="radio"
                       name="device"
                       value={device.id}
                       checked={selectedDeviceId === device.id}
-                      onChange={(e) => setSelectedDeviceId(e.target.value)}
-                      className="mt-1 cursor-pointer"
+                      onChange={(e) => setSelectedDeviceId(Number(e.target.value))}
+                      className="mt-1.5 cursor-pointer"
                     />
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="font-semibold text-slate-900 dark:text-white text-sm">
                         {device.model}
+                        <span className="text-[10px] font-mono text-slate-600 dark:text-slate-400 ml-2">
+                          {device.code}
+                        </span>
                       </div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-0.5">
-                        <div>Serial: <span className="font-mono">{device.serialNo}</span></div>
-                        <div>Status: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{device.status}</span></div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-0.5 mt-1">
+                        <div>Serial: <span className="font-mono text-slate-700 dark:text-slate-300">{device.serialNumber || 'N/A'}</span></div>
+                        <div className="flex justify-between">
+                          <span>Type: <span className="capitalize font-medium">{device.deviceType}</span></span>
+                          <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 rounded text-[10px] font-semibold">
+                            In Stock
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </label>
@@ -152,14 +236,15 @@ export default function DeviceAssignmentModal({
           <button
             type="button"
             onClick={handleAssignDevice}
-            disabled={!selectedDeviceId || completing || isLoading}
-            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-extrabold text-xs transition-colors cursor-pointer"
+            disabled={!selectedDeviceId || completing || isLoading || availableDevices.length === 0}
+            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-slate-400 disabled:cursor-not-allowed text-white font-extrabold text-xs transition-colors cursor-pointer"
+            title={availableDevices.length === 0 ? 'No devices available' : 'Assign device to employee'}
           >
             {completing || isLoading ? (
               <Spinner label="Assigning…" />
             ) : (
               <>
-                <CheckCircle2 className="w-4 h-4" /> Assign & Resolve
+                <CheckCircle2 className="w-4 h-4" /> Assign Device
               </>
             )}
           </button>
