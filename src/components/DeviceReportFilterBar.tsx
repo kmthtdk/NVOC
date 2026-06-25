@@ -33,17 +33,19 @@ export default function DeviceReportFilterBar({
   return (
     <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-4 mb-6">
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between h-6">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Filter Reports</h3>
-          {hasActiveFilters && (
-            <button
-              onClick={handleClearFilters}
-              className="flex items-center gap-1 text-xs px-2 py-1 rounded text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              <X className="w-3 h-3" />
-              Clear Filters
-            </button>
-          )}
+          <button
+            onClick={handleClearFilters}
+            className={`flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors ${
+              hasActiveFilters
+                ? 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                : 'text-transparent pointer-events-none'
+            }`}
+          >
+            <X className="w-3 h-3" />
+            Clear Filters
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -105,14 +107,16 @@ export default function DeviceReportFilterBar({
           </div>
         </div>
 
-        {hasActiveFilters && (
-          <div className="text-xs text-slate-600 dark:text-slate-400">
-            Showing filtered results
-            {filters.department && ` • Department: ${filters.department}`}
-            {filters.deviceType && ` • Type: ${filters.deviceType}`}
-            {filters.status && ` • Status: ${filters.status}`}
-          </div>
-        )}
+        <div className="text-xs text-slate-600 dark:text-slate-400 min-h-5">
+          {hasActiveFilters ? (
+            <>
+              Showing filtered results
+              {filters.department && ` • Department: ${filters.department}`}
+              {filters.deviceType && ` • Type: ${filters.deviceType}`}
+              {filters.status && ` • Status: ${filters.status}`}
+            </>
+          ) : null}
+        </div>
       </div>
     </div>
   );

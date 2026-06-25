@@ -156,7 +156,7 @@ export default function DeviceReportsPage() {
 
       {/* Loading & Error States */}
       {loading && (
-        <div className="p-8 text-center">
+        <div className="min-h-96 flex items-center justify-center p-8">
           <div className="inline-flex flex-col items-center gap-3">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
             <p className="text-gray-600">Loading report...</p>
@@ -171,7 +171,7 @@ export default function DeviceReportsPage() {
       )}
 
       {!loading && !error && (
-        <>
+        <div className="transition-opacity duration-200">
           {/* Summary Tab */}
           {activeTab === 'summary' && summary && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -330,7 +330,7 @@ export default function DeviceReportsPage() {
               ))}
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );
