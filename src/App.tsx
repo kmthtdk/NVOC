@@ -409,7 +409,7 @@ function AdminWorkspace({
   }, [reloadKey]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 transition-opacity duration-200">
       {/* Admin Tab Switcher */}
       <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
         <button
@@ -438,7 +438,7 @@ function AdminWorkspace({
 
       {/* Tickets Tab Content */}
       {adminTab === 'tickets' && (
-        <>
+        <div className="space-y-6 animate-fadeIn">
           {/* Banner */}
           <div className="bg-slate-900 dark:bg-slate-900 border border-slate-800 rounded-xl p-6 sm:p-7 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="space-y-1.5">
@@ -478,12 +478,12 @@ function AdminWorkspace({
           <div className="animate-fadeIn">
             <TicketList reloadKey={reloadKey} onSelectTicket={onSelectTicket} />
           </div>
-        </>
+        </div>
       )}
 
       {/* Devices Tab Content */}
       {adminTab === 'devices' && (
-        <div className="space-y-4">
+        <div className="space-y-6 animate-fadeIn">
           {/* Sub-tabs for device management */}
           <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
             <button
