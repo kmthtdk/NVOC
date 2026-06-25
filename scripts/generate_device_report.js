@@ -11,8 +11,8 @@
  * Example: node scripts/generate_device_report.js devices.json
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 if (process.argv.length < 3) {
   console.error('Usage: node scripts/generate_device_report.js <data-file>');
