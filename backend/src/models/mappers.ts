@@ -8,6 +8,7 @@ import type {
   PublicUser,
   Device,
   LinkedTicket,
+  LinkedDevice,
   MacAddress,
   DeviceSpecifications,
 } from '../types/index.js';
@@ -73,6 +74,7 @@ export function mapTicket(
   comments: TicketComment[] = [],
   history: TicketHistoryItem[] = [],
   attachments?: AttachmentMeta[],
+  linkedDevices?: LinkedDevice[],
 ): Ticket {
   return {
     id: String(r.id),
@@ -95,6 +97,7 @@ export function mapTicket(
     comments,
     history,
     ...(attachments ? { attachments } : {}),
+    ...(linkedDevices && linkedDevices.length > 0 ? { linkedDevices } : {}),
     details: parseJsonColumn(r.details),
   };
 }
@@ -119,13 +122,23 @@ export function mapDevice(
   linkedTickets: LinkedTicket[] = [],
   macAddresses: MacAddress[] = [],
 ): Device {
+  // specs_json may be a string or already-parsed object depending on MySQL driver behavior
+  let additionalSpecs = undefined;
+  if (r.specs_json) {
+    if (typeof r.specs_json === 'string') {
+      additionalSpecs = JSON.parse(r.specs_json);
+    } else if (typeof r.specs_json === 'object') {
+      additionalSpecs = r.specs_json;
+    }
+  }
+
   const specifications: DeviceSpecifications = {
     cpu: r.cpu,
     ramGb: r.ram_gb,
     storageGb: r.storage_gb,
     gpu: r.gpu,
     psuWatts: r.psu_watts,
-    additionalSpecs: r.specs_json ? JSON.parse(r.specs_json) : undefined,
+    additionalSpecs,
   };
 
   const hasSpecs = Object.values(specifications).some(v => v !== null && v !== undefined);

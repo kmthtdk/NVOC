@@ -83,7 +83,7 @@ CREATE TABLE tickets (
   type_id          VARCHAR(60) NULL,                   -- legacy tickets predate type capture
 
   priority         ENUM('low','medium','high','urgent') NOT NULL DEFAULT 'medium',
-  status           ENUM('submitted','processing','pending_user','resolved','rejected') NOT NULL DEFAULT 'submitted',
+  status           ENUM('submitted','waiting','resolved','rejected') NOT NULL DEFAULT 'submitted',
 
   -- assigned_to kept as free-text for data parity; assigned_user_id is the FK target.
   assigned_to      VARCHAR(150) NOT NULL DEFAULT 'Unassigned',
@@ -130,7 +130,7 @@ CREATE TABLE comments (
 CREATE TABLE ticket_history (
   id           BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   ticket_id    BIGINT UNSIGNED NOT NULL,
-  status       ENUM('submitted','processing','pending_user','resolved','rejected') NOT NULL,
+  status       ENUM('submitted','waiting','resolved','rejected') NOT NULL,
   status_label VARCHAR(120) NOT NULL,
   updated_by   VARCHAR(150) NOT NULL,
   notes        TEXT NULL,

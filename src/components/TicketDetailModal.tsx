@@ -81,6 +81,7 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
   const [deviceWorkflow, setDeviceWorkflow] = useState<{
     ticketCode: string;
     deviceActionType: 'new' | 'replace' | 'return';
+    deviceId?: number;
     requesterName?: string;
     requesterEmail?: string;
     requesterDept?: string;
@@ -168,10 +169,25 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
       deviceActionType &&
       ['new', 'replace', 'return'].includes(deviceActionType)
     ) {
+      // Extract device ID for return/replace actions
+      let deviceId: number | undefined;
+      if (deviceActionType === 'new') {
+        // For new devices, no device ID yet (will be created in modal)
+        deviceId = undefined;
+      } else if (deviceActionType === 'return' || deviceActionType === 'replace') {
+        // For return/replace, device ID must exist
+        deviceId = ticket.linkedDevices?.[0]?.deviceId;
+        if (!deviceId) {
+          toast.error('No device linked to this request. Cannot proceed with checkout.');
+          return;
+        }
+      }
+
       // Show device workflow modal instead of saving directly
       setDeviceWorkflow({
         ticketCode: ticket.code,
         deviceActionType,
+        deviceId,
         requesterName: ticket.requesterName,
         requesterEmail: ticket.requesterEmail,
         requesterDept: ticket.requesterDept,
@@ -538,9 +554,10 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
       )}
 
       {/* Device Checkout Modal */}
-      {deviceWorkflow && (deviceWorkflow.deviceActionType === 'return' || deviceWorkflow.deviceActionType === 'replace') && (
+      {deviceWorkflow && (deviceWorkflow.deviceActionType === 'return' || deviceWorkflow.deviceActionType === 'replace') && deviceWorkflow.deviceId && (
         <DeviceCheckoutModal
           ticketCode={deviceWorkflow.ticketCode}
+          deviceId={deviceWorkflow.deviceId}
           deviceActionType={deviceWorkflow.deviceActionType}
           onComplete={handleDeviceWorkflowComplete}
           onCancel={() => {

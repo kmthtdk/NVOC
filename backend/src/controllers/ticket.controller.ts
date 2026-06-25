@@ -7,14 +7,13 @@ import { AppError } from '../utils/AppError.js';
 import { pool } from '../config/db.js';
 
 const PRIORITY = ['low', 'medium', 'high', 'urgent'] as const;
-const STATUS = ['submitted', 'processing', 'pending_user', 'resolved', 'rejected'] as const;
+const STATUS = ['submitted', 'waiting', 'resolved', 'rejected'] as const;
 const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD');
 
 // Valid ticket status transitions state machine
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  submitted: ['processing', 'rejected'],
-  processing: ['pending_user', 'resolved', 'rejected'],
-  pending_user: ['processing', 'resolved', 'rejected'],
+  submitted: ['waiting', 'rejected'],
+  waiting: ['resolved', 'rejected'],
   resolved: [],
   rejected: [],
 };

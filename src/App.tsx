@@ -24,6 +24,7 @@ import AdminSimulation from './components/AdminSimulation';
 import StatusDashboard from './components/StatusDashboard';
 import ConfirmationModal from './components/ConfirmationModal';
 import DeviceManagement from './components/DeviceManagement';
+import DeviceReportsPage from './components/DeviceReportsPage';
 import { LoadingPanel, ErrorState } from './components/ui/Spinner';
 
 import {
@@ -43,7 +44,8 @@ type PortalView = 'user' | 'admin';
 
 // Pull a wide page for dashboard metrics so breakdowns reflect the whole set,
 // not just the paginated list page. (No dedicated stats endpoint exists.)
-const METRICS_PAGE_SIZE = 200;
+// Max allowed by backend is 100.
+const METRICS_PAGE_SIZE = 100;
 
 export default function App() {
   const { isAuthenticated, isBootstrapping, user, isITSupport } = useAuth();
@@ -52,6 +54,7 @@ export default function App() {
 
   const [view, setView] = useState<PortalView>('user');
   const [adminTab, setAdminTab] = useState<'tickets' | 'devices'>('tickets');
+  const [deviceSubTab, setDeviceSubTab] = useState<'management' | 'reports'>('management');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [showAdminSimulation, setShowAdminSimulation] = useState(true);
   const [currentTime, setCurrentTime] = useState('');
@@ -198,6 +201,8 @@ export default function App() {
             reloadKey={reloadKey}
             adminTab={adminTab}
             onAdminTabChange={setAdminTab}
+            deviceSubTab={deviceSubTab}
+            onDeviceSubTabChange={setDeviceSubTab}
             showSim={showAdminSimulation}
             onToggleSim={() => setShowAdminSimulation((s) => !s)}
             onMutated={handleMutated}
@@ -367,6 +372,8 @@ function AdminWorkspace({
   reloadKey,
   adminTab,
   onAdminTabChange,
+  deviceSubTab,
+  onDeviceSubTabChange,
   showSim,
   onToggleSim,
   onMutated,
@@ -375,6 +382,8 @@ function AdminWorkspace({
   reloadKey: number;
   adminTab: 'tickets' | 'devices';
   onAdminTabChange: (tab: 'tickets' | 'devices') => void;
+  deviceSubTab: 'management' | 'reports';
+  onDeviceSubTabChange: (tab: 'management' | 'reports') => void;
   showSim: boolean;
   onToggleSim: () => void;
   onMutated: () => void;
@@ -389,11 +398,13 @@ function AdminWorkspace({
     api
       .listTickets({ page: 1, pageSize: METRICS_PAGE_SIZE, sort: 'newest' }, ctrl.signal)
       .then((res) => {
+        console.log('[Dashboard] Tickets loaded:', res.data.length, 'Total:', res.total);
         setMetricsTickets(res.data);
         setMetricsTotal(res.total);
       })
       .catch((err) => {
         if ((err as Error)?.name === 'AbortError') return;
+        console.error('[Dashboard] Failed to load tickets:', err);
         // Non-fatal: the dashboard simply shows zeros if this fails.
       });
     return () => ctrl.abort();
@@ -455,7 +466,7 @@ function AdminWorkspace({
             </button>
           </div>
 
-          {/* Dashboard metrics (whole-set) */}
+          {/* Unified Dashboard: metrics + breakdowns */}
           <StatusDashboard tickets={metricsTickets} total={metricsTotal} />
 
           {/* Dispatch console */}
@@ -474,8 +485,44 @@ function AdminWorkspace({
 
       {/* Devices Tab Content */}
       {adminTab === 'devices' && (
-        <div className="animate-fadeIn">
-          <DeviceManagement user={{ role: 'admin' }} />
+        <div className="space-y-4">
+          {/* Sub-tabs for device management */}
+          <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
+            <button
+              onClick={() => onDeviceSubTabChange('management')}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-all ${
+                deviceSubTab === 'management'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              Device Management
+            </button>
+            <button
+              onClick={() => onDeviceSubTabChange('reports')}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-all ${
+                deviceSubTab === 'reports'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              Reports & Analytics
+            </button>
+          </div>
+
+          {/* Device Management */}
+          {deviceSubTab === 'management' && (
+            <div className="animate-fadeIn">
+              <DeviceManagement user={{ role: 'admin' }} />
+            </div>
+          )}
+
+          {/* Device Reports */}
+          {deviceSubTab === 'reports' && (
+            <div className="animate-fadeIn">
+              <DeviceReportsPage />
+            </div>
+          )}
         </div>
       )}
     </div>

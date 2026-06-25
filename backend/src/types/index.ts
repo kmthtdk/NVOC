@@ -6,12 +6,13 @@
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type TicketStatus =
   | 'submitted'
-  | 'processing'
-  | 'pending_user'
+  | 'waiting'
   | 'resolved'
   | 'rejected';
 
-export type DeviceStatus = 'Active' | 'In Repair' | 'Retired' | 'Lost';
+export type DeviceStatus = 'Active' | 'In Repair' | 'Retired' | 'Lost' | 'In Stock';
+export type DeviceActionType = 'new' | 'repair' | 'return' | 'replace';
+export type TicketDeviceActionType = 'related' | 'resolved' | 'affected' | DeviceActionType;
 
 export type UserRole = 'requester' | 'it_support' | 'admin';
 export type CommentRole = 'requester' | 'it_support';
@@ -46,6 +47,11 @@ export interface AttachmentMeta {
 /** Polymorphic per-category details blob (stored as JSON). Loosely typed by design. */
 export type TicketDetails = Record<string, unknown>;
 
+export interface LinkedDevice {
+  deviceId: number;
+  actionType: DeviceActionType;
+}
+
 export interface Ticket {
   id: string;
   code: string;
@@ -67,12 +73,21 @@ export interface Ticket {
   comments: TicketComment[];
   history: TicketHistoryItem[];
   attachments?: AttachmentMeta[];
+  linkedDevices?: LinkedDevice[];
   details: TicketDetails;
 }
 
 export interface LinkedTicket {
   ticketId: number;
-  actionType: 'related' | 'resolved' | 'affected';
+  actionType: TicketDeviceActionType;
+}
+
+export interface TicketDeviceLink {
+  id: number;
+  ticketId: number;
+  deviceId: number;
+  actionType: DeviceActionType;
+  createdAt: string;
 }
 
 export type MacAddressType = 'Ethernet' | 'WiFi' | 'Bluetooth' | 'Other';

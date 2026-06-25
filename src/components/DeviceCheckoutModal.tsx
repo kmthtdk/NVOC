@@ -8,10 +8,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, X, Truck, AlertCircle } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import { api, ApiError } from '../api/client';
 import { Spinner } from './ui/Spinner';
 
 interface DeviceCheckoutModalProps {
   ticketCode: string;
+  deviceId: number;
   deviceActionType: 'return' | 'replace';
   onComplete: () => Promise<void>;
   onCancel: () => void;
@@ -20,6 +22,7 @@ interface DeviceCheckoutModalProps {
 
 export default function DeviceCheckoutModal({
   ticketCode,
+  deviceId,
   deviceActionType,
   onComplete,
   onCancel,
@@ -50,22 +53,25 @@ export default function DeviceCheckoutModal({
   const handleCheckoutDevice = async () => {
     setCompleting(true);
     try {
-      // TODO: Call device checkout API when implemented
-      // await api.checkoutDevice(ticketCode, {
-      //   actionType: deviceActionType,
-      //   condition: deviceCondition,
-      //   notes: checkoutNotes,
-      // });
+      // Checkout device via API
+      const actionType = isReturn ? 'return' : 'replace';
+      await api.checkoutDevice(deviceId, deviceCondition, checkoutNotes, actionType);
 
-      // For now, simulate the completion
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
+      // Confirm the checkout with backend
       await onComplete();
-      toast.success(
-        `Device ${isReturn ? 'return' : 'replacement'} processed for ${ticketCode}.`
-      );
+
+      if (isReturn) {
+        toast.success(
+          `Device returned and marked as "In Stock". Ready for reassignment.`
+        );
+      } else {
+        toast.success(
+          `Device marked for replacement and set to "In Repair" status.`
+        );
+      }
     } catch (err) {
-      toast.error('Failed to process device checkout. Please try again.');
+      const msg = err instanceof ApiError ? err.message : 'Failed to process device checkout. Please try again.';
+      toast.error(msg);
     } finally {
       setCompleting(false);
     }
@@ -104,6 +110,16 @@ export default function DeviceCheckoutModal({
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center leading-relaxed">
             {description} ({ticketCode})
           </p>
+          {isReturn && (
+            <div className="mt-3 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/50 rounded-lg text-green-700 dark:text-green-300 text-xs">
+              <strong>Device Return:</strong> Once processed, device status will change to "In Stock" and will be available for reassignment.
+            </div>
+          )}
+          {!isReturn && (
+            <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-lg text-amber-700 dark:text-amber-300 text-xs">
+              <strong>Device Replacement:</strong> Device will be marked as "In Repair" for assessment and may be returned to inventory or retired.
+            </div>
+          )}
 
           <div className="mt-6 space-y-5">
             {/* Device Condition */}

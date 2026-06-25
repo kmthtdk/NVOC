@@ -2,7 +2,7 @@ import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { pool, withTransaction } from '../config/db.js';
 import type { DeviceRow, MacAddressRow } from './rows.js';
 import { mapDevice, mapMacAddress } from './mappers.js';
-import type { Device, DeviceStatus, MacAddress, MacAddressInput, DeviceSpecifications } from '../types/index.js';
+import type { Device, DeviceStatus, DeviceActionType, MacAddress, MacAddressInput, DeviceSpecifications } from '../types/index.js';
 
 export interface DeviceListFilters {
   deviceType?: string;
@@ -393,11 +393,13 @@ export const deviceRepo = {
 
   /** Delete device. */
   async delete(id: number): Promise<boolean> {
-    // Delete linked tickets first (cascade via FK, but explicit for safety)
-    await pool.execute('DELETE FROM ticket_device_links WHERE device_id = ?', [id]);
-    // Delete the device
-    const [result] = await pool.execute('DELETE FROM devices WHERE id = ?', [id]);
-    return (result as { affectedRows: number }).affectedRows > 0;
+    return withTransaction(async (conn) => {
+      // Delete linked tickets first (cascade via FK, but explicit for safety)
+      await conn.execute('DELETE FROM ticket_device_links WHERE device_id = ?', [id]);
+      // Delete the device
+      const [result] = await conn.execute('DELETE FROM devices WHERE id = ?', [id]);
+      return (result as { affectedRows: number }).affectedRows > 0;
+    });
   },
 
   /**
@@ -408,7 +410,7 @@ export const deviceRepo = {
     conn: PoolConnection,
     ticketId: number,
     deviceId: number,
-    actionType: 'related' | 'resolved' | 'affected',
+    actionType: DeviceActionType,
   ): Promise<void> {
     await conn.execute(
       'INSERT INTO ticket_device_links (ticket_id, device_id, action_type) VALUES (?, ?, ?)',
@@ -422,6 +424,371 @@ export const deviceRepo = {
    */
   async setStatus(conn: PoolConnection, deviceId: number, status: DeviceStatus): Promise<void> {
     await conn.execute('UPDATE devices SET status = ? WHERE id = ?', [status, deviceId]);
+  },
+
+  /**
+   * Assign device to a user (typically when resolving a hardware request).
+   * Logs the assignment to device_history for audit trail.
+   */
+  async assignToUser(
+    deviceId: number,
+    _userId: number | null,
+    userName: string,
+    userEmail: string,
+    userDept: string | null,
+    ticketId: number | null = null,
+    reason: string | null = null,
+  ): Promise<Device> {
+    return withTransaction(async (conn) => {
+      // Update device assignment and status
+      await conn.execute(
+        'UPDATE devices SET assigned_to = ?, status = ?, department = ?, updated_at = NOW() WHERE id = ?',
+        [`${userName} (${userEmail})`, 'Active', userDept || null, deviceId],
+      );
+
+      // Log to device_history
+      await conn.execute(
+        `INSERT INTO device_history (device_id, ticket_id, action_type, assigned_to, department, reason, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [deviceId, ticketId, 'assigned', userName, userDept || null, reason || `Assigned to ${userName}`, 'System'],
+      );
+
+      const device = await this.getByIdFull(deviceId);
+      if (!device) throw new Error('Device not found after assignment');
+      return device;
+    });
+  },
+
+  /**
+   * Checkout a device — update status to In Stock or In Repair, log the action.
+   */
+  async checkout(
+    deviceId: number,
+    condition: 'good' | 'damaged' | 'unknown',
+    newStatus: DeviceStatus,
+    notes: string = '',
+    createdBy: string = 'System',
+  ): Promise<Device> {
+    return withTransaction(async (conn) => {
+      // Update device: clear assignment, set new status
+      await conn.execute(
+        'UPDATE devices SET assigned_to = NULL, status = ?, updated_at = NOW() WHERE id = ?',
+        [newStatus, deviceId],
+      );
+
+      // Log to device_history
+      await conn.execute(
+        `INSERT INTO device_history (device_id, action_type, condition_state, notes, created_by)
+         VALUES (?, ?, ?, ?, ?)`,
+        [deviceId, 'returned', condition, notes || null, createdBy],
+      );
+
+      const device = await this.getByIdFull(deviceId);
+      if (!device) throw new Error('Device not found after checkout');
+      return device;
+    });
+  },
+
+  /**
+   * Get device history report (audit trail of all assignments/returns).
+   */
+  async getHistoryReport(): Promise<Array<{
+    id: number;
+    device_code: string;
+    device_model: string;
+    action_type: string;
+    assigned_to: string | null;
+    department: string | null;
+    reason: string | null;
+    created_at: string;
+  }>> {
+    const [rows] = await pool.query<any[]>(
+      `SELECT
+        dh.id,
+        d.code as device_code,
+        d.model as device_model,
+        dh.action_type,
+        dh.assigned_to,
+        dh.department,
+        dh.reason,
+        DATE_FORMAT(dh.created_at, '%Y-%m-%d %H:%i:%s') as created_at
+      FROM device_history dh
+      JOIN devices d ON dh.device_id = d.id
+      ORDER BY dh.created_at DESC
+      LIMIT 500`,
+    );
+    return rows || [];
+  },
+
+  /**
+   * Get device inventory summary report.
+   */
+  async getSummaryReport(): Promise<{
+    total: number;
+    by_status: Record<string, number>;
+    by_type: Record<string, number>;
+    by_department: Record<string, number>;
+  }> {
+    const summary = {
+      total: 0,
+      by_status: {} as Record<string, number>,
+      by_type: {} as Record<string, number>,
+      by_department: {} as Record<string, number>,
+    };
+
+    const [totalRows] = await pool.query<any[]>(
+      'SELECT COUNT(*) as count FROM devices',
+    );
+    summary.total = totalRows[0]?.count || 0;
+
+    const [statusRows] = await pool.query<any[]>(
+      'SELECT status, COUNT(*) as count FROM devices GROUP BY status',
+    );
+    statusRows.forEach(r => {
+      summary.by_status[r.status] = r.count;
+    });
+
+    const [typeRows] = await pool.query<any[]>(
+      'SELECT device_type, COUNT(*) as count FROM devices GROUP BY device_type',
+    );
+    typeRows.forEach(r => {
+      summary.by_type[r.device_type] = r.count;
+    });
+
+    const [deptRows] = await pool.query<any[]>(
+      'SELECT COALESCE(department, "Unassigned") as department, COUNT(*) as count FROM devices GROUP BY department',
+    );
+    deptRows.forEach(r => {
+      summary.by_department[r.department] = r.count;
+    });
+
+    return summary;
+  },
+
+  /**
+   * Get device assignments (device → user mapping).
+   */
+  async getAssignmentsReport(): Promise<Array<{
+    device_code: string;
+    model: string;
+    serial_number: string;
+    assigned_to: string | null;
+    status: string;
+    department: string | null;
+  }>> {
+    const [rows] = await pool.query<any[]>(
+      `SELECT
+        code as device_code,
+        model,
+        serial_number,
+        assigned_to,
+        status,
+        department
+      FROM devices
+      WHERE assigned_to IS NOT NULL
+      ORDER BY assigned_to ASC`,
+    );
+    return rows || [];
+  },
+
+  /**
+   * Get devices nearing warranty expiry.
+   */
+  async getAgingReport(): Promise<Array<{
+    device_code: string;
+    model: string;
+    assigned_to: string | null;
+    warranty_expiry: string | null;
+    days_until_expiry: number;
+    status: string;
+  }>> {
+    const [rows] = await pool.query<any[]>(
+      `SELECT
+        code as device_code,
+        model,
+        assigned_to,
+        warranty_expiry,
+        DATEDIFF(warranty_expiry, CURDATE()) as days_until_expiry,
+        status
+      FROM devices
+      WHERE warranty_expiry IS NOT NULL
+        AND warranty_expiry <= DATE_ADD(CURDATE(), INTERVAL 90 DAY)
+      ORDER BY warranty_expiry ASC`,
+    );
+    return rows || [];
+  },
+
+  /**
+   * Get devices by department.
+   */
+  async getByDepartmentReport(): Promise<Array<{
+    department: string | null;
+    total: number;
+    active: number;
+    in_repair: number;
+    retired: number;
+  }>> {
+    const [rows] = await pool.query<any[]>(
+      `SELECT
+        COALESCE(department, 'Unassigned') as department,
+        COUNT(*) as total,
+        SUM(IF(status = 'Active', 1, 0)) as active,
+        SUM(IF(status = 'In Repair', 1, 0)) as in_repair,
+        SUM(IF(status = 'Retired', 1, 0)) as retired
+      FROM devices
+      GROUP BY department`,
+    );
+    return rows || [];
+  },
+
+  /**
+   * Get device availability summary.
+   */
+  async getAvailabilityReport(): Promise<{
+    in_stock: number;
+    active: number;
+    in_repair: number;
+    retired: number;
+    lost: number;
+  }> {
+    const [rows] = await pool.query<any[]>(
+      `SELECT
+        status,
+        COUNT(*) as count
+      FROM devices
+      GROUP BY status`,
+    );
+
+    const report = {
+      in_stock: 0,
+      active: 0,
+      in_repair: 0,
+      retired: 0,
+      lost: 0,
+    };
+
+    rows.forEach((r: any) => {
+      const key = r.status.toLowerCase().replace(' ', '_') as keyof typeof report;
+      if (key in report) {
+        report[key] = r.count;
+      }
+    });
+
+    return report;
+  },
+
+  /**
+   * Get all devices linked to a specific ticket.
+   */
+  async getLinkedByTicketId(ticketId: number): Promise<Array<{ deviceId: number; actionType: DeviceActionType }>> {
+    const [rows] = await pool.query<any[]>(
+      'SELECT device_id, action_type FROM ticket_device_links WHERE ticket_id = ? ORDER BY created_at DESC',
+      [ticketId],
+    );
+    return rows.map((r) => ({
+      deviceId: r.device_id,
+      actionType: r.action_type,
+    })) || [];
+  },
+
+  /**
+   * Get daily stock movement (assigned and returned devices by date).
+   */
+  async getStockMovementReport(): Promise<Array<{
+    date: string;
+    assigned: number;
+    returned: number;
+    repaired: number;
+  }>> {
+    const [rows] = await pool.query<any[]>(`
+      SELECT
+        DATE(created_at) as date,
+        SUM(IF(action_type = 'assigned', 1, 0)) as assigned,
+        SUM(IF(action_type = 'returned', 1, 0)) as returned,
+        SUM(IF(action_type IN ('repair', 'in_repair'), 1, 0)) as repaired
+      FROM device_history
+      WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+      GROUP BY DATE(created_at)
+      ORDER BY date DESC
+    `);
+    return rows || [];
+  },
+
+  /**
+   * Get stock levels by device type and status.
+   */
+  async getStockByTypeReport(): Promise<Array<{
+    device_type: string;
+    in_stock: number;
+    active: number;
+    in_repair: number;
+    retired: number;
+    total: number;
+  }>> {
+    const [rows] = await pool.query<any[]>(`
+      SELECT
+        device_type,
+        SUM(IF(status = 'In Stock', 1, 0)) as in_stock,
+        SUM(IF(status = 'Active', 1, 0)) as active,
+        SUM(IF(status = 'In Repair', 1, 0)) as in_repair,
+        SUM(IF(status = 'Retired', 1, 0)) as retired,
+        COUNT(*) as total
+      FROM devices
+      GROUP BY device_type
+      ORDER BY total DESC
+    `);
+    return rows || [];
+  },
+
+  /**
+   * Get unassigned devices or devices awaiting return.
+   */
+  async getUnassignedReport(): Promise<Array<{
+    id: number;
+    code: string;
+    device_type: string;
+    model: string;
+    status: string;
+    department: string | null;
+  }>> {
+    const [rows] = await pool.query<any[]>(`
+      SELECT
+        id,
+        code,
+        device_type,
+        model,
+        status,
+        department
+      FROM devices
+      WHERE assigned_to IS NULL AND status IN ('In Stock', 'In Repair')
+      ORDER BY updated_at DESC
+    `);
+    return rows || [];
+  },
+
+  /**
+   * Get devices per user (inverse of assignments).
+   */
+  async getByUserReport(): Promise<Array<{
+    user: string;
+    department: string | null;
+    device_count: number;
+    device_types: string;
+    statuses: string;
+  }>> {
+    const [rows] = await pool.query<any[]>(`
+      SELECT
+        assigned_to as user,
+        department,
+        COUNT(*) as device_count,
+        GROUP_CONCAT(DISTINCT device_type) as device_types,
+        GROUP_CONCAT(DISTINCT status) as statuses
+      FROM devices
+      WHERE assigned_to IS NOT NULL
+      GROUP BY assigned_to, department
+      ORDER BY device_count DESC
+    `);
+    return rows || [];
   },
 };
 

@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS devices (
   device_type      VARCHAR(50)  NOT NULL,
   model            VARCHAR(150) NOT NULL,
   serial_number    VARCHAR(100) NOT NULL,
-  status           ENUM('Active','In Repair','Retired','Lost') NOT NULL DEFAULT 'Active',
+  status           ENUM('In Stock','Active','In Repair','Retired','Lost') NOT NULL DEFAULT 'In Stock',
   assigned_to      VARCHAR(150) NULL,
   department       VARCHAR(100) NULL,
   purchase_date    DATE         NULL,
@@ -54,15 +54,16 @@ CREATE TABLE IF NOT EXISTS devices (
 
 -- ----------------------------------------------------------------------------
 -- ticket_device_links
--- Many-to-many between tickets and devices. action_type matches LinkedTicket:
--- 'related' | 'resolved' | 'affected'. Unique (ticket_id, device_id) prevents
--- duplicate links. ON DELETE CASCADE keeps links consistent with both parents.
+-- Many-to-many between tickets and devices. action_type matches DeviceActionType:
+-- 'new' | 'repair' | 'return' | 'replace' | 'related' | 'resolved' | 'affected'.
+-- Unique (ticket_id, device_id) prevents duplicate links.
+-- ON DELETE CASCADE keeps links consistent with both parents.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ticket_device_links (
   id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   ticket_id    BIGINT UNSIGNED NOT NULL,
   device_id    INT UNSIGNED NOT NULL,
-  action_type  ENUM('related','resolved','affected') NOT NULL DEFAULT 'related',
+  action_type  ENUM('new','repair','return','replace','related','resolved','affected') NOT NULL DEFAULT 'related',
   created_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_ticket_device (ticket_id, device_id),
@@ -72,9 +73,10 @@ CREATE TABLE IF NOT EXISTS ticket_device_links (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
--- Seed: 5 demo devices ITA-2026-0001 .. ITA-2026-0005
+-- Seed: Demo devices - mixture of assigned, in stock, and in repair
+-- Note: Some devices are "In Stock" (unassigned) for testing assignment workflow
 -- ----------------------------------------------------------------------------
-INSERT INTO device_sequence (year, last_seq) VALUES (2026, 5)
+INSERT INTO device_sequence (year, last_seq) VALUES (2026, 10)
   ON DUPLICATE KEY UPDATE last_seq = GREATEST(last_seq, VALUES(last_seq));
 
 INSERT INTO devices
@@ -84,7 +86,12 @@ VALUES
   ('ITA-2026-0002', 'desktop', 'HP EliteDesk 800 G9',  'SN-HP800-0002',  'Active',    'Ben Lim',     'HR',         '2026-02-01', '2029-02-01', 'Front-desk workstation'),
   ('ITA-2026-0003', 'monitor', 'Dell U2723QE 27"',     'SN-DLU27-0003',  'Active',    'Ben Lim',     'HR',         '2026-02-01', '2028-02-01', 'Paired with ITA-2026-0002'),
   ('ITA-2026-0004', 'phone',   'iPhone 15',            'SN-IP15-0004',   'In Repair', 'Carla Reyes', 'Sales',      '2026-03-10', '2027-03-10', 'Screen replacement in progress'),
-  ('ITA-2026-0005', 'laptop',  'Lenovo ThinkPad X1',   'SN-LTX1-0005',   'Active',    NULL,          'IT',         '2026-04-05', '2029-04-05', 'Spare in stock')
+  ('ITA-2026-0005', 'laptop',  'Lenovo ThinkPad X1',   'SN-LTX1-0005',   'In Stock',  NULL,          NULL,         '2026-04-05', '2029-04-05', 'Ready for assignment'),
+  ('ITA-2026-0006', 'laptop',  'MacBook Pro 14"',      'SN-MBP14-0006',  'In Stock',  NULL,          NULL,         '2026-05-01', '2029-05-01', 'Available for new employee'),
+  ('ITA-2026-0007', 'desktop', 'ASUS Prostation D500', 'SN-AS500-0007',  'In Stock',  NULL,          NULL,         '2026-03-20', '2029-03-20', 'Workstation - ready to assign'),
+  ('ITA-2026-0008', 'monitor', 'LG UltraWide 34"',     'SN-LGUW34-0008', 'In Stock',  NULL,          NULL,         '2026-04-15', '2028-04-15', 'Display monitor'),
+  ('ITA-2026-0009', 'phone',   'Samsung Galaxy S24',   'SN-SGS24-0009',  'In Stock',  NULL,          NULL,         '2026-05-10', '2027-05-10', 'Mobile device for sales'),
+  ('ITA-2026-0010', 'laptop',  'HP EliteBook 840',     'SN-HPEB840-0010','In Stock',  NULL,          NULL,         '2026-02-28', '2029-02-28', 'Business laptop')
 ON DUPLICATE KEY UPDATE code = VALUES(code);
 
 -- ----------------------------------------------------------------------------
@@ -140,12 +147,12 @@ ON DUPLICATE KEY UPDATE is_active = VALUES(is_active);
 -- Hybrid design: core specs as columns (indexed), additional specs as JSON
 -- ============================================================================
 ALTER TABLE devices
-ADD COLUMN cpu VARCHAR(255) NULL AFTER notes COMMENT 'CPU model and specs',
-ADD COLUMN ram_gb INT UNSIGNED NULL AFTER cpu COMMENT 'RAM in gigabytes',
-ADD COLUMN storage_gb INT UNSIGNED NULL AFTER ram_gb COMMENT 'Storage in gigabytes',
-ADD COLUMN gpu VARCHAR(255) NULL AFTER storage_gb COMMENT 'GPU/Graphics processor',
-ADD COLUMN psu_watts INT UNSIGNED NULL AFTER gpu COMMENT 'Power supply unit in watts',
-ADD COLUMN specs_json JSON NULL AFTER psu_watts COMMENT 'Additional specs as JSON key-value pairs',
+ADD COLUMN cpu VARCHAR(255) NULL AFTER notes,
+ADD COLUMN ram_gb INT UNSIGNED NULL AFTER cpu,
+ADD COLUMN storage_gb INT UNSIGNED NULL AFTER ram_gb,
+ADD COLUMN gpu VARCHAR(255) NULL AFTER storage_gb,
+ADD COLUMN psu_watts INT UNSIGNED NULL AFTER gpu,
+ADD COLUMN specs_json JSON NULL AFTER psu_watts,
 ADD INDEX idx_devices_cpu (cpu),
 ADD INDEX idx_devices_ram (ram_gb),
 ADD INDEX idx_devices_storage (storage_gb),
@@ -196,3 +203,42 @@ UPDATE devices SET
   psu_watts = 100,
   specs_json = JSON_OBJECT('ssd_type', 'NVMe', 'display_size', '13.3 inch', 'battery_wh', '63')
 WHERE id = 5;
+
+-- ============================================================================
+-- device_history
+-- Track all device assignment/return events for audit trail and reporting
+-- action_type: 'assigned' | 'returned' | 'retired' | 'lost' | 'repaired'
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS device_history (
+  id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  device_id        INT UNSIGNED NOT NULL,
+  ticket_id        BIGINT UNSIGNED NULL,
+  action_type      ENUM('assigned','returned','retired','lost','repaired','created') NOT NULL,
+  assigned_to      VARCHAR(150) NULL,
+  department       VARCHAR(100) NULL,
+  reason           TEXT NULL,
+  condition_state  ENUM('new','good','fair','poor','unknown') NULL,
+  notes            TEXT NULL,
+  created_by       VARCHAR(150) NULL,
+  created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_dh_device (device_id),
+  KEY idx_dh_ticket (ticket_id),
+  KEY idx_dh_action (action_type),
+  KEY idx_dh_assigned_to (assigned_to),
+  KEY idx_dh_created_at (created_at),
+  CONSTRAINT fk_dh_device FOREIGN KEY (device_id) REFERENCES devices (id) ON DELETE CASCADE,
+  CONSTRAINT fk_dh_ticket FOREIGN KEY (ticket_id) REFERENCES tickets (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Seed: Create history for existing device assignments
+INSERT INTO device_history (device_id, action_type, assigned_to, department, reason, created_by)
+SELECT
+  id,
+  'assigned',
+  assigned_to,
+  department,
+  'Initial assignment',
+  'System'
+FROM devices
+WHERE assigned_to IS NOT NULL;

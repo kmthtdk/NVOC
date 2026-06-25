@@ -4,11 +4,13 @@ import type { TicketRow } from './rows.js';
 import { mapTicket } from './mappers.js';
 import { commentRepo, historyRepo } from './comment.repo.js';
 import { attachmentRepo } from './attachment.repo.js';
+import { deviceRepo } from './device.repo.js';
 import type {
   Ticket,
   TicketPriority,
   TicketStatus,
   TicketDetails,
+  DeviceSpecifications,
 } from '../types/index.js';
 
 export interface TicketListFilters {
@@ -37,6 +39,12 @@ export interface CreateTicketInput {
   periodFrom: string | null;
   periodTo: string | null;
   details: TicketDetails;
+  // Device-related fields for hardware requests
+  deviceAction?: 'new' | 'repair' | 'return' | 'replace';
+  deviceType?: string;
+  deviceSerialNumber?: string;
+  deviceModel?: string;
+  specifications?: DeviceSpecifications;
 }
 
 export interface UpdateTicketInput {
@@ -119,12 +127,13 @@ export const ticketRepo = {
     const row = rows[0];
     if (!row) return null;
 
-    const [comments, history, attachments] = await Promise.all([
+    const [comments, history, attachments, linkedDevices] = await Promise.all([
       commentRepo.listByTicket(id),
       historyRepo.listByTicket(id),
       attachmentRepo.listByTicket(id),
+      deviceRepo.getLinkedByTicketId(id),
     ]);
-    return mapTicket(row, comments, history, attachments);
+    return mapTicket(row, comments, history, attachments, linkedDevices);
   },
 
   async exists(id: number): Promise<boolean> {
@@ -175,6 +184,58 @@ export const ticketRepo = {
         updatedBy: input.requesterName,
         notes: 'Awaiting IT triage.',
       });
+
+      // Handle device creation/linking for hardware requests
+      if (input.category === 'hardware_request' && input.deviceAction) {
+        if (input.deviceAction === 'new') {
+          // Create a new device for this hardware request
+          const newDevice = await deviceRepo.create(
+            {
+              deviceType: input.deviceType || input.subcategory || 'IT equipment',
+              model: input.deviceModel || 'Unspecified',
+              serialNumber: `TEMP-${ticketId}-${Date.now()}`,
+              status: 'In Stock',
+              assignedTo: null,
+              department: input.requesterDept || null,
+              purchaseDate: null,
+              warrantyExpiry: null,
+              notes: `Created from VOC ${code}`,
+              specifications: input.specifications,
+            },
+            conn
+          );
+          // Link the ticket to the created device (will throw on failure)
+          await deviceRepo.createLink(conn, ticketId, newDevice.id, 'new');
+          await historyRepo.append(conn, {
+            ticketId,
+            status: 'submitted',
+            statusLabel: 'Device Created',
+            updatedBy: 'System',
+            notes: `Device ${newDevice.code} created for this request.`,
+          });
+        } else if (input.deviceAction === 'repair' || input.deviceAction === 'return' || input.deviceAction === 'replace') {
+          // Link to existing device
+          if (input.deviceSerialNumber) {
+            const existingDevice = await deviceRepo.findBySerial(input.deviceSerialNumber);
+            if (!existingDevice) {
+              throw new Error(`Device with serial number ${input.deviceSerialNumber} not found`);
+            }
+            // Link device (will throw on failure)
+            await deviceRepo.createLink(conn, ticketId, existingDevice.id, input.deviceAction);
+            // Update device status for repair/return
+            if (input.deviceAction === 'repair' || input.deviceAction === 'return') {
+              await deviceRepo.setStatus(conn, existingDevice.id, 'In Repair');
+            }
+            await historyRepo.append(conn, {
+              ticketId,
+              status: 'submitted',
+              statusLabel: 'Device Linked',
+              updatedBy: 'System',
+              notes: `Device ${existingDevice.code} linked to this request.`,
+            });
+          }
+        }
+      }
 
       return ticketId;
     });
@@ -250,8 +311,7 @@ export const ticketRepo = {
 
 const STATUS_LABELS: Record<TicketStatus, string> = {
   submitted: 'VOC Submitted',
-  processing: 'Under Investigation',
-  pending_user: 'Awaiting User Response',
+  waiting: 'Waiting for Review',
   resolved: 'Issue Resolved',
   rejected: 'Request Rejected',
 };

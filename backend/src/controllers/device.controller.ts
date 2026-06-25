@@ -10,7 +10,7 @@ import type { DeviceStatus } from '../types/index.js';
 // status uses the VOC Title-Case enum: Active | In Repair | Retired | Lost.
 // MAC address format: 00:00:00:00:00:00 (12 hex pairs separated by colons)
 // ----------------------------------------------------------------------------
-const DEVICE_STATUSES = ['Active', 'In Repair', 'Retired', 'Lost'] as const;
+const DEVICE_STATUSES = ['Active', 'In Repair', 'Retired', 'Lost', 'In Stock'] as const;
 const MAC_ADDRESS_TYPES = ['Ethernet', 'WiFi', 'Bluetooth', 'Other'] as const;
 const MAC_ADDRESS_REGEX = /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/;
 
@@ -40,7 +40,7 @@ export const createDeviceSchema = z.object({
   deviceType: z.string().min(1, 'Device type is required').max(50),
   model: z.string().min(1, 'Model is required').max(150),
   serialNumber: z.string().min(1, 'Serial number is required').max(100),
-  status: z.enum(DEVICE_STATUSES).default('Active'),
+  status: z.enum(DEVICE_STATUSES).default('In Stock'),
   assignedTo: z.string().max(150).nullable().optional().default(null),
   department: z.string().max(100).nullable().optional().default(null),
   purchaseDate: nullableDate.default(null),
@@ -58,6 +58,21 @@ export const updateMacSchema = z.object({
     .string()
     .regex(MAC_ADDRESS_REGEX, 'MAC address must be in format 00:00:00:00:00:00')
     .optional(),
+});
+
+export const checkoutDeviceSchema = z.object({
+  condition: z.enum(['good', 'damaged', 'unknown']).default('good'),
+  notes: z.string().max(500).optional().default(''),
+  actionType: z.enum(['return', 'replace']).default('return'),
+});
+
+export const assignDeviceSchema = z.object({
+  userId: z.number().int().positive().optional().nullable(),
+  userName: z.string().min(1).max(150),
+  userEmail: z.string().email(),
+  userDept: z.string().max(100).optional().nullable(),
+  ticketId: z.string().max(50).optional().nullable(),
+  reason: z.string().max(500).optional(),
 });
 
 // Export macAddressSchema for use in route validation
@@ -271,5 +286,120 @@ export const deviceController = {
     });
 
     res.status(204).send();
+  },
+
+  /** POST /devices/:id/assign — assign device to a user. */
+  async assignToUser(req: Request, res: Response): Promise<void> {
+    const deviceId = parsePositiveInt(req.params.id, 'device id');
+    const { userId, userName, userEmail, userDept, ticketId, reason } = req.body;
+
+    if (!userName || !userEmail) {
+      throw AppError.badRequest('userName and userEmail are required');
+    }
+
+    const device = await deviceRepo.getByIdFull(deviceId);
+    if (!device) {
+      throw AppError.notFound('Device not found');
+    }
+
+    // Assign device and log history in a transaction
+    const updated = await deviceRepo.assignToUser(
+      deviceId,
+      userId || null,
+      userName,
+      userEmail,
+      userDept || null,
+      ticketId || null,
+      reason || `Assigned to ${userName}`
+    );
+    res.json({ device: updated });
+  },
+
+  /** POST /devices/:id/checkout — checkout/return a device. */
+  async checkout(req: Request, res: Response): Promise<void> {
+    const deviceId = parsePositiveInt(req.params.id, 'device id');
+    const body = req.body as z.infer<typeof checkoutDeviceSchema>;
+
+    const device = await deviceRepo.getByIdFull(deviceId);
+    if (!device) {
+      throw AppError.notFound('Device not found');
+    }
+
+    if (device.status !== 'Active') {
+      throw AppError.badRequest(`Device cannot be checked out. Current status: ${device.status}`);
+    }
+
+    // Determine new status based on action type
+    const newStatus = body.actionType === 'replace' ? 'In Repair' : 'In Stock';
+
+    // Checkout and update status in a transaction
+    const updated = await deviceRepo.checkout(
+      deviceId,
+      body.condition,
+      newStatus,
+      body.notes,
+      req.user?.name || 'System'
+    );
+    res.json({ device: updated });
+  },
+
+  /** GET /devices/reports/history — device assignment history. */
+  async getHistoryReport(_req: Request, res: Response): Promise<void> {
+    const history = await deviceRepo.getHistoryReport();
+    res.json({ history });
+  },
+
+  /** GET /devices/reports/summary — device inventory summary. */
+  async getSummaryReport(_req: Request, res: Response): Promise<void> {
+    const summary = await deviceRepo.getSummaryReport();
+    res.json({ summary });
+  },
+
+  /** GET /devices/reports/assignments — device to user mapping. */
+  async getAssignmentsReport(_req: Request, res: Response): Promise<void> {
+    const assignments = await deviceRepo.getAssignmentsReport();
+    res.json({ assignments });
+  },
+
+  /** GET /devices/reports/aging — devices nearing warranty expiry. */
+  async getAgingReport(_req: Request, res: Response): Promise<void> {
+    const aging = await deviceRepo.getAgingReport();
+    res.json({ aging });
+  },
+
+  /** GET /devices/reports/department — devices by department. */
+  async getDepartmentReport(_req: Request, res: Response): Promise<void> {
+    const departments = await deviceRepo.getByDepartmentReport();
+    res.json({ departments });
+  },
+
+  /** GET /devices/reports/availability — device availability status. */
+  async getAvailabilityReport(_req: Request, res: Response): Promise<void> {
+    const availability = await deviceRepo.getAvailabilityReport();
+    res.json({ availability });
+  },
+
+  /** GET /devices/reports/stock-movement — daily stock in/out. */
+  async getStockMovementReport(_req: Request, res: Response): Promise<void> {
+    const movement = await deviceRepo.getStockMovementReport();
+    res.json({ movement });
+  },
+
+  /** GET /devices/reports/stock-by-type — devices grouped by type and status. */
+  async getStockByTypeReport(_req: Request, res: Response): Promise<void> {
+    const stockByType = await deviceRepo.getStockByTypeReport();
+    res.json({ stockByType });
+  },
+
+  /** GET /devices/reports/unassigned — devices not assigned or awaiting return. */
+  async getUnassignedReport(_req: Request, res: Response): Promise<void> {
+    const unassigned = await deviceRepo.getUnassignedReport();
+    res.json({ unassigned });
+  },
+
+  /** GET /devices/reports/by-user — devices per user. */
+  async getByUserReport(_req: Request, res: Response): Promise<void> {
+    const byUser = await deviceRepo.getByUserReport();
+    res.json({ byUser });
   },
 };

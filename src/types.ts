@@ -1,6 +1,6 @@
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
 
-export type TicketStatus = 'submitted' | 'processing' | 'pending_user' | 'resolved' | 'rejected';
+export type TicketStatus = 'submitted' | 'waiting' | 'resolved' | 'rejected';
 
 export interface TicketComment {
   id: string;
@@ -39,6 +39,11 @@ export interface PublicUser {
   title: string | null;
 }
 
+export interface LinkedDevice {
+  deviceId: number;
+  actionType: 'new' | 'repair' | 'return' | 'replace';
+}
+
 export interface Ticket {
   id: string;
   code: string;
@@ -60,6 +65,7 @@ export interface Ticket {
   comments: TicketComment[];
   history: TicketHistoryItem[];
   attachments?: AttachmentMeta[];
+  linkedDevices?: LinkedDevice[];
   details: {
     // Dynamic specifications
     // Daily support info:
