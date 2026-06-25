@@ -49,7 +49,7 @@ interface PendingDeviceWorkflow {
 export default function AdminSimulation({ tickets, onMutated }: AdminSimulationProps) {
   const toast = useToast();
   const [selectedTicketId, setSelectedTicketId] = useState('');
-  const [newStatus, setNewStatus] = useState<TicketStatus>('processing');
+  const [newStatus, setNewStatus] = useState<TicketStatus>('waiting');
   const [notes, setNotes] = useState('');
   const [assignedTo, setAssignedTo] = useState(ENGINEERS[0]);
   const [saving, setSaving] = useState(false);
@@ -268,8 +268,7 @@ export default function AdminSimulation({ tickets, onMutated }: AdminSimulationP
                     className="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500 appearance-none font-bold"
                   >
                     <option value="submitted" className="bg-slate-900">Submitted</option>
-                    <option value="processing" className="bg-slate-900">In Progress</option>
-                    <option value="pending_user" className="bg-slate-900">Awaiting Info</option>
+                    <option value="waiting" className="bg-slate-900">Waiting for Review</option>
                     <option value="resolved" className="bg-slate-900">Resolved</option>
                     <option value="rejected" className="bg-slate-900">Rejected</option>
                   </select>

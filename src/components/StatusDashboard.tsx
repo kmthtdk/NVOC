@@ -16,8 +16,7 @@ interface StatusDashboardProps {
 
 const STATUS_META: Record<TicketStatus, { label: string; dot: string; text: string }> = {
   submitted: { label: 'Submitted', dot: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400' },
-  processing: { label: 'In Progress', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
-  pending_user: { label: 'Awaiting Info', dot: 'bg-purple-500', text: 'text-purple-600 dark:text-purple-400' },
+  waiting: { label: 'Waiting for Review', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
   resolved: { label: 'Resolved', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
   rejected: { label: 'Rejected', dot: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400' },
 };
@@ -33,8 +32,7 @@ export default function StatusDashboard({ tickets, total }: StatusDashboardProps
   const metrics = useMemo(() => {
     const byStatus: Record<TicketStatus, number> = {
       submitted: 0,
-      processing: 0,
-      pending_user: 0,
+      waiting: 0,
       resolved: 0,
       rejected: 0,
     };
@@ -47,7 +45,7 @@ export default function StatusDashboard({ tickets, total }: StatusDashboardProps
       byCategory[t.category] = (byCategory[t.category] ?? 0) + 1;
     }
 
-    const open = byStatus.submitted + byStatus.processing + byStatus.pending_user;
+    const open = byStatus.submitted + byStatus.waiting;
     const closed = byStatus.resolved + byStatus.rejected;
     const resolutionRate = tickets.length ? Math.round((byStatus.resolved / tickets.length) * 100) : 0;
 
@@ -77,11 +75,11 @@ export default function StatusDashboard({ tickets, total }: StatusDashboardProps
       iconCls: 'text-violet-600',
     },
     {
-      label: 'Awaiting Info',
-      value: metrics.byStatus.pending_user,
+      label: 'Waiting for Review',
+      value: metrics.byStatus.waiting,
       icon: Clock,
-      accent: 'border-l-purple-500',
-      iconCls: 'text-purple-500',
+      accent: 'border-l-amber-500',
+      iconCls: 'text-amber-500',
     },
     {
       label: 'Resolved',

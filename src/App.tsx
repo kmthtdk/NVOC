@@ -277,15 +277,13 @@ function UserPortal({
 
   const getStatusBadge = (st: string) => {
     if (st === 'submitted') return 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800';
-    if (st === 'processing') return 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800';
-    if (st === 'pending_user') return 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800';
+    if (st === 'waiting') return 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800';
     if (st === 'resolved') return 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
     return 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800';
   };
   const getStatusText = (st: string) =>
     st === 'submitted' ? 'Submitted'
-    : st === 'processing' ? 'In Progress'
-    : st === 'pending_user' ? 'Awaiting Info'
+    : st === 'waiting' ? 'Waiting for Review'
     : st === 'resolved' ? 'Resolved'
     : 'Rejected';
 

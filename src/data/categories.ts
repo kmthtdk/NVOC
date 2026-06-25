@@ -306,7 +306,7 @@ export const INITIAL_TICKETS: Ticket[] = [
       },
       {
         id: 'h2',
-        status: 'processing',
+        status: 'waiting',
         statusLabel: 'Under Investigation',
         updatedBy: 'Marcus Vance',
         notes: 'Triage complete. Configuring policy rules on Fortigate firewall and provisioning database credentials.',
@@ -338,7 +338,7 @@ export const INITIAL_TICKETS: Ticket[] = [
     subcategory: 'folder',
     priority: 'urgent',
     description: 'Someone from the design workflow deleted the folder Campaign_Q2 on the shared drive (S:\\Marketing\\Active_Projects\\). It contains high-resolution assets and media plan templates for Q3 rollout.',
-    status: 'processing',
+    status: 'waiting',
     createdAt: '2026-06-17T08:00:00-07:00',
     updatedAt: '2026-06-17T14:10:00-07:00',
     assignedTo: 'Lucas Croft (System Administrator)',
@@ -369,7 +369,7 @@ export const INITIAL_TICKETS: Ticket[] = [
       },
       {
         id: 'h5',
-        status: 'processing',
+        status: 'waiting',
         statusLabel: 'System Diagnostics',
         updatedBy: 'Lucas Croft',
         notes: 'Identified the directory mount structure. Initialising folder snapshot restore process.',
@@ -426,7 +426,7 @@ export const INITIAL_TICKETS: Ticket[] = [
     subcategory: 'laptop',
     priority: 'high',
     description: 'My primary workstation laptop emits a high-pitched whistling noise when starting high-load processes. It has shut down abruptly three times while rendering Photoshop artboards this morning due to extreme heat.',
-    status: 'pending_user',
+    status: 'waiting',
     createdAt: '2026-06-15T11:00:00-07:00',
     updatedAt: '2026-06-16T10:10:00-07:00',
     assignedTo: 'Nicholas Croft (Hardware Support)',
@@ -457,7 +457,7 @@ export const INITIAL_TICKETS: Ticket[] = [
       },
       {
         id: 'h8',
-        status: 'processing',
+        status: 'waiting',
         statusLabel: 'Assigned & Accepted',
         updatedBy: 'Nicholas Croft',
         notes: 'Identified hardware thermal throttling error. Requested direct handoff for physical dusting and re-pasting.',
@@ -465,7 +465,7 @@ export const INITIAL_TICKETS: Ticket[] = [
       },
       {
         id: 'h9',
-        status: 'pending_user',
+        status: 'waiting',
         statusLabel: 'Awaiting Device Handoff',
         updatedBy: 'Nicholas Croft',
         notes: 'Pending customer physical delivery to IT suite.',

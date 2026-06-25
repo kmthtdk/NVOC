@@ -32,15 +32,13 @@ interface TicketDetailModalProps {
 
 const STATUS_COLOR: Record<TicketStatus, string> = {
   submitted: 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800',
-  processing: 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
-  pending_user: 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+  waiting: 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
   resolved: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
   rejected: 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800',
 };
 const STATUS_LABEL: Record<TicketStatus, string> = {
   submitted: 'Submitted - Pending Triage',
-  processing: 'In Progress',
-  pending_user: 'Awaiting Info',
+  waiting: 'Waiting for Review',
   resolved: 'Resolved',
   rejected: 'Rejected',
 };
@@ -69,7 +67,7 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
 
   // Admin edit panel state.
   const [showEdit, setShowEdit] = useState(false);
-  const [editStatus, setEditStatus] = useState<TicketStatus>('processing');
+  const [editStatus, setEditStatus] = useState<TicketStatus>('waiting');
   const [editPriority, setEditPriority] = useState<TicketPriority>('medium');
   const [editAssignee, setEditAssignee] = useState('');
   const [editNotes, setEditNotes] = useState('');
@@ -350,8 +348,7 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
                       <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase font-mono">Status</label>
                       <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as TicketStatus)} className="w-full text-xs p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-medium">
                         <option value="submitted">Submitted</option>
-                        <option value="processing">In Progress</option>
-                        <option value="pending_user">Awaiting Info</option>
+                        <option value="waiting">Waiting for Review</option>
                         <option value="resolved">Resolved</option>
                         <option value="rejected">Rejected</option>
                       </select>

@@ -236,8 +236,7 @@ export const ticketController = {
 
     const statusCounts: Record<string, number> = {
       submitted: 0,
-      processing: 0,
-      pending_user: 0,
+      waiting: 0,
       resolved: 0,
       rejected: 0,
     };
@@ -286,15 +285,14 @@ export const ticketController = {
     const totalTickets = Object.values(statusCounts).reduce((a, b) => a + b, 0);
     const resolvedTickets = statusCounts.resolved;
     const resolutionRate = totalTickets > 0 ? Math.round((resolvedTickets / totalTickets) * 100) : 0;
-    const pendingTickets = statusCounts.submitted + statusCounts.processing + statusCounts.pending_user;
+    const pendingTickets = statusCounts.submitted + statusCounts.waiting;
 
     res.json({
       period: 'current_month',
       summary: {
         total: totalTickets,
         submitted: statusCounts.submitted,
-        processing: statusCounts.processing,
-        pending_user: statusCounts.pending_user,
+        waiting: statusCounts.waiting,
         resolved: statusCounts.resolved,
         rejected: statusCounts.rejected,
         pending: pendingTickets,
