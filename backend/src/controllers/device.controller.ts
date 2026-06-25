@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { deviceRepo } from '../models/device.repo.js';
+import { deviceRepo, type ReportFilters } from '../models/device.repo.js';
 import { AppError } from '../utils/AppError.js';
 import { withTransaction } from '../config/db.js';
 import type { DeviceStatus } from '../types/index.js';
@@ -356,14 +356,24 @@ export const deviceController = {
   },
 
   /** GET /devices/reports/assignments — device to user mapping. */
-  async getAssignmentsReport(_req: Request, res: Response): Promise<void> {
-    const assignments = await deviceRepo.getAssignmentsReport();
+  async getAssignmentsReport(req: Request, res: Response): Promise<void> {
+    const filters: ReportFilters = {
+      department: typeof req.query.department === 'string' ? req.query.department : undefined,
+      deviceType: typeof req.query.deviceType === 'string' ? req.query.deviceType : undefined,
+      status: typeof req.query.status === 'string' ? req.query.status : undefined,
+    };
+    const assignments = await deviceRepo.getAssignmentsReport(filters);
     res.json({ assignments });
   },
 
   /** GET /devices/reports/aging — devices nearing warranty expiry. */
-  async getAgingReport(_req: Request, res: Response): Promise<void> {
-    const aging = await deviceRepo.getAgingReport();
+  async getAgingReport(req: Request, res: Response): Promise<void> {
+    const filters: ReportFilters = {
+      department: typeof req.query.department === 'string' ? req.query.department : undefined,
+      deviceType: typeof req.query.deviceType === 'string' ? req.query.deviceType : undefined,
+      status: typeof req.query.status === 'string' ? req.query.status : undefined,
+    };
+    const aging = await deviceRepo.getAgingReport(filters);
     res.json({ aging });
   },
 

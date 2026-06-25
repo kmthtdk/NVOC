@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, AlertTriangle, TrendingUp, Users, Package, Clock } from 'lucide-react';
-import { api } from '../api/client';
+import { api, DeviceReportFilters } from '../api/client';
 import DeviceInventoryPivotTable from './DeviceInventoryPivotTable';
+import DeviceReportFilterBar from './DeviceReportFilterBar';
 
 interface SummaryReport {
   total: number;
@@ -50,6 +51,9 @@ export default function DeviceReportsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<DeviceReportFilters>({});
+  const [departmentOptions, setDepartmentOptions] = useState<string[]>([]);
+  const [deviceTypeOptions, setDeviceTypeOptions] = useState<string[]>([]);
 
   const [summary, setSummary] = useState<SummaryReport | null>(null);
   const [assignments, setAssignments] = useState<AssignmentReport[]>([]);
@@ -57,7 +61,7 @@ export default function DeviceReportsPage() {
   const [department, setDepartment] = useState<DepartmentReport[]>([]);
   const [availability, setAvailability] = useState<AvailabilityReport | null>(null);
 
-  const loadReport = async (tab: TabType) => {
+  const loadReport = async (tab: TabType, activeFilters: DeviceReportFilters = {}) => {
     setLoading(true);
     setError(null);
     try {
@@ -65,15 +69,18 @@ export default function DeviceReportsPage() {
         case 'summary': {
           const res = await api.getDeviceSummary();
           setSummary(res.summary);
+          // Extract department and device type options from summary
+          setDepartmentOptions(Object.keys(res.summary.by_department).sort());
+          setDeviceTypeOptions(Object.keys(res.summary.by_type).sort());
           break;
         }
         case 'assignments': {
-          const res = await api.getDeviceAssignments();
+          const res = await api.getDeviceAssignments(activeFilters);
           setAssignments(res.assignments || []);
           break;
         }
         case 'aging': {
-          const res = await api.getDeviceAging();
+          const res = await api.getDeviceAging(activeFilters);
           setAging(res.aging || []);
           break;
         }
@@ -96,8 +103,8 @@ export default function DeviceReportsPage() {
   };
 
   useEffect(() => {
-    loadReport(activeTab);
-  }, [activeTab]);
+    loadReport(activeTab, filters);
+  }, [activeTab, filters]);
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
@@ -113,6 +120,14 @@ export default function DeviceReportsPage() {
         </h1>
         <p className="text-gray-600 mt-2">Comprehensive device tracking and allocation reports</p>
       </div>
+
+      {/* Filter Bar */}
+      <DeviceReportFilterBar
+        filters={filters}
+        onChange={setFilters}
+        departmentOptions={departmentOptions}
+        deviceTypeOptions={deviceTypeOptions}
+      />
 
       {/* Tab Navigation */}
       <div className="flex gap-2 border-b border-gray-200 flex-wrap">
@@ -294,7 +309,7 @@ export default function DeviceReportsPage() {
 
           {/* Department Tab - Pivot Tables */}
           {activeTab === 'department' && (
-            <DeviceInventoryPivotTable />
+            <DeviceInventoryPivotTable filters={filters} />
           )}
 
           {/* Availability Tab */}

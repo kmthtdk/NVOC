@@ -15,6 +15,12 @@ export interface DeviceListFilters {
   sort: 'newest' | 'oldest';
 }
 
+export interface ReportFilters {
+  department?: string;
+  deviceType?: string;
+  status?: string;
+}
+
 export interface CreateDeviceInput {
   deviceType: string;
   model: string;
@@ -570,7 +576,7 @@ export const deviceRepo = {
   /**
    * Get device assignments (device → user mapping).
    */
-  async getAssignmentsReport(): Promise<Array<{
+  async getAssignmentsReport(filters: ReportFilters = {}): Promise<Array<{
     device_code: string;
     model: string;
     serial_number: string;
@@ -578,6 +584,23 @@ export const deviceRepo = {
     status: string;
     department: string | null;
   }>> {
+    const where: string[] = ['assigned_to IS NOT NULL'];
+    const params: (string | null)[] = [];
+
+    if (filters.department) {
+      where.push('department = ?');
+      params.push(filters.department);
+    }
+    if (filters.deviceType) {
+      where.push('device_type = ?');
+      params.push(filters.deviceType);
+    }
+    if (filters.status) {
+      where.push('status = ?');
+      params.push(filters.status);
+    }
+
+    const whereSql = `WHERE ${where.join(' AND ')}`;
     const [rows] = await pool.query<any[]>(
       `SELECT
         code as device_code,
@@ -587,8 +610,9 @@ export const deviceRepo = {
         status,
         department
       FROM devices
-      WHERE assigned_to IS NOT NULL
+      ${whereSql}
       ORDER BY assigned_to ASC`,
+      params,
     );
     return rows || [];
   },
@@ -596,7 +620,7 @@ export const deviceRepo = {
   /**
    * Get devices nearing warranty expiry.
    */
-  async getAgingReport(): Promise<Array<{
+  async getAgingReport(filters: ReportFilters = {}): Promise<Array<{
     device_code: string;
     model: string;
     assigned_to: string | null;
@@ -604,6 +628,26 @@ export const deviceRepo = {
     days_until_expiry: number;
     status: string;
   }>> {
+    const where: string[] = [
+      'warranty_expiry IS NOT NULL',
+      'warranty_expiry <= DATE_ADD(CURDATE(), INTERVAL 90 DAY)',
+    ];
+    const params: (string | null)[] = [];
+
+    if (filters.department) {
+      where.push('department = ?');
+      params.push(filters.department);
+    }
+    if (filters.deviceType) {
+      where.push('device_type = ?');
+      params.push(filters.deviceType);
+    }
+    if (filters.status) {
+      where.push('status = ?');
+      params.push(filters.status);
+    }
+
+    const whereSql = `WHERE ${where.join(' AND ')}`;
     const [rows] = await pool.query<any[]>(
       `SELECT
         code as device_code,
@@ -613,9 +657,9 @@ export const deviceRepo = {
         DATEDIFF(warranty_expiry, CURDATE()) as days_until_expiry,
         status
       FROM devices
-      WHERE warranty_expiry IS NOT NULL
-        AND warranty_expiry <= DATE_ADD(CURDATE(), INTERVAL 90 DAY)
+      ${whereSql}
       ORDER BY warranty_expiry ASC`,
+      params,
     );
     return rows || [];
   },

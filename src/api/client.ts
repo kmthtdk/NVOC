@@ -334,6 +334,12 @@ export interface ListTicketsParams {
   sort?: 'newest' | 'oldest';
 }
 
+export interface DeviceReportFilters {
+  department?: string;
+  deviceType?: string;
+  status?: string;
+}
+
 export interface CreateTicketPayload {
   title: string;
   description: string;
@@ -459,9 +465,8 @@ export const api = {
   listAvailableDevices(page = 1, pageSize = 100): Promise<any> {
     return request<any>(`/devices?page=${page}&pageSize=${pageSize}&status=In%20Stock`);
   },
-  listDevices(page = 1, pageSize = 100, status?: string): Promise<any> {
-    const statusParam = status ? `&status=${encodeURIComponent(status)}` : '';
-    return request<any>(`/devices?page=${page}&pageSize=${pageSize}${statusParam}`);
+  listDevices(page = 1, pageSize = 100, filters: DeviceReportFilters = {}): Promise<any> {
+    return request<any>(`/devices${buildQuery({ page, pageSize, ...filters })}`);
   },
   getDevice(id: number): Promise<any> {
     return request<any>(`/devices/${id}`);
@@ -483,11 +488,11 @@ export const api = {
   getDeviceSummary(): Promise<DeviceSummaryResponse> {
     return request<DeviceSummaryResponse>('/devices/reports/summary');
   },
-  getDeviceAssignments(): Promise<DeviceAssignmentsResponse> {
-    return request<DeviceAssignmentsResponse>('/devices/reports/assignments');
+  getDeviceAssignments(filters: DeviceReportFilters = {}): Promise<DeviceAssignmentsResponse> {
+    return request<DeviceAssignmentsResponse>(`/devices/reports/assignments${buildQuery(filters)}`);
   },
-  getDeviceAging(): Promise<DeviceAgingResponse> {
-    return request<DeviceAgingResponse>('/devices/reports/aging');
+  getDeviceAging(filters: DeviceReportFilters = {}): Promise<DeviceAgingResponse> {
+    return request<DeviceAgingResponse>(`/devices/reports/aging${buildQuery(filters)}`);
   },
   getDeviceDepartment(): Promise<DeviceDepartmentResponse> {
     return request<DeviceDepartmentResponse>('/devices/reports/department');

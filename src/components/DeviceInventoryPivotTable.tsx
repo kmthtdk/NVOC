@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart3, AlertTriangle } from 'lucide-react';
-import { api } from '../api/client';
+import { api, DeviceReportFilters } from '../api/client';
 
 interface Device {
   id: number;
@@ -12,7 +12,11 @@ interface Device {
   model: string;
 }
 
-export default function DeviceInventoryPivotTable() {
+interface DeviceInventoryPivotTableProps {
+  filters: DeviceReportFilters;
+}
+
+export default function DeviceInventoryPivotTable({ filters }: DeviceInventoryPivotTableProps) {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +32,7 @@ export default function DeviceInventoryPivotTable() {
         let hasMore = true;
 
         while (hasMore) {
-          const res = await api.listDevices(page, pageSize);
+          const res = await api.listDevices(page, pageSize, filters);
           const batch = res.data || [];
           allDevices.push(...batch);
           hasMore = batch.length === pageSize && allDevices.length < res.total;
@@ -43,7 +47,7 @@ export default function DeviceInventoryPivotTable() {
       }
     };
     loadDevices();
-  }, []);
+  }, [filters]);
 
   const pivotData = useMemo(() => {
     if (!devices.length) return null;
