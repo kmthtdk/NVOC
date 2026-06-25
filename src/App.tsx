@@ -115,7 +115,7 @@ export default function App() {
   if (!isAuthenticated) return <Login />;
 
   return (
-    <div className="min-h-screen bg-slate-50/70 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans flex flex-col antialiased selection:bg-violet-100 selection:text-violet-950 pb-16 transition-colors">
+    <div className="min-h-screen bg-slate-50/70 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans flex flex-col antialiased selection:bg-violet-100 selection:text-violet-950 pb-16 transition-colors overflow-x-hidden">
       {/* Header */}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-30 shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -409,7 +409,7 @@ function AdminWorkspace({
   }, [reloadKey]);
 
   return (
-    <div className="space-y-6 transition-opacity duration-200">
+    <div className="space-y-6">
       {/* Admin Tab Switcher */}
       <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
         <button
@@ -438,7 +438,7 @@ function AdminWorkspace({
 
       {/* Tickets Tab Content */}
       {adminTab === 'tickets' && (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-6">
           {/* Banner */}
           <div className="bg-slate-900 dark:bg-slate-900 border border-slate-800 rounded-xl p-6 sm:p-7 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="space-y-1.5">
@@ -469,21 +469,17 @@ function AdminWorkspace({
 
           {/* Dispatch console */}
           {showSim && (
-            <div className="animate-fadeIn">
-              <AdminSimulation tickets={metricsTickets} onMutated={onMutated} />
-            </div>
+            <AdminSimulation tickets={metricsTickets} onMutated={onMutated} />
           )}
 
           {/* Master queue: server-side search / filter / sort / pagination */}
-          <div className="animate-fadeIn">
-            <TicketList reloadKey={reloadKey} onSelectTicket={onSelectTicket} />
-          </div>
+          <TicketList reloadKey={reloadKey} onSelectTicket={onSelectTicket} />
         </div>
       )}
 
       {/* Devices Tab Content */}
       {adminTab === 'devices' && (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-6">
           {/* Sub-tabs for device management */}
           <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
             <button
@@ -510,16 +506,12 @@ function AdminWorkspace({
 
           {/* Device Management */}
           {deviceSubTab === 'management' && (
-            <div className="animate-fadeIn">
-              <DeviceManagement user={{ role: 'admin' }} />
-            </div>
+            <DeviceManagement user={{ role: 'admin' }} />
           )}
 
           {/* Device Reports */}
           {deviceSubTab === 'reports' && (
-            <div className="animate-fadeIn">
-              <DeviceReportsPage />
-            </div>
+            <DeviceReportsPage />
           )}
         </div>
       )}
