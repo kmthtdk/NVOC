@@ -85,8 +85,9 @@ export default function DeviceReportsPage() {
           break;
         }
         case 'department': {
-          const res = await api.getDeviceDepartment();
-          setDepartment(res.departments || []);
+          // Note: Pivot table component handles its own data fetching
+          // This case doesn't need to load anything; the pivot table
+          // renders directly and loads filtered device data
           break;
         }
         case 'availability': {
