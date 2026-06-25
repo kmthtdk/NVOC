@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { deviceController } from '../controllers/device.controller.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validate.js';
@@ -14,19 +15,28 @@ import {
 
 export const deviceRoutes = Router();
 
+// Rate limiter for device mutation endpoints (DoS prevention).
+const deviceMutationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many requests. Please try again later.',
+});
+
 // Read endpoints — any authenticated user.
 // NOTE: /search and /reports must be registered before /:id so they aren't captured as ids.
 deviceRoutes.get('/search', authenticate, asyncHandler(deviceController.search));
-deviceRoutes.get('/reports/history', authenticate, asyncHandler(deviceController.getHistoryReport));
-deviceRoutes.get('/reports/summary', authenticate, asyncHandler(deviceController.getSummaryReport));
-deviceRoutes.get('/reports/assignments', authenticate, asyncHandler(deviceController.getAssignmentsReport));
-deviceRoutes.get('/reports/aging', authenticate, asyncHandler(deviceController.getAgingReport));
-deviceRoutes.get('/reports/department', authenticate, asyncHandler(deviceController.getDepartmentReport));
-deviceRoutes.get('/reports/availability', authenticate, asyncHandler(deviceController.getAvailabilityReport));
-deviceRoutes.get('/reports/stock-movement', authenticate, asyncHandler(deviceController.getStockMovementReport));
-deviceRoutes.get('/reports/stock-by-type', authenticate, asyncHandler(deviceController.getStockByTypeReport));
-deviceRoutes.get('/reports/unassigned', authenticate, asyncHandler(deviceController.getUnassignedReport));
-deviceRoutes.get('/reports/by-user', authenticate, asyncHandler(deviceController.getByUserReport));
+deviceRoutes.get('/reports/history', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getHistoryReport));
+deviceRoutes.get('/reports/summary', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getSummaryReport));
+deviceRoutes.get('/reports/assignments', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getAssignmentsReport));
+deviceRoutes.get('/reports/aging', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getAgingReport));
+deviceRoutes.get('/reports/department', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getDepartmentReport));
+deviceRoutes.get('/reports/availability', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getAvailabilityReport));
+deviceRoutes.get('/reports/stock-movement', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getStockMovementReport));
+deviceRoutes.get('/reports/stock-by-type', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getStockByTypeReport));
+deviceRoutes.get('/reports/unassigned', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getUnassignedReport));
+deviceRoutes.get('/reports/by-user', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getByUserReport));
 deviceRoutes.get('/', authenticate, asyncHandler(deviceController.list));
 deviceRoutes.get('/:id', authenticate, asyncHandler(deviceController.get));
 
@@ -52,6 +62,7 @@ deviceRoutes.post(
   '/:id/assign',
   authenticate,
   requireRole('it_support', 'admin'),
+  deviceMutationLimiter,
   validateBody(assignDeviceSchema),
   asyncHandler(deviceController.assignToUser),
 );
@@ -61,6 +72,7 @@ deviceRoutes.post(
   '/:id/checkout',
   authenticate,
   requireRole('it_support', 'admin'),
+  deviceMutationLimiter,
   validateBody(checkoutDeviceSchema),
   asyncHandler(deviceController.checkout),
 );

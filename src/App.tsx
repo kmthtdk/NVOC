@@ -396,7 +396,7 @@ function AdminWorkspace({
     api
       .listTickets({ page: 1, pageSize: METRICS_PAGE_SIZE, sort: 'newest' }, ctrl.signal)
       .then((res) => {
-        console.log('[Dashboard] Tickets loaded:', res.data.length, 'Total:', res.total);
+
         setMetricsTickets(res.data);
         setMetricsTotal(res.total);
       })

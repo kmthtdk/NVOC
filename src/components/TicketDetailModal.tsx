@@ -152,15 +152,6 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
     // Check if this is a hardware request being resolved with device workflow
     const deviceActionType = ticket.details?.deviceActionType as 'new' | 'replace' | 'return' | undefined;
 
-    // Debug logging
-    console.log('[Device Workflow Debug]', {
-      editStatus,
-      category: ticket.category,
-      deviceActionType,
-      details: ticket.details,
-      shouldTrigger: editStatus === 'resolved' && ticket.category === 'hardware_request' && deviceActionType && ['new', 'replace', 'return'].includes(deviceActionType),
-    });
-
     if (
       editStatus === 'resolved' &&
       ticket.category === 'hardware_request' &&

@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: tests\mac-address.spec.ts >> 1. MAC Address Creation >> 1.1: Create device and add WiFi MAC
-- Location: tests\mac-address.spec.ts:219:3
+- Name: tests\mac-address.spec.ts >> 2. MAC Address Retrieval >> 2.1: Get device by ID with MAC list
+- Location: tests\mac-address.spec.ts:289:3
 
 # Error details
 
@@ -15,7 +15,7 @@
 Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: 201
-Received: 404
+Received: 409
 ```
 
 # Test source

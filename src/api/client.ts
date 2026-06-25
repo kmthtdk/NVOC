@@ -157,6 +157,157 @@ export interface TriageResponse {
   summary: string;
 }
 
+// ---- Ticket report response shapes ------------------------------------------
+
+export interface PendingHardwareRequest {
+  id: string;
+  code: string;
+  title: string;
+  created_at: string;
+  priority: string;
+  requester_name: string;
+  assigned_to: string;
+  status: string;
+}
+
+export interface PendingHardwareResponse {
+  pendingRequests: PendingHardwareRequest[];
+}
+
+export interface FulfillmentStat {
+  category_id: string;
+  total_resolved: number;
+  avg_hours: number;
+  min_hours: number;
+  max_hours: number;
+}
+
+export interface FulfillmentTimeResponse {
+  fulfillmentStats: FulfillmentStat[];
+}
+
+export interface AgeBucketsResponse {
+  ageBuckets: Record<string, Record<string, number>>;
+}
+
+export interface CategoryTrendItem {
+  month: string;
+  category_id: string;
+  count: number;
+}
+
+export interface CategoryTrendResponse {
+  categoryTrend: CategoryTrendItem[];
+}
+
+// ---- Device report response shapes ------------------------------------------
+
+export interface DeviceSummaryData {
+  total: number;
+  by_status: Record<string, number>;
+  by_type: Record<string, number>;
+  by_department: Record<string, number>;
+}
+
+export interface DeviceSummaryResponse {
+  summary: DeviceSummaryData;
+}
+
+export interface AssignmentReportItem {
+  device_code: string;
+  model: string;
+  serial_number: string;
+  assigned_to: string | null;
+  status: string;
+  department: string | null;
+}
+
+export interface DeviceAssignmentsResponse {
+  assignments: AssignmentReportItem[];
+}
+
+export interface AgingReportItem {
+  device_code: string;
+  model: string;
+  assigned_to: string | null;
+  warranty_expiry: string | null;
+  days_until_expiry: number;
+  status: string;
+}
+
+export interface DeviceAgingResponse {
+  aging: AgingReportItem[];
+}
+
+export interface DepartmentReportItem {
+  department: string;
+  total: number;
+  active: number;
+  in_repair: number;
+  retired: number;
+}
+
+export interface DeviceDepartmentResponse {
+  departments: DepartmentReportItem[];
+}
+
+export interface AvailabilityData {
+  in_stock: number;
+  active: number;
+  in_repair: number;
+  retired: number;
+  lost: number;
+}
+
+export interface DeviceAvailabilityResponse {
+  availability: AvailabilityData;
+}
+export interface DeviceHistoryResponse {
+  history: unknown[];
+}
+export interface StockMovementResponse {
+  movement: unknown[];
+}
+export interface StockByTypeResponse {
+  stockByType: unknown[];
+}
+export interface UnassignedDevicesResponse {
+  unassigned: unknown[];
+}
+export interface DevicesByUserResponse {
+  byUser: unknown[];
+}
+
+// ---- Device data shapes -----------------------------------------------------
+
+export interface DeviceRecord {
+  id: number;
+  asset_tag: string;
+  device_type: string;
+  brand: string;
+  model: string;
+  serial_number: string;
+  status: string;
+  assigned_to_name: string | null;
+  assigned_to_email: string | null;
+  assigned_to_dept: string | null;
+  condition_status: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeviceListResponse {
+  data: DeviceRecord[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+export interface DeviceSingleResponse {
+  data: DeviceRecord;
+}
+
 export interface ListTicketsParams {
   status?: TicketStatus;
   category?: string;
@@ -203,6 +354,11 @@ function buildQuery(params: Record<string, unknown>): string {
 // ---- Public API surface -----------------------------------------------------
 
 export const api = {
+  // Generic GET — enables ad-hoc `api.get<T>('/path')` calls.
+  get<T = unknown>(path: string, signal?: AbortSignal): Promise<T> {
+    return request<T>(path, { signal });
+  },
+
   // Auth
   login(email: string, password: string): Promise<LoginResponse> {
     return request<LoginResponse>('/auth/login', { method: 'POST', body: { email, password } });
@@ -267,7 +423,24 @@ export const api = {
     return request<TriageResponse>('/ai/triage', { method: 'POST', body: { title, description } });
   },
 
+  // Ticket reports
+  getPendingHardwareReport(signal?: AbortSignal): Promise<PendingHardwareResponse> {
+    return request<PendingHardwareResponse>('/tickets/reports/pending-hardware', { signal });
+  },
+  getFulfillmentTimeReport(signal?: AbortSignal): Promise<FulfillmentTimeResponse> {
+    return request<FulfillmentTimeResponse>('/tickets/reports/fulfillment-time', { signal });
+  },
+  getAgeBucketsReport(signal?: AbortSignal): Promise<AgeBucketsResponse> {
+    return request<AgeBucketsResponse>('/tickets/reports/age-buckets', { signal });
+  },
+  getCategoryTrendReport(signal?: AbortSignal): Promise<CategoryTrendResponse> {
+    return request<CategoryTrendResponse>('/tickets/reports/category-trend', { signal });
+  },
+
   // Device management
+  // NOTE: These return `any` because existing components use camelCase Device
+  // interfaces while the backend sends snake_case. Fixing the mismatch requires
+  // updating all Device component interfaces or adding a mapper layer.
   listAvailableDevices(page = 1, pageSize = 100): Promise<any> {
     return request<any>(`/devices?page=${page}&pageSize=${pageSize}&status=In%20Stock`);
   },
@@ -278,7 +451,7 @@ export const api = {
   getDevice(id: number): Promise<any> {
     return request<any>(`/devices/${id}`);
   },
-  assignDevice(id: number, userName: string, userEmail: string, userDept?: string, ticketId?: number, reason?: string): Promise<any> {
+  assignDevice(id: number, userName: string, userEmail: string, userDept?: string, ticketId?: string, reason?: string): Promise<any> {
     return request<any>(`/devices/${id}/assign`, {
       method: 'POST',
       body: { userName, userEmail, userDept, ticketId, reason },
@@ -292,35 +465,35 @@ export const api = {
   },
 
   // Device reports
-  getDeviceSummary(): Promise<any> {
-    return request<any>('/devices/reports/summary');
+  getDeviceSummary(): Promise<DeviceSummaryResponse> {
+    return request<DeviceSummaryResponse>('/devices/reports/summary');
   },
-  getDeviceAssignments(): Promise<any> {
-    return request<any>('/devices/reports/assignments');
+  getDeviceAssignments(): Promise<DeviceAssignmentsResponse> {
+    return request<DeviceAssignmentsResponse>('/devices/reports/assignments');
   },
-  getDeviceAging(): Promise<any> {
-    return request<any>('/devices/reports/aging');
+  getDeviceAging(): Promise<DeviceAgingResponse> {
+    return request<DeviceAgingResponse>('/devices/reports/aging');
   },
-  getDeviceDepartment(): Promise<any> {
-    return request<any>('/devices/reports/department');
+  getDeviceDepartment(): Promise<DeviceDepartmentResponse> {
+    return request<DeviceDepartmentResponse>('/devices/reports/department');
   },
-  getDeviceAvailability(): Promise<any> {
-    return request<any>('/devices/reports/availability');
+  getDeviceAvailability(): Promise<DeviceAvailabilityResponse> {
+    return request<DeviceAvailabilityResponse>('/devices/reports/availability');
   },
-  getDeviceHistory(): Promise<any> {
-    return request<any>('/devices/reports/history');
+  getDeviceHistory(): Promise<DeviceHistoryResponse> {
+    return request<DeviceHistoryResponse>('/devices/reports/history');
   },
-  getStockMovement(): Promise<any> {
-    return request<any>('/devices/reports/stock-movement');
+  getStockMovement(): Promise<StockMovementResponse> {
+    return request<StockMovementResponse>('/devices/reports/stock-movement');
   },
-  getStockByType(): Promise<any> {
-    return request<any>('/devices/reports/stock-by-type');
+  getStockByType(): Promise<StockByTypeResponse> {
+    return request<StockByTypeResponse>('/devices/reports/stock-by-type');
   },
-  getUnassignedDevices(): Promise<any> {
-    return request<any>('/devices/reports/unassigned');
+  getUnassignedDevices(): Promise<UnassignedDevicesResponse> {
+    return request<UnassignedDevicesResponse>('/devices/reports/unassigned');
   },
-  getDevicesByUser(): Promise<any> {
-    return request<any>('/devices/reports/by-user');
+  getDevicesByUser(): Promise<DevicesByUserResponse> {
+    return request<DevicesByUserResponse>('/devices/reports/by-user');
   },
 
   // Device-ticket linking

@@ -106,7 +106,8 @@ export default function DeviceAssignmentModal({
 
       // Assign device to requester with reason and ticket tracking
       const reason = ticketDescription || `Assigned via ${ticketCode}`;
-      await api.assignDevice(selectedDeviceId, requesterName, requesterEmail, requesterDept, ticketId, reason);
+      const stringTicketId = ticketId != null ? String(ticketId) : undefined;
+      await api.assignDevice(selectedDeviceId, requesterName, requesterEmail, requesterDept, stringTicketId, reason);
 
       // Create ticket-device link if ticketId provided
       if (ticketId) {
