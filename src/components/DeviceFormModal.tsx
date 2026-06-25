@@ -24,6 +24,15 @@ export interface MacAddress {
   updatedAt: string;
 }
 
+export interface DeviceSpecifications {
+  cpu?: string | null;
+  ramGb?: number | null;
+  storageGb?: number | null;
+  gpu?: string | null;
+  psuWatts?: number | null;
+  additionalSpecs?: Record<string, string> | null;
+}
+
 export interface Device {
   id: number;
   code: string;
@@ -39,6 +48,7 @@ export interface Device {
   createdAt?: string;
   updatedAt?: string;
   macAddresses?: MacAddress[];
+  specifications?: DeviceSpecifications;
 }
 
 interface DeviceFormModalProps {
@@ -63,6 +73,19 @@ const DEVICE_TYPE_OPTIONS = [
   'removable_disk',
   'accessories',
 ];
+
+const DEVICE_TYPE_LABELS: Record<string, string> = {
+  'desktop': 'Desktop',
+  'laptop': 'Laptop',
+  'monitor': 'Monitor',
+  'phone': 'Mobile Phone',
+  'tablet': 'Tablet',
+  'deskphone': 'Desk Phone',
+  'removable_disk': 'Removable Disk',
+  'accessories': 'Accessories',
+};
+
+const formatDeviceTypeLabel = (type: string): string => DEVICE_TYPE_LABELS[type] || type;
 
 const STATUS_OPTIONS: DeviceStatus[] = ['Active', 'In Repair', 'Retired', 'Lost'];
 const MAC_ADDRESS_TYPES: MacAddressType[] = ['Ethernet', 'WiFi', 'Bluetooth', 'Other'];
@@ -152,6 +175,12 @@ export default function DeviceFormModal({
     macAddress: '',
   });
   const [newMacErrors, setNewMacErrors] = useState<Record<string, string>>({});
+
+  // Device specifications management
+  const [specifications, setSpecifications] = useState<DeviceSpecifications>(() =>
+    device?.specifications ?? {}
+  );
+  const [specErrors, setSpecErrors] = useState<Record<string, string>>({});
 
   // Load full device data on mount (edit mode) to fetch MACs
   useEffect(() => {
@@ -351,6 +380,14 @@ export default function DeviceFormModal({
         warrantyExpiry: form.warrantyExpiry || null,
         notes: form.notes.trim() || null,
         ...(isEditMode ? {} : { macAddresses: macAddresses.filter((m) => m.isNew) }),
+        specifications: {
+          cpu: specifications.cpu || null,
+          ramGb: specifications.ramGb || null,
+          storageGb: specifications.storageGb || null,
+          gpu: specifications.gpu || null,
+          psuWatts: specifications.psuWatts || null,
+          additionalSpecs: specifications.additionalSpecs || null,
+        },
       };
 
       const url = isEditMode
@@ -516,9 +553,10 @@ export default function DeviceFormModal({
                 onChange={(e) => update('deviceType', e.target.value)}
                 className={fieldClass('deviceType')}
               >
+                <option value="">Select device type...</option>
                 {DEVICE_TYPE_OPTIONS.map((t) => (
                   <option key={t} value={t}>
-                    {t}
+                    {formatDeviceTypeLabel(t)}
                   </option>
                 ))}
               </select>
@@ -850,6 +888,94 @@ export default function DeviceFormModal({
               rows={3}
               className={fieldClass('notes')}
             />
+          </div>
+
+          {/* Device Specifications Section */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+            <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">Device Specifications</h3>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* CPU */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  CPU
+                </label>
+                <input
+                  type="text"
+                  value={specifications.cpu || ''}
+                  onChange={(e) => setSpecifications({ ...specifications, cpu: e.target.value || null })}
+                  placeholder="e.g., Intel i7-10700K"
+                  disabled={isEditMode}
+                  className={`rounded-md border border-gray-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'}`}
+                />
+              </div>
+
+              {/* RAM */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  RAM (GB)
+                </label>
+                <input
+                  type="number"
+                  value={specifications.ramGb || ''}
+                  onChange={(e) => setSpecifications({ ...specifications, ramGb: e.target.value ? parseInt(e.target.value) : null })}
+                  min="1"
+                  max="1024"
+                  placeholder="16"
+                  disabled={isEditMode}
+                  className={`rounded-md border border-gray-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'}`}
+                />
+              </div>
+
+              {/* Storage */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Storage (GB)
+                </label>
+                <input
+                  type="number"
+                  value={specifications.storageGb || ''}
+                  onChange={(e) => setSpecifications({ ...specifications, storageGb: e.target.value ? parseInt(e.target.value) : null })}
+                  min="1"
+                  max="10000"
+                  placeholder="512"
+                  disabled={isEditMode}
+                  className={`rounded-md border border-gray-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'}`}
+                />
+              </div>
+
+              {/* GPU */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  GPU (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={specifications.gpu || ''}
+                  onChange={(e) => setSpecifications({ ...specifications, gpu: e.target.value || null })}
+                  placeholder="e.g., NVIDIA RTX 3060"
+                  disabled={isEditMode}
+                  className={`rounded-md border border-gray-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'}`}
+                />
+              </div>
+
+              {/* PSU */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  PSU Watts (Optional)
+                </label>
+                <input
+                  type="number"
+                  value={specifications.psuWatts || ''}
+                  onChange={(e) => setSpecifications({ ...specifications, psuWatts: e.target.value ? parseInt(e.target.value) : null })}
+                  min="0"
+                  max="2000"
+                  placeholder="130"
+                  disabled={isEditMode}
+                  className={`rounded-md border border-gray-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'}`}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700 pt-4">
