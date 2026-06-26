@@ -79,7 +79,7 @@ export const deviceRepo = {
   async getMacsByDeviceId(deviceId: number, conn?: PoolConnection): Promise<MacAddress[]> {
     const db = conn ?? pool;
     const [rows] = await db.query<MacAddressRow[]>(
-      'SELECT * FROM mac_addresses WHERE device_id = ? ORDER BY created_at DESC',
+      'SELECT * FROM mac_addresses WHERE device_id = ? AND is_active = 1 ORDER BY created_at DESC',
       [deviceId],
     );
     return rows.map(mapMacAddress);

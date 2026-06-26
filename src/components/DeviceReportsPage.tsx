@@ -68,10 +68,12 @@ export default function DeviceReportsPage() {
       switch (tab) {
         case 'summary': {
           const res = await api.getDeviceSummary();
-          setSummary(res.summary);
-          // Extract department and device type options from summary
-          setDepartmentOptions(Object.keys(res.summary.by_department).sort());
-          setDeviceTypeOptions(Object.keys(res.summary.by_type).sort());
+          if (res?.summary) {
+            setSummary(res.summary);
+            // Extract department and device type options from summary
+            setDepartmentOptions(Object.keys(res.summary.by_department || {}).sort());
+            setDeviceTypeOptions(Object.keys(res.summary.by_type || {}).sort());
+          }
           break;
         }
         case 'assignments': {
@@ -92,7 +94,7 @@ export default function DeviceReportsPage() {
         }
         case 'availability': {
           const res = await api.getDeviceAvailability();
-          setAvailability(res.availability);
+          setAvailability(res?.availability || null);
           break;
         }
       }
@@ -232,8 +234,8 @@ export default function DeviceReportsPage() {
                         </td>
                       </tr>
                     ) : (
-                      assignments.map((device, idx) => (
-                        <tr key={idx} className="border-t border-gray-200 hover:bg-gray-50">
+                      assignments.map((device) => (
+                        <tr key={device.device_code} className="border-t border-gray-200 hover:bg-gray-50">
                           <td className="px-4 py-3 font-mono text-gray-900">{device.device_code}</td>
                           <td className="px-4 py-3 text-gray-900">{device.model}</td>
                           <td className="px-4 py-3 text-gray-600 text-xs">{device.serial_number}</td>
@@ -275,9 +277,9 @@ export default function DeviceReportsPage() {
                         </td>
                       </tr>
                     ) : (
-                      aging.map((device, idx) => (
+                      aging.map((device) => (
                         <tr
-                          key={idx}
+                          key={device.device_code}
                           className={`border-t border-gray-200 ${
                             device.days_until_expiry <= 30 ? 'bg-red-50' : device.days_until_expiry <= 60 ? 'bg-yellow-50' : ''
                           }`}
@@ -322,8 +324,8 @@ export default function DeviceReportsPage() {
                 { label: 'In Repair', value: availability.in_repair, color: 'bg-yellow-100 text-yellow-700' },
                 { label: 'Retired', value: availability.retired, color: 'bg-gray-100 text-gray-700' },
                 { label: 'Lost', value: availability.lost, color: 'bg-red-100 text-red-700' },
-              ].map((item, idx) => (
-                <div key={idx} className={`rounded-lg p-6 ${item.color}`}>
+              ].map((item) => (
+                <div key={item.label} className={`rounded-lg p-6 ${item.color}`}>
                   <p className="text-sm font-medium opacity-90">{item.label}</p>
                   <p className="text-3xl font-bold mt-2">{item.value}</p>
                 </div>

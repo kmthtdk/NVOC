@@ -405,10 +405,9 @@ export const api = {
   createTicket(payload: CreateTicketPayload): Promise<{ ticket: Ticket }> {
     return request<{ ticket: Ticket }>('/tickets', { method: 'POST', body: payload });
   },
-  // NOTE: the backend PUT returns 204 No Content (no body). Callers should
-  // refetch via getTicket / bump a reload key to refresh derived state.
-  updateTicket(id: string, payload: UpdateTicketPayload): Promise<void> {
-    return request<void>(`/tickets/${id}`, { method: 'PUT', body: payload });
+  // Returns updated ticket; callers may use returned ticket or refetch via getTicket
+  updateTicket(id: string, payload: UpdateTicketPayload): Promise<{ ticket: Ticket }> {
+    return request<{ ticket: Ticket }>(`/tickets/${id}`, { method: 'PUT', body: payload });
   },
   deleteTicket(id: string): Promise<void> {
     return request<void>(`/tickets/${id}`, { method: 'DELETE' });
