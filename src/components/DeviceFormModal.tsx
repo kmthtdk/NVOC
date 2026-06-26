@@ -9,6 +9,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Save, Plus, Edit2, Trash2, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { api } from '../api/client';
 import { useToast } from '../context/ToastContext';
 import { Spinner } from './ui/Spinner';
 
@@ -188,12 +189,7 @@ export default function DeviceFormModal({
     if (isEditMode && device?.id) {
       const loadDevice = async () => {
         try {
-          const res = await fetch(`${apiBaseUrl}/devices/${device.id}`, {
-            headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
-          });
-          if (!res.ok) throw new Error('Failed to load device');
-          const body = await res.json();
-          const fullDevice: Device = body.data ?? body;
+          const fullDevice: Device = await api.getDevice(device.id);
           setMacAddresses(
             fullDevice.macAddresses?.map((mac) => ({
               id: mac.id,
@@ -211,7 +207,7 @@ export default function DeviceFormModal({
     } else {
       setLoading(false);
     }
-  }, [device?.id, isEditMode, apiBaseUrl, authToken, toast]);
+  }, [device?.id, isEditMode, toast]);
 
   useEffect(() => {
     setForm(toFormState(device));
@@ -400,25 +396,16 @@ export default function DeviceFormModal({
         },
       };
 
-      const url = isEditMode
-        ? `${apiBaseUrl}/devices/${device!.id}`
-        : `${apiBaseUrl}/devices`;
-      const res = await fetch(url, {
-        method: isEditMode ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-        },
-        body: JSON.stringify(devicePayload),
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error?.message || body?.message || `Request failed (${res.status})`);
+      let saved: Device;
+      if (isEditMode) {
+        saved = await api.updateDevice(device!.id, devicePayload);
+      } else {
+        saved = await api.createDevice(devicePayload);
       }
-
-      const body = await res.json();
-      let saved: Device = body.data ?? body;
+      // Ensure saved is a Device object (api may return { data: Device } or Device directly)
+      if (saved && typeof saved === 'object' && 'data' in saved && !('id' in saved)) {
+        saved = (saved as any).data;
+      }
 
       // Step 2: For edit mode, handle MAC changes (add/edit/delete)
       if (isEditMode && device?.id) {
@@ -426,36 +413,16 @@ export default function DeviceFormModal({
           try {
             if (mac.isNew) {
               // Create new MAC
-              const macRes = await fetch(`${apiBaseUrl}/devices/${device.id}/mac`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-                },
-                body: JSON.stringify({
-                  macType: mac.macType,
-                  macAddress: mac.macAddress,
-                }),
+              await api.createMacAddress(device.id, {
+                macType: mac.macType,
+                macAddress: mac.macAddress,
               });
-              if (!macRes.ok) {
-                throw new Error(`Failed to add MAC address: ${mac.macAddress}`);
-              }
             } else if (mac.originalValues) {
               // Update existing MAC
-              const updateRes = await fetch(`${apiBaseUrl}/devices/${device.id}/mac/${mac.id}`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-                },
-                body: JSON.stringify({
-                  macType: mac.macType,
-                  macAddress: mac.macAddress,
-                }),
+              await api.updateMacAddress(device.id, mac.id, {
+                macType: mac.macType,
+                macAddress: mac.macAddress,
               });
-              if (!updateRes.ok) {
-                throw new Error(`Failed to update MAC address: ${mac.macAddress}`);
-              }
             }
           } catch (macErr) {
             throw macErr;
@@ -474,25 +441,17 @@ export default function DeviceFormModal({
 
         for (const deletedId of deletedMacIds) {
           try {
-            const deleteRes = await fetch(`${apiBaseUrl}/devices/${device.id}/mac/${deletedId}`, {
-              method: 'DELETE',
-              headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
-            });
-            if (!deleteRes.ok) {
-              throw new Error(`Failed to delete MAC address`);
-            }
+            await api.deleteMacAddress(device.id, deletedId);
           } catch (delErr) {
             throw delErr;
           }
         }
 
         // Refresh device to get updated MACs
-        const refreshRes = await fetch(`${apiBaseUrl}/devices/${device.id}`, {
-          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
-        });
-        if (refreshRes.ok) {
-          const refreshBody = await refreshRes.json();
-          saved = refreshBody.data ?? refreshBody;
+        try {
+          saved = await api.getDevice(device.id);
+        } catch (err) {
+          // Continue with the saved device even if refresh fails
         }
       }
 

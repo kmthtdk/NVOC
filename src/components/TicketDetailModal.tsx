@@ -77,6 +77,7 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
 
   // Device workflow state
   const [deviceWorkflow, setDeviceWorkflow] = useState<{
+    ticketId: string;
     ticketCode: string;
     deviceActionType: 'new' | 'replace' | 'return';
     deviceId?: number;
@@ -174,6 +175,7 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
 
       // Show device workflow modal instead of saving directly
       setDeviceWorkflow({
+        ticketId: ticket.id,
         ticketCode: ticket.code,
         deviceActionType,
         deviceId,
