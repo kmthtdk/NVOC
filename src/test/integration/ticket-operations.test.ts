@@ -10,6 +10,7 @@ import { api } from '../../api/client';
 describe('Ticket Operations Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
   });
 
   describe('Ticket CRUD Workflow', () => {
@@ -17,7 +18,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 201,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           ticket: {
             id: '1',
@@ -74,7 +75,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 201,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           ticket: {
             id: '2',
@@ -114,7 +115,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           ticket: {
             id: '1',
@@ -142,7 +143,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           ticket: {
             id: '1',
@@ -164,7 +165,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 204,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
       });
 
       await expect(api.deleteTicket('1')).resolves.toBeUndefined();
@@ -181,7 +182,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           ticket: { id: '1', status: 'waiting' },
         }),
@@ -196,7 +197,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           ticket: { id: '1', status: 'resolved' },
         }),
@@ -213,7 +214,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 201,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           comment: {
             id: '1',
@@ -240,7 +241,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 201,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           comment: {
             id: '2',
@@ -266,7 +267,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 201,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           comment: {
             id: '3',
@@ -297,30 +298,39 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
-          comments: [
-            {
-              id: '1',
-              author: 'John Doe',
-              role: 'requester' as const,
-              content: 'Requesting new device',
-              createdAt: new Date().toISOString(),
-            },
-            {
-              id: '2',
-              author: 'Marcus Vance',
-              role: 'it_support' as const,
-              content: 'Device will be available tomorrow',
-              createdAt: new Date().toISOString(),
-            },
-          ],
+          ticket: {
+            id: '1',
+            code: 'TICKET-001',
+            title: 'Test',
+            status: 'submitted',
+            comments: [
+              {
+                id: '1',
+                author: 'John Doe',
+                role: 'requester' as const,
+                content: 'Requesting new device',
+                createdAt: new Date().toISOString(),
+              },
+              {
+                id: '2',
+                author: 'Marcus Vance',
+                role: 'it_support' as const,
+                content: 'Device will be available tomorrow',
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          },
         }),
       });
 
       const result = await api.getTicket('1');
 
       expect(global.fetch).toHaveBeenCalled();
+      expect(result.ticket.comments).toHaveLength(2);
+      expect(result.ticket.comments[0].role).toBe('requester');
+      expect(result.ticket.comments[1].author).toBe('Marcus Vance');
     });
   });
 
@@ -329,7 +339,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 201,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           success: true,
           linked: true,
@@ -351,7 +361,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 201,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           success: true,
           linked: true,
@@ -367,11 +377,13 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           ticket: {
             id: '1',
             code: 'TICKET-2026-001',
+            title: 'Test',
+            status: 'submitted',
             linkedDevices: [
               {
                 deviceId: 1,
@@ -385,6 +397,8 @@ describe('Ticket Operations Integration', () => {
       const result = await api.getTicket('1');
 
       expect(global.fetch).toHaveBeenCalled();
+      expect(result.ticket.linkedDevices).toHaveLength(1);
+      expect(result.ticket.linkedDevices[0].deviceId).toBe(1);
     });
   });
 
@@ -393,10 +407,13 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           ticket: {
             id: '1',
+            code: 'TICKET-001',
+            title: 'Test',
+            status: 'submitted',
             history: [
               {
                 id: '1',
@@ -422,16 +439,22 @@ describe('Ticket Operations Integration', () => {
       const result = await api.getTicket('1');
 
       expect(global.fetch).toHaveBeenCalled();
+      expect(result.ticket.history).toHaveLength(2);
+      expect(result.ticket.history[0].status).toBe('submitted');
+      expect(result.ticket.history[1].status).toBe('waiting');
     });
 
     it('should preserve audit trail', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           ticket: {
             id: '1',
+            code: 'TICKET-001',
+            title: 'Test',
+            status: 'submitted',
             history: [
               {
                 id: '1',
@@ -453,6 +476,8 @@ describe('Ticket Operations Integration', () => {
       const result = await api.getTicket('1');
 
       expect(global.fetch).toHaveBeenCalled();
+      expect(result.ticket.history[0].updatedBy).toContain('john.doe');
+      expect(result.ticket.history[1].updatedBy).toContain('marcus.vance');
     });
   });
 
@@ -461,7 +486,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           data: [
             {
@@ -487,7 +512,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           data: [
             { id: '1', requesterEmail: 'john.doe@company.com', code: 'TICKET-2026-001' },
@@ -509,7 +534,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           data: [
             { id: '1', code: 'TICKET-2026-001', status: 'submitted' },
@@ -534,7 +559,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           data: [
             { id: '1', priority: 'high' },
@@ -557,7 +582,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           data: [
             { id: '1', status: 'submitted' },
@@ -591,7 +616,7 @@ describe('Ticket Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           data: [
             { status: 'submitted' },

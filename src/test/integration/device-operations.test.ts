@@ -10,6 +10,7 @@ import { api } from '../../api/client';
 describe('Device Operations Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
   });
 
   describe('Device CRUD Workflow', () => {
@@ -17,7 +18,7 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 201,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           id: 1,
           asset_tag: 'ITA-2026-001',
@@ -53,7 +54,7 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           id: 1,
           asset_tag: 'ITA-2026-001',
@@ -76,7 +77,7 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           id: 1,
           asset_tag: 'ITA-2026-001',
@@ -96,7 +97,7 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 204,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
       });
 
       const result = await api.updateDevice(1, { status: 'Retired' });
@@ -111,7 +112,7 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           data: [
             { id: 1, asset_tag: 'ITA-2026-001', device_type: 'laptop', status: 'Active' },
@@ -136,7 +137,7 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           success: true,
           message: 'Device assigned',
@@ -158,20 +159,26 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
-          id: 1,
-          device_id: 1,
-          action_type: 'assigned',
-          assigned_to: 'John Doe',
-          department: 'Engineering',
-          created_at: new Date().toISOString(),
+          success: true,
+          message: 'Device assigned',
+          history: {
+            id: 1,
+            device_id: 1,
+            action_type: 'assigned',
+            assigned_to: 'John Doe',
+            department: 'Engineering',
+            created_at: new Date().toISOString(),
+          },
         }),
       });
 
       const result = await api.assignDevice(1, 'John Doe', 'john.doe@company.com', 'Engineering');
 
       expect(global.fetch).toHaveBeenCalled();
+      expect(result).toBeDefined();
+      expect(result.history?.action_type).toBe('assigned');
     });
   });
 
@@ -180,7 +187,7 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 201,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           id: 1,
           device_id: 1,
@@ -203,7 +210,7 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           id: 1,
           device_id: 1,
@@ -226,7 +233,7 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 204,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
       });
 
       await expect(api.deleteMacAddress(1, 1)).resolves.toBeUndefined();
@@ -241,9 +248,12 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
-          macs: [
+          id: 1,
+          asset_tag: 'ITA-2026-001',
+          device_type: 'laptop',
+          macAddresses: [
             { id: 1, mac_type: 'Ethernet', mac_address: '00:11:22:33:44:55' },
             { id: 2, mac_type: 'WiFi', mac_address: 'AA:BB:CC:DD:EE:FF' },
           ],
@@ -253,6 +263,8 @@ describe('Device Operations Integration', () => {
       const result = await api.getDevice(1);
 
       expect(global.fetch).toHaveBeenCalled();
+      expect(result.macAddresses).toHaveLength(2);
+      expect(result.macAddresses[0].mac_type).toBe('Ethernet');
     });
   });
 
@@ -261,7 +273,7 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           success: true,
           status: 'In Stock',
@@ -284,7 +296,7 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           success: true,
           status: 'In Repair',
@@ -304,21 +316,26 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
-          id: 1,
-          device_id: 1,
-          action_type: 'returned',
-          condition_state: 'good',
-          notes: 'Device returned in excellent condition',
-          created_by: 'John Doe',
-          created_at: new Date().toISOString(),
+          success: true,
+          history: {
+            id: 1,
+            device_id: 1,
+            action_type: 'returned',
+            condition_state: 'good',
+            notes: 'Device returned in excellent condition',
+            created_by: 'John Doe',
+            created_at: new Date().toISOString(),
+          },
         }),
       });
 
-      await api.checkoutDevice(1, 'good', 'Device returned in excellent condition', 'return');
+      const result = await api.checkoutDevice(1, 'good', 'Device returned in excellent condition', 'return');
 
       expect(global.fetch).toHaveBeenCalled();
+      expect(result.history?.action_type).toBe('returned');
+      expect(result.history?.condition_state).toBe('good');
     });
   });
 
@@ -327,7 +344,7 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           summary: {
             total: 50,
@@ -356,7 +373,7 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           assignments: [
             {
@@ -379,7 +396,7 @@ describe('Device Operations Integration', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           aging: [
             {

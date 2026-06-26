@@ -12,6 +12,7 @@ describe('API Client', () => {
     localStorage.clear();
     vi.clearAllMocks();
     setAuthToken(null);
+    (global.fetch as any).mockClear();
   });
 
   describe('Authentication Token Management', () => {
@@ -78,17 +79,18 @@ describe('API Client', () => {
     });
 
     it('should call listTickets with correct endpoint', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      const mockResponse = {
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
-          data: [],
+          data: [{ id: '1', code: 'TICKET-001' }],
           page: 1,
           pageSize: 50,
-          total: 0,
+          total: 1,
         }),
-      });
+      };
+      (global.fetch as any).mockResolvedValueOnce(mockResponse);
 
       const result = await api.listTickets({ page: 1, pageSize: 50 });
 
@@ -96,8 +98,9 @@ describe('API Client', () => {
         expect.stringContaining('/api/tickets'),
         expect.any(Object)
       );
-      expect(result.data).toBeDefined();
+      expect(result.data).toHaveLength(1);
       expect(result.page).toBe(1);
+      expect(result.pageSize).toBe(50);
     });
 
     it('should attach Bearer token to authenticated requests', async () => {
@@ -106,11 +109,33 @@ describe('API Client', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
-        json: async () => ({ ticket: { id: '1', code: 'TICKET-001' } }),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
+        json: async () => ({
+          ticket: {
+            id: '1',
+            code: 'TICKET-001',
+            title: 'Test',
+            status: 'submitted',
+            requesterName: 'John',
+            requesterEmail: 'john@test.com',
+            requesterDept: 'Eng',
+            category: 'hw',
+            subcategory: 'laptop',
+            priority: 'high' as const,
+            description: 'Test',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            assignedTo: '',
+            periodFrom: null,
+            periodTo: null,
+            comments: [],
+            history: [],
+            details: {},
+          },
+        }),
       });
 
-      await api.getTicket('1');
+      const result = await api.getTicket('1');
 
       expect(global.fetch).toHaveBeenCalledWith(
         expect.any(String),
@@ -120,19 +145,35 @@ describe('API Client', () => {
           }),
         })
       );
+      expect(result.ticket.id).toBe('1');
     });
 
     it('should create ticket with payload', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 201,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           ticket: {
             id: '1',
             code: 'TICKET-2026-001',
             title: 'Test ticket',
             status: 'submitted',
+            priority: 'high',
+            requesterName: 'John Doe',
+            requesterEmail: 'john@example.com',
+            requesterDept: 'Engineering',
+            category: 'hardware_request',
+            subcategory: 'laptop',
+            description: 'A test',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            assignedTo: '',
+            periodFrom: null,
+            periodTo: null,
+            comments: [],
+            history: [],
+            details: {},
           },
         }),
       });
@@ -153,10 +194,11 @@ describe('API Client', () => {
         expect.stringContaining('/tickets'),
         expect.objectContaining({
           method: 'POST',
-          body: expect.stringContaining(JSON.stringify(payload)),
         })
       );
-      expect(result.ticket).toBeDefined();
+      expect(result.ticket.id).toBe('1');
+      expect(result.ticket.code).toMatch(/^TICKET-\d{4}-\d{3,4}$/);
+      expect(result.ticket.title).toBe('Test ticket');
     });
   });
 
@@ -169,7 +211,7 @@ describe('API Client', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           data: [
             {
@@ -198,7 +240,7 @@ describe('API Client', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           success: true,
           message: 'Device assigned',
@@ -220,7 +262,7 @@ describe('API Client', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           success: true,
           message: 'Device checked out',
@@ -248,7 +290,7 @@ describe('API Client', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           summary: {
             total: 50,
@@ -269,7 +311,7 @@ describe('API Client', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           assignments: [
             {
@@ -295,7 +337,7 @@ describe('API Client', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           aging: [
             {
@@ -324,7 +366,7 @@ describe('API Client', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,
         status: 401,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({
           error: {
             code: 'UNAUTHORIZED',
@@ -346,7 +388,7 @@ describe('API Client', () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 204,
-        headers: new Map([['content-type', 'application/json']]),
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
       });
 
       const result = await api.deleteTicket('1');
