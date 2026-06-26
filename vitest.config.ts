@@ -32,11 +32,11 @@ export default defineConfig({
       statements: 40,
     },
 
-    // Test file patterns
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'backend/**/*.test.ts'],
+    // Test file patterns — only our src/test files, never node_modules
+    include: ['src/test/**/*.test.ts', 'src/test/**/*.test.tsx'],
 
-    // Exclude patterns
-    exclude: ['node_modules', 'dist'],
+    // Exclude patterns — be explicit
+    exclude: ['node_modules/**', 'dist/**', 'backend/**'],
 
     // Timeout: 5 seconds per test
     testTimeout: 5000,

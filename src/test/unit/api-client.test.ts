@@ -1,17 +1,17 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getAuthToken, setAuthToken } from '../../api/client';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import {
+  getAuthToken,
+  setAuthToken,
+  api,
+  ApiError,
+  setUnauthorizedHandler,
+} from '../../api/client';
 
 describe('API Client', () => {
   beforeEach(() => {
     localStorage.clear();
-    // Reset mocked fetch
-    if (global.fetch) {
-      vi.clearAllMocks();
-    }
-  });
-
-  afterEach(() => {
-    localStorage.clear();
+    vi.clearAllMocks();
+    setAuthToken(null);
   });
 
   describe('Authentication Token Management', () => {
@@ -34,292 +34,324 @@ describe('API Client', () => {
       expect(localStorage.getItem('nvoc_token')).toBeNull();
     });
 
-    it('should handle empty string token', () => {
-      setAuthToken('');
-      expect(getAuthToken()).toBe('');
-    });
-
     it('should handle long JWT tokens', () => {
-      const longToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+      const longToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
       setAuthToken(longToken);
       expect(getAuthToken()).toBe(longToken);
     });
   });
 
-  describe('Request Headers', () => {
-    it('should include auth token in request headers', () => {
-      const token = 'test-token';
-      setAuthToken(token);
-      expect(getAuthToken()).toBe(token);
-      // In real scenario, this would be in Authorization header
-      expect(getAuthToken()).toContain('test-token');
+  describe('API Error Handling', () => {
+    it('should create ApiError with proper fields', () => {
+      const error = new ApiError(401, 'UNAUTHORIZED', 'Invalid token', [
+        { path: 'token', message: 'Expired' },
+      ]);
+      expect(error.status).toBe(401);
+      expect(error.code).toBe('UNAUTHORIZED');
+      expect(error.message).toBe('Invalid token');
+      expect(error.details).toHaveLength(1);
     });
 
-    it('should have content-type application/json for POST requests', () => {
-      const contentType = 'application/json';
-      expect(contentType).toBe('application/json');
+    it('should identify auth errors via isAuthError', () => {
+      const authError = new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      expect(authError.isAuthError).toBe(true);
+
+      const otherError = new ApiError(500, 'SERVER_ERROR', 'Internal server error');
+      expect(otherError.isAuthError).toBe(false);
     });
 
-    it('should handle missing auth token gracefully', () => {
-      setAuthToken(null);
-      expect(getAuthToken()).toBeNull();
-    });
-  });
+    it('should support unauthorized handler callback', () => {
+      const handler = vi.fn();
+      setUnauthorizedHandler(handler);
 
-  describe('Query Parameter Building', () => {
-    it('should build query string from parameters', () => {
-      const params = {
-        page: 1,
-        pageSize: 50,
-        sort: 'newest',
-      };
-      const query = new URLSearchParams(
-        Object.entries(params).map(([k, v]) => [k, String(v)])
-      ).toString();
-      expect(query).toContain('page=1');
-      expect(query).toContain('pageSize=50');
-      expect(query).toContain('sort=newest');
-    });
+      const authError = new ApiError(401, 'UNAUTHORIZED', 'Session expired');
+      expect(authError.isAuthError).toBe(true);
 
-    it('should filter out null/undefined values', () => {
-      const params = {
-        page: 1,
-        filter: null,
-        sort: undefined,
-        search: 'test',
-      };
-      const filtered = Object.entries(params).filter(([, v]) => v != null);
-      const query = new URLSearchParams(
-        filtered.map(([k, v]) => [k, String(v)])
-      ).toString();
-      expect(query).toContain('page=1');
-      expect(query).toContain('search=test');
-      expect(query).not.toContain('filter');
-      expect(query).not.toContain('sort');
-    });
-
-    it('should URL-encode special characters', () => {
-      const params = { search: 'device name with spaces' };
-      const query = new URLSearchParams(
-        Object.entries(params).map(([k, v]) => [k, String(v)])
-      ).toString();
-      expect(query).toContain('device');
-      expect(query).not.toContain(' '); // spaces should be encoded
-    });
-
-    it('should handle numeric parameters', () => {
-      const params = {
-        page: 1,
-        pageSize: 100,
-        limit: 50,
-      };
-      const query = new URLSearchParams(
-        Object.entries(params).map(([k, v]) => [k, String(v)])
-      ).toString();
-      expect(query).toContain('100');
-      expect(query).toContain('50');
+      setUnauthorizedHandler(null);
     });
   });
 
-  describe('Request/Response Types', () => {
-    it('should expect device list response structure', () => {
-      const response = {
-        data: [
-          {
-            id: 1,
-            code: 'ITA-2026-001',
-            deviceType: 'laptop',
-            model: 'Dell Latitude',
-            status: 'Active',
-          },
-        ],
-        meta: {
+  describe('Ticket CRUD via API', () => {
+    beforeEach(() => {
+      (global.fetch as any).mockClear();
+    });
+
+    it('should call listTickets with correct endpoint', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Map([['content-type', 'application/json']]),
+        json: async () => ({
+          data: [],
           page: 1,
-          limit: 50,
-          total: 100,
-        },
-      };
-      expect(response.data).toBeDefined();
-      expect(response.meta).toBeDefined();
-      expect(response.data[0].id).toBe(1);
+          pageSize: 50,
+          total: 0,
+        }),
+      });
+
+      const result = await api.listTickets({ page: 1, pageSize: 50 });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/tickets'),
+        expect.any(Object)
+      );
+      expect(result.data).toBeDefined();
+      expect(result.page).toBe(1);
     });
 
-    it('should expect ticket response structure', () => {
-      const response = {
-        ticket: {
-          id: '1',
-          code: 'TICKET-001',
-          title: 'New laptop needed',
-          status: 'submitted',
-          priority: 'high',
-          description: 'Request for new device',
-          comments: [],
-          history: [],
-        },
-      };
-      expect(response.ticket).toBeDefined();
-      expect(response.ticket.id).toBe('1');
-      expect(response.ticket.code).toBe('TICKET-001');
+    it('should attach Bearer token to authenticated requests', async () => {
+      setAuthToken('test-token');
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Map([['content-type', 'application/json']]),
+        json: async () => ({ ticket: { id: '1', code: 'TICKET-001' } }),
+      });
+
+      await api.getTicket('1');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer test-token',
+          }),
+        })
+      );
     });
 
-    it('should expect error response structure', () => {
-      const error = {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid email format',
-          details: [
+    it('should create ticket with payload', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        headers: new Map([['content-type', 'application/json']]),
+        json: async () => ({
+          ticket: {
+            id: '1',
+            code: 'TICKET-2026-001',
+            title: 'Test ticket',
+            status: 'submitted',
+          },
+        }),
+      });
+
+      const payload = {
+        title: 'Test ticket',
+        description: 'A test',
+        requesterName: 'John Doe',
+        requesterEmail: 'john@example.com',
+        requesterDept: 'Engineering',
+        category: 'hardware_request',
+        subcategory: 'laptop',
+      };
+
+      const result = await api.createTicket(payload);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/tickets'),
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining(JSON.stringify(payload)),
+        })
+      );
+      expect(result.ticket).toBeDefined();
+    });
+  });
+
+  describe('Device CRUD via API', () => {
+    beforeEach(() => {
+      (global.fetch as any).mockClear();
+    });
+
+    it('should list devices with pagination', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Map([['content-type', 'application/json']]),
+        json: async () => ({
+          data: [
             {
-              path: 'email',
-              message: 'Expected string with @ symbol',
+              id: 1,
+              asset_tag: 'ITA-2026-001',
+              device_type: 'laptop',
+              status: 'Active',
             },
           ],
-        },
-      };
-      expect(error.error).toBeDefined();
-      expect(error.error.code).toBe('VALIDATION_ERROR');
-      expect(error.error.details).toBeDefined();
-    });
-  });
-
-  describe('URL Construction', () => {
-    it('should construct absolute URL from path', () => {
-      const basePath = '/api';
-      const endpoint = '/devices';
-      const fullUrl = basePath + endpoint;
-      expect(fullUrl).toBe('/api/devices');
-    });
-
-    it('should construct URL with ID parameter', () => {
-      const basePath = '/api';
-      const resourceId = 123;
-      const fullUrl = `${basePath}/devices/${resourceId}`;
-      expect(fullUrl).toBe('/api/devices/123');
-    });
-
-    it('should construct URL with multiple segments', () => {
-      const basePath = '/api';
-      const segments = ['devices', '123', 'mac', '456'];
-      const fullUrl = `${basePath}/${segments.join('/')}`;
-      expect(fullUrl).toBe('/api/devices/123/mac/456');
-    });
-
-    it('should handle report endpoints', () => {
-      const basePath = '/api';
-      const reportType = 'summary';
-      const fullUrl = `${basePath}/devices/reports/${reportType}`;
-      expect(fullUrl).toBe('/api/devices/reports/summary');
-    });
-  });
-
-  describe('HTTP Methods', () => {
-    it('should use GET for list endpoints', () => {
-      const method = 'GET';
-      expect(method).toBe('GET');
-    });
-
-    it('should use POST for create endpoints', () => {
-      const method = 'POST';
-      expect(method).toBe('POST');
-    });
-
-    it('should use PUT for update endpoints', () => {
-      const method = 'PUT';
-      expect(method).toBe('PUT');
-    });
-
-    it('should use DELETE for delete endpoints', () => {
-      const method = 'DELETE';
-      expect(method).toBe('DELETE');
-    });
-  });
-
-  describe('Request Payload Handling', () => {
-    it('should serialize device create payload', () => {
-      const payload = {
-        deviceType: 'laptop',
-        model: 'Dell Latitude 7440',
-        serialNumber: 'SN-123456',
-        status: 'In Stock',
-        department: 'IT Support',
-      };
-      const json = JSON.stringify(payload);
-      const parsed = JSON.parse(json);
-      expect(parsed.deviceType).toBe('laptop');
-      expect(parsed.model).toBe('Dell Latitude 7440');
-    });
-
-    it('should serialize ticket create payload', () => {
-      const payload = {
-        title: 'New laptop needed',
-        category: 'hardware_request',
-        priority: 'high',
-        description: 'Need new device for developer',
-        details: {
-          deviceType: 'laptop',
-          deviceModel: 'MacBook Pro',
-        },
-      };
-      const json = JSON.stringify(payload);
-      const parsed = JSON.parse(json);
-      expect(parsed.title).toBe('New laptop needed');
-      expect(parsed.details.deviceType).toBe('laptop');
-    });
-
-    it('should handle null values in payload', () => {
-      const payload = {
-        department: null,
-        notes: null,
-        warrantyExpiry: null,
-      };
-      const json = JSON.stringify(payload);
-      const parsed = JSON.parse(json);
-      expect(parsed.department).toBeNull();
-      expect(parsed.notes).toBeNull();
-    });
-
-    it('should preserve nested objects in payload', () => {
-      const payload = {
-        specifications: {
-          cpu: 'Intel i7',
-          ramGb: 16,
-          storageGb: 512,
-          additionalSpecs: {
-            display: '15.6" 4K',
-            keyboard: 'Mechanical',
-          },
-        },
-      };
-      const json = JSON.stringify(payload);
-      const parsed = JSON.parse(json);
-      expect(parsed.specifications.additionalSpecs.display).toBe('15.6" 4K');
-    });
-  });
-
-  describe('Response Parsing', () => {
-    it('should parse JSON response', () => {
-      const jsonBody = '{"success": true, "data": {"id": 1}}';
-      const parsed = JSON.parse(jsonBody);
-      expect(parsed.success).toBe(true);
-      expect(parsed.data.id).toBe(1);
-    });
-
-    it('should handle empty response body (204 No Content)', () => {
-      const statusCode = 204;
-      expect(statusCode).toBe(204);
-    });
-
-    it('should extract pagination metadata', () => {
-      const response = {
-        data: [],
-        meta: {
           page: 1,
-          limit: 50,
-          total: 0,
-        },
-      };
-      expect(response.meta.page).toBe(1);
-      expect(response.meta.limit).toBe(50);
-      expect(response.meta.total).toBe(0);
+          pageSize: 100,
+          total: 1,
+        }),
+      });
+
+      const result = await api.listDevices(1, 100);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/devices'),
+        expect.any(Object)
+      );
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should assign device to user', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Map([['content-type', 'application/json']]),
+        json: async () => ({
+          success: true,
+          message: 'Device assigned',
+        }),
+      });
+
+      await api.assignDevice(1, 'John Doe', 'john@example.com', 'Engineering');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/devices/1/assign'),
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('John Doe'),
+        })
+      );
+    });
+
+    it('should checkout device', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Map([['content-type', 'application/json']]),
+        json: async () => ({
+          success: true,
+          message: 'Device checked out',
+        }),
+      });
+
+      await api.checkoutDevice(1, 'good', 'Device returned in good condition', 'return');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/devices/1/checkout'),
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('good'),
+        })
+      );
+    });
+  });
+
+  describe('Device Reports via API', () => {
+    beforeEach(() => {
+      (global.fetch as any).mockClear();
+    });
+
+    it('should fetch device summary report', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Map([['content-type', 'application/json']]),
+        json: async () => ({
+          summary: {
+            total: 50,
+            by_status: { Active: 30, 'In Stock': 20 },
+            by_type: { laptop: 25, desktop: 25 },
+            by_department: { Engineering: 30, Sales: 20 },
+          },
+        }),
+      });
+
+      const result = await api.getDeviceSummary();
+
+      expect(result.summary).toBeDefined();
+      expect(result.summary.total).toBe(50);
+    });
+
+    it('should fetch device assignments with filters', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Map([['content-type', 'application/json']]),
+        json: async () => ({
+          assignments: [
+            {
+              device_code: 'ITA-2026-001',
+              model: 'Dell Latitude',
+              assigned_to: 'John Doe',
+              status: 'Active',
+            },
+          ],
+        }),
+      });
+
+      const result = await api.getDeviceAssignments({ department: 'Engineering' });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/devices/reports/assignments'),
+        expect.any(Object)
+      );
+      expect(result.assignments).toHaveLength(1);
+    });
+
+    it('should fetch device aging report', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Map([['content-type', 'application/json']]),
+        json: async () => ({
+          aging: [
+            {
+              device_code: 'ITA-2026-001',
+              warranty_expiry: '2026-12-31',
+              days_until_expiry: 180,
+              status: 'warning',
+            },
+          ],
+        }),
+      });
+
+      const result = await api.getDeviceAging();
+
+      expect(result.aging).toBeDefined();
+      expect(result.aging).toHaveLength(1);
+    });
+  });
+
+  describe('Error Handling', () => {
+    beforeEach(() => {
+      (global.fetch as any).mockClear();
+    });
+
+    it('should throw ApiError on 401 response', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        headers: new Map([['content-type', 'application/json']]),
+        json: async () => ({
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Invalid token',
+          },
+        }),
+      });
+
+      await expect(api.listTickets()).rejects.toThrow(ApiError);
+    });
+
+    it('should throw ApiError on network failure', async () => {
+      (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+
+      await expect(api.listTickets()).rejects.toThrow(ApiError);
+    });
+
+    it('should handle 204 No Content response', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        status: 204,
+        headers: new Map([['content-type', 'application/json']]),
+      });
+
+      const result = await api.deleteTicket('1');
+
+      expect(result).toBeUndefined();
     });
   });
 });

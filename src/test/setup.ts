@@ -1,33 +1,41 @@
 import '@testing-library/jest-dom';
-import { expect, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
-// Cleanup after each test
+// Reset and cleanup after each test
 afterEach(() => {
   cleanup();
+  vi.clearAllMocks();
 });
 
-// Mock localStorage
-const localStorageMock = (() => {
-  let store: Record<string, string> = {};
+// localStorage mock with proper isolation between tests
+let localStorageStore: Record<string, string> = {};
 
-  return {
-    getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => {
-      store[key] = value.toString();
-    },
-    removeItem: (key: string) => {
-      delete store[key];
-    },
-    clear: () => {
-      store = {};
-    },
-  };
-})();
+const localStorageMock = {
+  getItem: (key: string) => localStorageStore[key] ?? null,
+  setItem: (key: string, value: string) => {
+    localStorageStore[key] = String(value);
+  },
+  removeItem: (key: string) => {
+    delete localStorageStore[key];
+  },
+  clear: () => {
+    localStorageStore = {};
+  },
+  key: (index: number) => {
+    const keys = Object.keys(localStorageStore);
+    return keys[index] ?? null;
+  },
+  get length() {
+    return Object.keys(localStorageStore).length;
+  },
+};
 
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
+  writable: true,
+  configurable: true,
 });
 
-// Mock fetch globally for tests (can be overridden per-test)
-global.fetch = vi.fn();
+// Global fetch mock (can be overridden per-test)
+global.fetch = vi.fn() as any;
