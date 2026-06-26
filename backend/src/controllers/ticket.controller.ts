@@ -63,6 +63,7 @@ export const listQuerySchema = z.object({
   category: z.string().max(50).optional(),
   priority: z.enum(PRIORITY).optional(),
   assignedTo: z.string().max(150).optional(),
+  requesterEmail: z.string().email().optional(),
   q: z.string().max(200).optional(),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().positive().max(100).default(20),

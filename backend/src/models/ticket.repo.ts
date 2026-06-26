@@ -18,6 +18,7 @@ export interface TicketListFilters {
   category?: string;
   priority?: TicketPriority;
   assignedTo?: string;
+  requesterEmail?: string;
   q?: string;
   page: number;
   pageSize: number;
@@ -94,6 +95,10 @@ export const ticketRepo = {
     if (filters.assignedTo) {
       where.push('assigned_to = ?');
       params.push(filters.assignedTo);
+    }
+    if (filters.requesterEmail) {
+      where.push('LOWER(requester_email) = LOWER(?)');
+      params.push(filters.requesterEmail);
     }
     if (filters.q && filters.q.trim()) {
       // FULLTEXT over (title, description, requester_name); falls back gracefully.

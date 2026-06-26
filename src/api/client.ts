@@ -328,6 +328,7 @@ export interface ListTicketsParams {
   category?: string;
   priority?: TicketPriority;
   assignedTo?: string;
+  requesterEmail?: string;
   q?: string;
   page?: number;
   pageSize?: number;

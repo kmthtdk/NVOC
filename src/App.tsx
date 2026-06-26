@@ -267,10 +267,15 @@ function UserPortal({
     const ctrl = new AbortController();
     setLoading(true);
     setError(null);
-    // A requester sees the full queue (backend has no per-requester filter);
-    // we surface a reasonable page newest-first. `q` search is in TicketList for admins.
+    // Fetch only the current user's tickets via server-side filter for security.
+    // If no requesterEmail is available, show empty state (do not fetch all tickets).
+    if (!requesterEmail) {
+      setTickets([]);
+      setLoading(false);
+      return;
+    }
     api
-      .listTickets({ page: 1, pageSize: 50, sort: 'newest' }, ctrl.signal)
+      .listTickets({ page: 1, pageSize: 50, sort: 'newest', requesterEmail }, ctrl.signal)
       .then((res) => setTickets(res.data))
       .catch((err) => {
         if ((err as Error)?.name === 'AbortError') return;
@@ -278,12 +283,7 @@ function UserPortal({
       })
       .finally(() => setLoading(false));
     return () => ctrl.abort();
-  }, [reloadKey]);
-
-  // Highlight the current user's own tickets if we can match by email.
-  const mine = requesterEmail
-    ? tickets.filter((t) => t.requesterEmail?.toLowerCase() === requesterEmail.toLowerCase())
-    : [];
+  }, [reloadKey, requesterEmail]);
 
   const getStatusBadge = (st: string) => {
     if (st === 'submitted') return 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800';
@@ -297,7 +297,7 @@ function UserPortal({
     : st === 'resolved' ? 'Resolved'
     : 'Rejected';
 
-  const listToShow = mine.length > 0 ? mine : tickets;
+  const listToShow = tickets;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
