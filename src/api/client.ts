@@ -473,6 +473,35 @@ export const api = {
   getDevice(id: number): Promise<any> {
     return request<any>(`/devices/${id}`);
   },
+  createDevice(payload: any): Promise<any> {
+    return request<any>('/devices', {
+      method: 'POST',
+      body: payload,
+    });
+  },
+  updateDevice(id: number, payload: any): Promise<any> {
+    return request<any>(`/devices/${id}`, {
+      method: 'PUT',
+      body: payload,
+    });
+  },
+  createMacAddress(deviceId: number, payload: any): Promise<any> {
+    return request<any>(`/devices/${deviceId}/mac`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+  updateMacAddress(deviceId: number, macId: number, payload: any): Promise<any> {
+    return request<any>(`/devices/${deviceId}/mac/${macId}`, {
+      method: 'PUT',
+      body: payload,
+    });
+  },
+  deleteMacAddress(deviceId: number, macId: number): Promise<void> {
+    return request<void>(`/devices/${deviceId}/mac/${macId}`, {
+      method: 'DELETE',
+    });
+  },
   assignDevice(id: number, userName: string, userEmail: string, userDept?: string, ticketId?: string, reason?: string): Promise<any> {
     return request<any>(`/devices/${id}/assign`, {
       method: 'POST',
