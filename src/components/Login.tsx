@@ -10,12 +10,19 @@ import { useAuth } from '../context/AuthContext';
 import { Spinner } from './ui/Spinner';
 import { Database, Lock, Mail, AlertCircle, Sparkles } from 'lucide-react';
 
+// Demo mode is controlled via VITE_DEMO_MODE environment variable.
+// In production, this should be 'false' to hide demo accounts entirely.
+const DEMO_MODE_ENABLED = import.meta.env.VITE_DEMO_MODE === 'true';
+
 const DEMO_ACCOUNTS = [
   { email: 'admin@company.com', label: 'Admin', role: 'admin' },
   { email: 'marcus.vance@company.com', label: 'IT Support', role: 'it_support' },
   { email: 'alex.mercer@company.com', label: 'Requester', role: 'requester' },
 ];
-const DEMO_PASSWORD = 'Passw0rd!';
+
+// Password is from environment variable in development/demo, should be
+// configured securely in production or demo mode should be disabled.
+const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || 'Passw0rd!';
 
 export default function Login() {
   const { login, isLoggingIn, loginError } = useAuth();
@@ -122,24 +129,26 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Demo accounts */}
-          <div className="mt-7 pt-5 border-t border-slate-150 dark:border-slate-800">
-            <p className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-2.5">
-              <Sparkles className="w-3 h-3 text-violet-500" /> Demo accounts (password: {DEMO_PASSWORD})
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {DEMO_ACCOUNTS.map((acct) => (
-                <button
-                  key={acct.email}
-                  type="button"
-                  onClick={() => fillDemo(acct.email)}
-                  className="px-2 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 transition-all cursor-pointer"
-                >
-                  {acct.label}
-                </button>
-              ))}
+          {/* Demo accounts section (only shown when VITE_DEMO_MODE=true) */}
+          {DEMO_MODE_ENABLED && (
+            <div className="mt-7 pt-5 border-t border-slate-150 dark:border-slate-800">
+              <p className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-2.5">
+                <Sparkles className="w-3 h-3 text-violet-500" /> Demo accounts
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {DEMO_ACCOUNTS.map((acct) => (
+                  <button
+                    key={acct.email}
+                    type="button"
+                    onClick={() => fillDemo(acct.email)}
+                    className="px-2 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 transition-all cursor-pointer"
+                  >
+                    {acct.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <p className="text-center text-[10px] text-slate-400 mt-6 font-mono">
