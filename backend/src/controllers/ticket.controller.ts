@@ -89,8 +89,13 @@ export const ticketController = {
   /** GET /tickets — filtered + paginated list. */
   async list(req: Request, res: Response): Promise<void> {
     const q = listQuerySchema.parse(req.query);
-    const { data, total } = await ticketRepo.list(q);
-    res.json({ data, page: q.page, pageSize: q.pageSize, total });
+    // Requesters may only see their OWN tickets. Force the requesterEmail filter
+    // to the authenticated email (which they cannot spoof — it comes from the JWT),
+    // overriding any client-supplied value. it_support/admin keep full visibility.
+    const scoped =
+      req.user?.role === 'requester' ? { ...q, requesterEmail: req.user.email } : q;
+    const { data, total } = await ticketRepo.list(scoped);
+    res.json({ data, page: scoped.page, pageSize: scoped.pageSize, total });
   },
 
   /** GET /tickets/:id — full ticket with comments/history/attachments. */
@@ -98,6 +103,14 @@ export const ticketController = {
     const id = parseId(req.params.id);
     const ticket = await ticketRepo.getByIdFull(id);
     if (!ticket) throw AppError.notFound('Ticket not found');
+    // Ownership check: a requester may only read a ticket they filed. Return 404
+    // (not 403) so ticket existence isn't leaked to other requesters.
+    if (
+      req.user?.role === 'requester' &&
+      ticket.requesterEmail.toLowerCase() !== req.user.email.toLowerCase()
+    ) {
+      throw AppError.notFound('Ticket not found');
+    }
     res.json({ ticket });
   },
 
@@ -187,9 +200,18 @@ export const ticketController = {
   /** POST /tickets/:id/comments — add a comment to the thread. */
   async addComment(req: Request, res: Response): Promise<void> {
     const id = parseId(req.params.id);
-    if (!(await ticketRepo.exists(id))) throw AppError.notFound('Ticket not found');
-
     if (!req.user) throw AppError.unauthorized('Authentication required');
+
+    const ticket = await ticketRepo.getByIdFull(id);
+    if (!ticket) throw AppError.notFound('Ticket not found');
+    // A requester may only comment on a ticket they filed (write-IDOR guard,
+    // mirrors the list/detail read guard). 404 (not 403) avoids leaking existence.
+    if (
+      req.user.role === 'requester' &&
+      ticket.requesterEmail.toLowerCase() !== req.user.email.toLowerCase()
+    ) {
+      throw AppError.notFound('Ticket not found');
+    }
 
     const body = req.body as z.infer<typeof createCommentSchema>;
     const comment = await commentRepo.create({

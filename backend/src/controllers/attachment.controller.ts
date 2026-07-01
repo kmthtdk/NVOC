@@ -46,6 +46,15 @@ export const attachmentController = {
     const row = await attachmentRepo.findById(id);
     if (!row) throw AppError.notFound('Attachment not found');
 
+    // Ownership check: a requester may only download attachments on tickets they
+    // filed. Return 404 (not 403) so attachment existence isn't leaked.
+    if (req.user?.role === 'requester') {
+      const ownerEmail = await attachmentRepo.findTicketOwnerEmail(row.ticket_id);
+      if (!ownerEmail || ownerEmail.toLowerCase() !== req.user.email.toLowerCase()) {
+        throw AppError.notFound('Attachment not found');
+      }
+    }
+
     // Resolve safely inside the upload dir (defense against traversal).
     const filePath = path.resolve(UPLOAD_DIR, row.stored_name);
     if (!filePath.startsWith(path.resolve(UPLOAD_DIR)) || !fs.existsSync(filePath)) {

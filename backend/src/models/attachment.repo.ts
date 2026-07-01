@@ -1,7 +1,12 @@
+import type { RowDataPacket } from 'mysql2';
 import { pool } from '../config/db.js';
 import type { AttachmentRow } from './rows.js';
 import { mapAttachment } from './mappers.js';
 import type { AttachmentMeta } from '../types/index.js';
+
+interface OwnerEmailRow extends RowDataPacket {
+  requester_email: string;
+}
 
 export const attachmentRepo = {
   async listByTicket(ticketId: number): Promise<AttachmentMeta[]> {
@@ -39,5 +44,14 @@ export const attachmentRepo = {
   async findById(id: number): Promise<AttachmentRow | null> {
     const [rows] = await pool.query<AttachmentRow[]>('SELECT * FROM attachments WHERE id = ? LIMIT 1', [id]);
     return rows[0] ?? null;
+  },
+
+  /** Return the requester email of the ticket that owns this attachment (for access checks). */
+  async findTicketOwnerEmail(ticketId: number): Promise<string | null> {
+    const [rows] = await pool.query<OwnerEmailRow[]>(
+      'SELECT requester_email FROM tickets WHERE id = ? LIMIT 1',
+      [ticketId],
+    );
+    return rows[0]?.requester_email ?? null;
   },
 };

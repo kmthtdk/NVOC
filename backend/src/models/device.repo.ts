@@ -312,7 +312,9 @@ export const deviceRepo = {
       ? await createWithConnection(conn)
       : await withTransaction(createWithConnection);
 
-    const created = await this.getByIdFull(newId);
+    // Read back on the SAME connection when we're inside a caller's transaction;
+    // a separate pool connection can't see the uncommitted INSERT (REPEATABLE READ).
+    const created = await this.getByIdFull(newId, conn);
     if (!created) throw new Error('Device creation failed to read back');
     return created;
   },

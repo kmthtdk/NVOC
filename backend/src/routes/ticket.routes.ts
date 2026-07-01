@@ -43,8 +43,12 @@ const attachmentLimiter = rateLimit({
 // All ticket routes require a valid session.
 ticketRoutes.use(authenticate);
 
-ticketRoutes.get('/stats/summary', asyncHandler(ticketController.getStatsSummary));
-ticketRoutes.get('/stats/recent', asyncHandler(ticketController.getStatsRecent));
+// Org-wide stats expose aggregate counts and other requesters' recent tickets
+// (PII). Restrict to IT/admin — requesters have no legitimate use for global
+// stats and must not see tickets they didn't file (matches the list/detail IDOR
+// fix). Only the orphaned Dashboard.tsx consumed these, so no live UI breaks.
+ticketRoutes.get('/stats/summary', requireRole('it_support', 'admin'), asyncHandler(ticketController.getStatsSummary));
+ticketRoutes.get('/stats/recent', requireRole('it_support', 'admin'), asyncHandler(ticketController.getStatsRecent));
 ticketRoutes.get('/reports/pending-hardware', requireRole('it_support', 'admin'), asyncHandler(ticketController.getPendingHardwareReport));
 ticketRoutes.get('/reports/fulfillment-time', requireRole('it_support', 'admin'), asyncHandler(ticketController.getFulfillmentTimeReport));
 ticketRoutes.get('/reports/age-buckets', requireRole('it_support', 'admin'), asyncHandler(ticketController.getAgeBucketsReport));

@@ -217,7 +217,7 @@ CREATE TABLE IF NOT EXISTS device_history (
   assigned_to      VARCHAR(150) NULL,
   department       VARCHAR(100) NULL,
   reason           TEXT NULL,
-  condition_state  ENUM('new','good','fair','poor','unknown') NULL,
+  condition_state  ENUM('new','good','fair','poor','damaged','unknown') NULL,
   notes            TEXT NULL,
   created_by       VARCHAR(150) NULL,
   created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
