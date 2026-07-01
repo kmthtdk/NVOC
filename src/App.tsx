@@ -25,6 +25,7 @@ import StatusDashboard from './components/StatusDashboard';
 import ConfirmationModal from './components/ConfirmationModal';
 import DeviceManagement from './components/DeviceManagement';
 import DeviceReportsPage from './components/DeviceReportsPage';
+import TicketReportsPage from './components/TicketReportsPage';
 import { LoadingPanel, ErrorState } from './components/ui/Spinner';
 
 import {
@@ -38,6 +39,7 @@ import {
   Moon,
   Sun,
   Cpu,
+  BarChart3,
 } from 'lucide-react';
 
 type PortalView = 'user' | 'admin';
@@ -53,7 +55,7 @@ export default function App() {
   const toast = useToast();
 
   const [view, setView] = useState<PortalView>('user');
-  const [adminTab, setAdminTab] = useState<'tickets' | 'devices'>('tickets');
+  const [adminTab, setAdminTab] = useState<'tickets' | 'devices' | 'reports'>('tickets');
   const [deviceSubTab, setDeviceSubTab] = useState<'management' | 'reports'>('management');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [showAdminSimulation, setShowAdminSimulation] = useState(true);
@@ -388,8 +390,8 @@ function AdminWorkspace({
   onSelectTicket,
 }: {
   reloadKey: number;
-  adminTab: 'tickets' | 'devices';
-  onAdminTabChange: (tab: 'tickets' | 'devices') => void;
+  adminTab: 'tickets' | 'devices' | 'reports';
+  onAdminTabChange: (tab: 'tickets' | 'devices' | 'reports') => void;
   deviceSubTab: 'management' | 'reports';
   onDeviceSubTabChange: (tab: 'management' | 'reports') => void;
   showSim: boolean;
@@ -443,6 +445,17 @@ function AdminWorkspace({
         >
           <Cpu className="w-4 h-4" />
           Device Inventory
+        </button>
+        <button
+          onClick={() => onAdminTabChange('reports')}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-colors ${
+            adminTab === 'reports'
+              ? 'border-amber-500 text-amber-600 dark:text-amber-400'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          Reports &amp; Trends
         </button>
       </div>
 
@@ -525,6 +538,10 @@ function AdminWorkspace({
           )}
         </div>
       )}
+
+      {/* Reports & Trends Tab Content — request reports: pending hardware,
+          fulfillment time, age buckets, and category trend over time. */}
+      {adminTab === 'reports' && <TicketReportsPage />}
     </div>
   );
 }
