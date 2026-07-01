@@ -41,6 +41,8 @@ import {
   Sun,
   Cpu,
   BarChart3,
+  FilePlus2,
+  Inbox,
 } from 'lucide-react';
 
 type PortalView = 'user' | 'admin';
@@ -265,6 +267,7 @@ function UserPortal({
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<'new' | 'requests'>('new');
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -302,13 +305,37 @@ function UserPortal({
 
   const listToShow = tickets;
 
+  // Jump to the list after submitting so the user sees their new request.
+  const handleCreated = (t: Ticket) => {
+    onCreated(t);
+    setTab('requests');
+  };
+
+  const tabCls = (t: 'new' | 'requests') =>
+    `flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 transition-colors ${
+      tab === t
+        ? 'border-violet-500 text-violet-600 dark:text-violet-400'
+        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+    }`;
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-      <div className="lg:col-span-7 space-y-6">
-        <RequestForm onCreated={onCreated} />
+    <div className="space-y-6">
+      {/* Portal tabs — Create Request vs the requester's own VOC list */}
+      <div className="flex gap-1 border-b border-slate-200 dark:border-slate-800">
+        <button type="button" onClick={() => setTab('new')} className={tabCls('new')}>
+          <FilePlus2 className="w-4 h-4" /> Create Request
+        </button>
+        <button type="button" onClick={() => setTab('requests')} className={tabCls('requests')}>
+          <Inbox className="w-4 h-4" /> Your VOC Requests
+          <span className="ml-0.5 text-[10px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded font-mono font-bold text-slate-600 dark:text-slate-300">
+            {listToShow.length}
+          </span>
+        </button>
       </div>
 
-      <div className="lg:col-span-5 space-y-4">
+      {tab === 'new' && <RequestForm onCreated={handleCreated} />}
+
+      {tab === 'requests' && (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-[0_2px_12px_rgba(0,0,0,0.015)] p-6 space-y-4">
           <div className="border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center justify-between">
             <div>
@@ -337,7 +364,7 @@ function UserPortal({
               </p>
             </div>
           ) : (
-            <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {listToShow.map((ticket) => (
                 <div
                   key={ticket.id}
@@ -371,7 +398,7 @@ function UserPortal({
             </div>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
