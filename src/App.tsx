@@ -87,8 +87,8 @@ export default function App() {
   // If a requester is somehow on the admin view (e.g. role changed), snap back.
   useEffect(() => {
     if (view === 'admin' && !isITSupport) {
-      console.warn('Security: Requester attempted admin view, redirecting to user portal', {
-        userEmail: user?.email,
+      // Do not log PII (email) to the browser console (L-1). Role is enough.
+      console.warn('Security: non-privileged role on admin view, redirecting', {
         userRole: user?.role,
       });
       setView('user');
