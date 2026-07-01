@@ -3,8 +3,11 @@ import { z } from 'zod';
 import { ticketRepo } from '../models/ticket.repo.js';
 import { categoryRepo } from '../models/category.repo.js';
 import { commentRepo } from '../models/comment.repo.js';
+import { approvalRepo } from '../models/approval.repo.js';
+import { approvalService } from '../services/approval.service.js';
 import { AppError } from '../utils/AppError.js';
 import { pool } from '../config/db.js';
+import { logger } from '../config/logger.js';
 
 const PRIORITY = ['low', 'medium', 'high', 'urgent'] as const;
 const STATUS = ['submitted', 'waiting', 'resolved', 'rejected'] as const;
@@ -103,15 +106,18 @@ export const ticketController = {
     const id = parseId(req.params.id);
     const ticket = await ticketRepo.getByIdFull(id);
     if (!ticket) throw AppError.notFound('Ticket not found');
-    // Ownership check: a requester may only read a ticket they filed. Return 404
-    // (not 403) so ticket existence isn't leaked to other requesters.
-    if (
-      req.user?.role === 'requester' &&
-      ticket.requesterEmail.toLowerCase() !== req.user.email.toLowerCase()
-    ) {
-      throw AppError.notFound('Ticket not found');
+    // Read authorization: a requester may read a ticket they filed OR one where
+    // they are an approver in its chain (their leader duty). Others 404 — 404 not
+    // 403 so ticket existence isn't leaked. it_support/admin always pass.
+    if (req.user?.role === 'requester') {
+      const isOwner = ticket.requesterEmail.toLowerCase() === req.user.email.toLowerCase();
+      const isApprover = isOwner ? false : await approvalRepo.isApprover(id, Number(req.user.sub));
+      if (!isOwner && !isApprover) {
+        throw AppError.notFound('Ticket not found');
+      }
     }
-    res.json({ ticket });
+    const approvals = await approvalService.getChain(id);
+    res.json({ ticket, approvals });
   },
 
   /** POST /tickets — create. Enforces the type period rule server-side. */
@@ -155,6 +161,12 @@ export const ticketController = {
       specifications: body.specifications,
     });
 
+    // Instantiate the approval chain (no-op when approval is disabled). Non-fatal:
+    // a chain failure must not fail ticket creation — it can be re-instantiated.
+    await approvalService.startApproval(Number(ticket.id), body.requesterDept).catch((err) => {
+      logger.warn({ err, ticketId: ticket.id }, 'Non-fatal: approval chain instantiation failed');
+    });
+
     res.status(201).json({ ticket });
   },
 
@@ -170,6 +182,12 @@ export const ticketController = {
 
     // Validate status transition if status is being changed
     if (body.status && body.status !== current.status) {
+      // Approval gate: while the chain is in progress, status is driven by the
+      // approval flow (auto-advances to 'waiting' when approved). Block manual
+      // changes so IT can't resolve a request before it's approved.
+      if (await approvalService.isPending(id)) {
+        throw AppError.badRequest('Ticket is awaiting approval and cannot change status yet');
+      }
       const validNextStates = VALID_TRANSITIONS[current.status];
       if (!validNextStates || !validNextStates.includes(body.status)) {
         throw AppError.badRequest(

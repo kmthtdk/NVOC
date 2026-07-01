@@ -13,11 +13,24 @@ vi.mock('../models/ticket.repo.js', () => ({
 }));
 vi.mock('../models/comment.repo.js', () => ({ commentRepo: { create: vi.fn() } }));
 vi.mock('../models/category.repo.js', () => ({ categoryRepo: {} }));
-vi.mock('../config/db.js', () => ({ pool: { query: vi.fn() } }));
+vi.mock('../config/db.js', () => ({ pool: { query: vi.fn() }, withTransaction: vi.fn() }));
+vi.mock('../config/logger.js', () => ({ logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn() } }));
+vi.mock('../models/approval.repo.js', () => ({
+  approvalRepo: { isApprover: vi.fn().mockResolvedValue(false) },
+  mapApproval: vi.fn(),
+}));
+vi.mock('../services/approval.service.js', () => ({
+  approvalService: {
+    getChain: vi.fn().mockResolvedValue([]),
+    isPending: vi.fn().mockResolvedValue(false),
+    startApproval: vi.fn().mockResolvedValue(undefined),
+  },
+}));
 
 import { ticketController } from '../controllers/ticket.controller.js';
 import { ticketRepo } from '../models/ticket.repo.js';
 import { commentRepo } from '../models/comment.repo.js';
+import { approvalRepo } from '../models/approval.repo.js';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function mockRes() {
@@ -75,7 +88,7 @@ describe('IDOR — ticket detail (F-01)', () => {
     const res = mockRes();
     const req: any = { params: { id: '5' }, user: { role: 'requester', email: 'owner@x.com', name: 'O' } };
     await ticketController.get(req, res);
-    expect(res.json).toHaveBeenCalledWith({ ticket: OWNER_TICKET });
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ ticket: OWNER_TICKET }));
   });
 
   it('lets it_support read any ticket', async () => {
@@ -83,7 +96,16 @@ describe('IDOR — ticket detail (F-01)', () => {
     const res = mockRes();
     const req: any = { params: { id: '5' }, user: { role: 'it_support', email: 'it@x.com', name: 'IT' } };
     await ticketController.get(req, res);
-    expect(res.json).toHaveBeenCalledWith({ ticket: OWNER_TICKET });
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ ticket: OWNER_TICKET }));
+  });
+
+  it('lets a requester who is an approver-in-chain read the ticket (approval visibility)', async () => {
+    (ticketRepo.getByIdFull as any).mockResolvedValue(OWNER_TICKET);
+    (approvalRepo.isApprover as any).mockResolvedValueOnce(true);
+    const res = mockRes();
+    const req: any = { params: { id: '5' }, user: { role: 'requester', email: 'leader@x.com', name: 'L' } };
+    await ticketController.get(req, res);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ ticket: OWNER_TICKET }));
   });
 });
 

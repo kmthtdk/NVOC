@@ -8,6 +8,11 @@ import {
   linkDeviceSchema,
 } from '../controllers/ticket.controller.js';
 import { attachmentController } from '../controllers/attachment.controller.js';
+import {
+  approvalController,
+  decideSchema,
+  assignApproverSchema,
+} from '../controllers/approval.controller.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validate.js';
 import { upload } from '../middleware/upload.js';
@@ -53,6 +58,9 @@ ticketRoutes.get('/reports/pending-hardware', requireRole('it_support', 'admin')
 ticketRoutes.get('/reports/fulfillment-time', requireRole('it_support', 'admin'), asyncHandler(ticketController.getFulfillmentTimeReport));
 ticketRoutes.get('/reports/age-buckets', requireRole('it_support', 'admin'), asyncHandler(ticketController.getAgeBucketsReport));
 ticketRoutes.get('/reports/category-trend', requireRole('it_support', 'admin'), asyncHandler(ticketController.getCategoryTrendReport));
+// Approver inbox — must be before '/:id' so it isn't shadowed.
+ticketRoutes.get('/approvals/inbox', asyncHandler(approvalController.inbox));
+
 ticketRoutes.get('/', asyncHandler(ticketController.list));
 ticketRoutes.get('/:id', asyncHandler(ticketController.get));
 ticketRoutes.post('/', ticketMutationLimiter, validateBody(createTicketSchema), asyncHandler(ticketController.create));
@@ -74,6 +82,20 @@ ticketRoutes.post(
   commentLimiter,
   validateBody(createCommentSchema),
   asyncHandler(ticketController.addComment),
+);
+
+// Approval decisions. The service authorizes the caller as the active step's
+// approver (or it_support/admin); assigning an approver is it_support/admin only.
+ticketRoutes.post(
+  '/:id/approvals/:step/decide',
+  validateBody(decideSchema),
+  asyncHandler(approvalController.decide),
+);
+ticketRoutes.post(
+  '/:id/approvals/:step/assign',
+  requireRole('it_support', 'admin'),
+  validateBody(assignApproverSchema),
+  asyncHandler(approvalController.assign),
 );
 
 // Link device to ticket (create ticket_device_link)
