@@ -2,10 +2,14 @@ import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { assertDbConnection, closePool } from './config/db.js';
+import { bootstrapAuth } from './config/adminBootstrap.js';
 
 async function bootstrap(): Promise<void> {
   // Fail fast if the database is unreachable.
   await assertDbConnection();
+
+  // Provision the env admin and neutralize seeded demo credentials in prod.
+  await bootstrapAuth();
 
   const app = createApp();
   const server = app.listen(env.PORT, () => {

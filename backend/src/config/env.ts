@@ -20,6 +20,11 @@ const schema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   JWT_EXPIRES_IN: z.string().default('8h'),
 
+  // Optional env-provisioned admin. When set, an admin user is created/updated
+  // from these at boot so production never depends on the seeded demo password.
+  ADMIN_EMAIL: z.string().email().optional(),
+  ADMIN_PASSWORD: z.string().min(8, 'ADMIN_PASSWORD must be at least 8 characters').optional(),
+
   UPLOAD_DIR: z.string().default('./uploads'),
   MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
 

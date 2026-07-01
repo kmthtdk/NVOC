@@ -67,6 +67,9 @@ services:
       DB_CONNECTION_LIMIT: ${DB_CONNECTION_LIMIT:-10}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (>=16 chars) in .env}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      # Provision a real admin at boot; disables seeded demo creds in production.
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       UPLOAD_DIR: /app/uploads
       MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-10485760}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}

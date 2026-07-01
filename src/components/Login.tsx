@@ -20,9 +20,10 @@ const DEMO_ACCOUNTS = [
   { email: 'alex.mercer@company.com', label: 'Requester', role: 'requester' },
 ];
 
-// Password is from environment variable in development/demo, should be
-// configured securely in production or demo mode should be disabled.
-const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || 'Passw0rd!';
+// Demo auto-fill password comes only from the build-time env var. No hardcoded
+// fallback — otherwise the credential is baked into every production bundle.
+// Set VITE_DEMO_PASSWORD (with VITE_DEMO_MODE=true) to enable the quick-fill.
+const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || '';
 
 export default function Login() {
   const { login, isLoggingIn, loginError } = useAuth();

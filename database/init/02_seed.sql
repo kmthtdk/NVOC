@@ -4,6 +4,9 @@
 -- Demo users + the 5 INITIAL_TICKETS with comments/history for demo parity.
 -- All timestamps converted from source -07:00 to UTC (+7h) for deterministic storage.
 -- Demo password for every seeded user: "Passw0rd!"  (bcrypt, cost 10)
+-- WARNING (production): these demo accounts are dev-only. Set ADMIN_EMAIL/
+--   ADMIN_PASSWORD so the backend provisions a real admin and DISABLES these
+--   demo logins at boot (see backend/src/config/adminBootstrap.ts).
 -- ============================================================================
 SET NAMES utf8mb4;
 SET time_zone = '+00:00';
