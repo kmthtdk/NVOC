@@ -107,6 +107,11 @@ export interface DeviceRow extends RowDataPacket {
   department: string | null;
   purchase_date: string | null;
   warranty_expiry: string | null;
+  supplier: string | null;
+  purchase_cost: string | null; // DECIMAL comes back as a string via mysql2
+  currency: string | null;
+  po_number: string | null;
+  invoice_no: string | null;
   notes: string | null;
   cpu: string | null;
   ram_gb: number | null;

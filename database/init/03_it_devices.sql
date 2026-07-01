@@ -161,6 +161,19 @@ ADD INDEX idx_devices_psu (psu_watts),
 ADD FULLTEXT KEY ft_devices_specs (cpu, gpu);
 
 -- ============================================================================
+-- device_purchase — procurement fields (who we bought from, cost, PO/invoice).
+-- purchase_date + warranty_expiry already live on the base table above.
+-- ============================================================================
+ALTER TABLE devices
+ADD COLUMN supplier VARCHAR(150) NULL AFTER warranty_expiry,
+ADD COLUMN purchase_cost DECIMAL(12,2) NULL AFTER supplier,
+ADD COLUMN currency VARCHAR(3) NULL AFTER purchase_cost,
+ADD COLUMN po_number VARCHAR(80) NULL AFTER currency,
+ADD COLUMN invoice_no VARCHAR(80) NULL AFTER po_number,
+ADD INDEX idx_devices_supplier (supplier),
+ADD INDEX idx_devices_po (po_number);
+
+-- ============================================================================
 -- Seed: Device specifications for demo devices
 -- ============================================================================
 UPDATE devices SET

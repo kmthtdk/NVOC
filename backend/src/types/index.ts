@@ -126,6 +126,11 @@ export interface Device {
   department: string | null;
   purchaseDate: string | null;
   warrantyExpiry: string | null;
+  supplier: string | null;
+  purchaseCost: number | null;
+  currency: string | null;
+  poNumber: string | null;
+  invoiceNo: string | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;

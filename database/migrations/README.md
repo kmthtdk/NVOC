@@ -31,3 +31,4 @@ mysql -h <host> -P <port> -u root -p voc_system \
 | File | Date | Purpose |
 |------|------|---------|
 | `2026-07-01_01_condition_state_damaged.sql` | 2026-07-01 | Add `'damaged'` to `device_history.condition_state` (C-2 fix) |
+| `2026-07-01_02_device_purchase_fields.sql` | 2026-07-01 | Add procurement fields to `devices` (supplier, purchase_cost, currency, po_number, invoice_no) |

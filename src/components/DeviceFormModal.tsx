@@ -45,6 +45,11 @@ export interface Device {
   department: string | null;
   purchaseDate: string | null;
   warrantyExpiry: string | null;
+  supplier: string | null;
+  purchaseCost: number | null;
+  currency: string | null;
+  poNumber: string | null;
+  invoiceNo: string | null;
   notes: string | null;
   createdAt?: string;
   updatedAt?: string;
@@ -109,6 +114,11 @@ interface FormState {
   department: string;
   purchaseDate: string;
   warrantyExpiry: string;
+  supplier: string;
+  purchaseCost: string;
+  currency: string;
+  poNumber: string;
+  invoiceNo: string;
   notes: string;
 }
 
@@ -127,6 +137,11 @@ function toFormState(device?: Device | null): FormState {
     department: device?.department ?? '',
     purchaseDate: device?.purchaseDate ?? '',
     warrantyExpiry: device?.warrantyExpiry ?? '',
+    supplier: device?.supplier ?? '',
+    purchaseCost: device?.purchaseCost != null ? String(device.purchaseCost) : '',
+    currency: device?.currency ?? '',
+    poNumber: device?.poNumber ?? '',
+    invoiceNo: device?.invoiceNo ?? '',
     notes: device?.notes ?? '',
   };
 }
@@ -251,6 +266,13 @@ export default function DeviceFormModal({
     const dateOk = (v: string) => v === '' || /^\d{4}-\d{2}-\d{2}$/.test(v);
     if (!dateOk(form.purchaseDate)) next.purchaseDate = 'Use format YYYY-MM-DD';
     if (!dateOk(form.warrantyExpiry)) next.warrantyExpiry = 'Use format YYYY-MM-DD';
+    if (form.purchaseCost.trim()) {
+      const cost = Number(form.purchaseCost);
+      if (!Number.isFinite(cost) || cost < 0) next.purchaseCost = 'Enter a valid non-negative amount';
+    }
+    if (form.currency.trim() && form.currency.trim().length > 3) {
+      next.currency = 'Use a 3-letter code (e.g. USD, VND)';
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -384,6 +406,11 @@ export default function DeviceFormModal({
         department: form.department.trim() || null,
         purchaseDate: form.purchaseDate || null,
         warrantyExpiry: form.warrantyExpiry || null,
+        supplier: form.supplier.trim() || null,
+        purchaseCost: form.purchaseCost.trim() ? Number(form.purchaseCost) : null,
+        currency: form.currency.trim().toUpperCase() || null,
+        poNumber: form.poNumber.trim() || null,
+        invoiceNo: form.invoiceNo.trim() || null,
         notes: form.notes.trim() || null,
         ...(isEditMode ? {} : { macAddresses: macAddresses.filter((m) => m.isNew) }),
         specifications: {
@@ -633,6 +660,85 @@ export default function DeviceFormModal({
               {errors.warrantyExpiry && (
                 <p className="mt-1 text-xs text-red-500">{errors.warrantyExpiry}</p>
               )}
+            </div>
+          </div>
+
+          {/* Purchase / Procurement Section */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Purchase / Procurement
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Supplier
+                </label>
+                <input
+                  type="text"
+                  value={form.supplier}
+                  onChange={(e) => update('supplier', e.target.value)}
+                  placeholder="e.g. Dell Vietnam"
+                  className={fieldClass('supplier')}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Purchase Cost
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.purchaseCost}
+                    onChange={(e) => update('purchaseCost', e.target.value)}
+                    placeholder="0.00"
+                    className={fieldClass('purchaseCost') + ' flex-1'}
+                  />
+                  <input
+                    type="text"
+                    value={form.currency}
+                    onChange={(e) => update('currency', e.target.value)}
+                    placeholder="USD"
+                    maxLength={3}
+                    className={fieldClass('currency') + ' w-20 uppercase'}
+                    aria-label="Currency code"
+                  />
+                </div>
+                {errors.purchaseCost && (
+                  <p className="mt-1 text-xs text-red-500">{errors.purchaseCost}</p>
+                )}
+                {errors.currency && (
+                  <p className="mt-1 text-xs text-red-500">{errors.currency}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  PO Number
+                </label>
+                <input
+                  type="text"
+                  value={form.poNumber}
+                  onChange={(e) => update('poNumber', e.target.value)}
+                  placeholder="e.g. PO-2026-0042"
+                  className={fieldClass('poNumber')}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Invoice No.
+                </label>
+                <input
+                  type="text"
+                  value={form.invoiceNo}
+                  onChange={(e) => update('invoiceNo', e.target.value)}
+                  placeholder="e.g. INV-88231"
+                  className={fieldClass('invoiceNo')}
+                />
+              </div>
             </div>
           </div>
 

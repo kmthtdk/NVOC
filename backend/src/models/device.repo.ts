@@ -30,6 +30,11 @@ export interface CreateDeviceInput {
   department: string | null;
   purchaseDate: string | null;
   warrantyExpiry: string | null;
+  supplier?: string | null;
+  purchaseCost?: number | null;
+  currency?: string | null;
+  poNumber?: string | null;
+  invoiceNo?: string | null;
   notes: string | null;
   macAddresses?: MacAddressInput[];
   specifications?: DeviceSpecifications;
@@ -44,6 +49,11 @@ export interface UpdateDeviceInput {
   department?: string | null;
   purchaseDate?: string | null;
   warrantyExpiry?: string | null;
+  supplier?: string | null;
+  purchaseCost?: number | null;
+  currency?: string | null;
+  poNumber?: string | null;
+  invoiceNo?: string | null;
   notes?: string | null;
   specifications?: Partial<DeviceSpecifications>;
 }
@@ -272,8 +282,8 @@ export const deviceRepo = {
 
       const [result] = await connection.execute(
         `INSERT INTO devices
-          (code, device_type, model, serial_number, status, assigned_to, department, purchase_date, warranty_expiry, notes, cpu, ram_gb, storage_gb, gpu, psu_watts, specs_json)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (code, device_type, model, serial_number, status, assigned_to, department, purchase_date, warranty_expiry, supplier, purchase_cost, currency, po_number, invoice_no, notes, cpu, ram_gb, storage_gb, gpu, psu_watts, specs_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           code,
           input.deviceType,
@@ -284,6 +294,11 @@ export const deviceRepo = {
           input.department,
           input.purchaseDate,
           input.warrantyExpiry,
+          input.supplier ?? null,
+          input.purchaseCost ?? null,
+          input.currency ?? null,
+          input.poNumber ?? null,
+          input.invoiceNo ?? null,
           input.notes,
           input.specifications?.cpu ?? null,
           input.specifications?.ramGb ?? null,
@@ -355,6 +370,26 @@ export const deviceRepo = {
     if (input.warrantyExpiry !== undefined) {
       sets.push('warranty_expiry = ?');
       params.push(input.warrantyExpiry);
+    }
+    if (input.supplier !== undefined) {
+      sets.push('supplier = ?');
+      params.push(input.supplier);
+    }
+    if (input.purchaseCost !== undefined) {
+      sets.push('purchase_cost = ?');
+      params.push(input.purchaseCost);
+    }
+    if (input.currency !== undefined) {
+      sets.push('currency = ?');
+      params.push(input.currency);
+    }
+    if (input.poNumber !== undefined) {
+      sets.push('po_number = ?');
+      params.push(input.poNumber);
+    }
+    if (input.invoiceNo !== undefined) {
+      sets.push('invoice_no = ?');
+      params.push(input.invoiceNo);
     }
     if (input.notes !== undefined) {
       sets.push('notes = ?');
