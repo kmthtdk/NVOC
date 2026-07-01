@@ -22,8 +22,15 @@ const schema = z.object({
 
   // Optional env-provisioned admin. When set, an admin user is created/updated
   // from these at boot so production never depends on the seeded demo password.
-  ADMIN_EMAIL: z.string().email().optional(),
-  ADMIN_PASSWORD: z.string().min(8, 'ADMIN_PASSWORD must be at least 8 characters').optional(),
+  // Empty strings (how docker-compose passes an unset var) are treated as unset.
+  ADMIN_EMAIL: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().email().optional(),
+  ),
+  ADMIN_PASSWORD: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().min(8, 'ADMIN_PASSWORD must be at least 8 characters').optional(),
+  ),
 
   UPLOAD_DIR: z.string().default('./uploads'),
   MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
