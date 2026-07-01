@@ -15,8 +15,10 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Install all deps (incl. dev) needed for the Vite build.
+# `npm install` (not `npm ci`) because package-lock.json is gitignored repo-wide,
+# so a fresh clone has no committed lockfile for `npm ci` to consume.
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install --no-audit --no-fund
 
 # Optional override; leave unset to keep the relative "/api" default.
 ARG VITE_API_BASE_URL

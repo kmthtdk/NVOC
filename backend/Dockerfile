@@ -2,9 +2,11 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install all deps (incl. dev) for the build
+# Install all deps (incl. dev) for the build.
+# `npm install` (not `npm ci`) because package-lock.json is gitignored repo-wide,
+# so a fresh clone has no committed lockfile for `npm ci` to consume.
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install --no-audit --no-fund
 
 COPY tsconfig.json ./
 COPY src ./src
