@@ -364,36 +364,44 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
         priority,
         periodFrom: currentTypeObj?.period === 'Apply' ? periodFrom : null,
         periodTo: currentTypeObj?.period === 'Apply' ? periodTo : null,
-        details: {
-          osType,
-          softwareName,
-          ipAddress,
-          macAddress,
-          wifiUserName,
-          wifiDeviceType,
-          sourceIp,
-          destinationIp,
-          protocolPort,
-          firewallAction,
-          deviceActionType,
-          deviceType,
-          deviceModelName,
-          reasonForChange,
-          usbDuration: currentTypeObj?.period === 'Apply' ? duration : usbDuration,
-          usbJustification,
-          decryptionFiles,
-          pcSecurityHost,
-          pcSecurityReason,
-          serviceName,
-          serviceDescription,
-          serverAction,
-          folderActionType,
-          folderPath,
-          permissionActionType: permissionActions,
-          targetUser,
-          aiModelName,
-          aiPurposeOnly,
-        },
+        // Only persist the spec fields relevant to the selected classification —
+        // mirrors the UI gates above. Previously every field was stored on every
+        // ticket, polluting details with empty/irrelevant data from other types.
+        details: ((): Record<string, unknown> => {
+          switch (selectedCategory) {
+            case 'general_request':
+              return selectedSubcategory === 'troubleshooting'
+                ? { osType, softwareName }
+                : {};
+            case 'network_request':
+              return selectedSubcategory === 'network_registration'
+                ? { ipAddress, macAddress, wifiUserName, wifiDeviceType }
+                : { serviceName };
+            case 'network_security':
+              return selectedSubcategory === 'firewall'
+                ? { sourceIp, destinationIp, protocolPort, firewallAction }
+                : {};
+            case 'server_request':
+              if (selectedSubcategory === 'folder') return { folderActionType, folderPath };
+              if (selectedSubcategory === 'permission')
+                return { permissionActionType: permissionActions, targetUser, folderPath };
+              if (selectedSubcategory === 'ai') return { aiModelName, aiPurposeOnly };
+              return {};
+            case 'security_request':
+              if (selectedSubcategory === 'e')
+                return {
+                  usbDuration: currentTypeObj?.period === 'Apply' ? duration : usbDuration,
+                  usbJustification,
+                };
+              if (selectedSubcategory === 'pc_security')
+                return { pcSecurityHost, pcSecurityReason };
+              return { decryptionFiles };
+            case 'hardware_request':
+              return { deviceActionType, deviceType, deviceModelName, reasonForChange };
+            default:
+              return {};
+          }
+        })(),
       });
 
       // Upload staged attachments (best-effort; failures are surfaced but the
