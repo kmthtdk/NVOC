@@ -12,6 +12,11 @@ export const assignApproverSchema = z.object({
   userId: z.number().int().positive(),
 });
 
+export const addSignerSchema = z.object({
+  afterStep: z.number().int().min(0),
+  userId: z.number().int().positive(),
+});
+
 function parseTicketId(req: Request): number {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) throw AppError.badRequest('Invalid ticket id');
@@ -49,6 +54,13 @@ export const approvalController = {
   async assign(req: Request, res: Response): Promise<void> {
     const body = req.body as z.infer<typeof assignApproverSchema>;
     const chain = await approvalService.assignApprover(parseTicketId(req), parseStep(req), body.userId);
+    res.json({ chain });
+  },
+
+  /** POST /tickets/:id/approvals/add-signer — insert an ad-hoc signer (open mode). */
+  async addSigner(req: Request, res: Response): Promise<void> {
+    const body = req.body as z.infer<typeof addSignerSchema>;
+    const chain = await approvalService.addSigner(parseTicketId(req), body.afterStep, body.userId);
     res.json({ chain });
   },
 };

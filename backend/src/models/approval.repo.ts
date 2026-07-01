@@ -224,6 +224,83 @@ export const approvalRepo = {
       ],
     );
   },
+
+  /** Insert an ad-hoc signer after a given step, shifting later steps down. */
+  async insertSigner(
+    ticketId: number,
+    afterStepOrder: number,
+    userId: number,
+    label: string | null,
+    conn: PoolConnection,
+  ): Promise<number> {
+    // Renumber highest-first so the unique (ticket_id, step_order) never collides.
+    await conn.query(
+      'UPDATE ticket_approvals SET step_order = step_order + 1 WHERE ticket_id = ? AND step_order > ? ORDER BY step_order DESC',
+      [ticketId, afterStepOrder],
+    );
+    const newOrder = afterStepOrder + 1;
+    await conn.execute(
+      `INSERT INTO ticket_approvals
+         (ticket_id, step_order, approver_type, approver_user_id, approver_label, status, is_ad_hoc)
+       VALUES (?, ?, 'user', ?, ?, 'pending', 1)`,
+      [ticketId, newOrder, userId, label],
+    );
+    return newOrder;
+  },
+
+  // ---- Admin configuration ----
+  async setSetting(key: string, value: string, conn?: PoolConnection): Promise<void> {
+    const db = conn ?? pool;
+    await db.execute(
+      `INSERT INTO app_settings (setting_key, setting_value) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
+      [key, value],
+    );
+  },
+
+  async replaceDefaultFlowSteps(
+    steps: Array<{ approverType: ApproverType; approverUserId?: number | null; label?: string | null }>,
+    conn: PoolConnection,
+  ): Promise<void> {
+    const [flowRows] = await conn.query<RowDataPacket[]>(
+      "SELECT id FROM approval_flows WHERE scope_type = 'default' LIMIT 1",
+    );
+    const flowId = flowRows[0]?.id as number | undefined;
+    if (!flowId) throw new Error('Default approval flow is missing');
+    await conn.execute('DELETE FROM approval_flow_steps WHERE flow_id = ?', [flowId]);
+    let order = 1;
+    for (const s of steps) {
+      await conn.execute(
+        `INSERT INTO approval_flow_steps (flow_id, step_order, approver_type, approver_user_id, label)
+         VALUES (?, ?, ?, ?, ?)`,
+        [flowId, order++, s.approverType, s.approverUserId ?? null, s.label ?? null],
+      );
+    }
+  },
+
+  async listDepartmentLeaders(conn?: PoolConnection): Promise<RowDataPacket[]> {
+    const db = conn ?? pool;
+    const [rows] = await db.query<RowDataPacket[]>(
+      `SELECT dl.department, dl.leader_user_id, u.full_name AS leader_name
+         FROM department_leaders dl LEFT JOIN users u ON u.id = dl.leader_user_id
+        ORDER BY dl.department`,
+    );
+    return rows;
+  },
+
+  async setDepartmentLeader(dept: string, userId: number, conn?: PoolConnection): Promise<void> {
+    const db = conn ?? pool;
+    await db.execute(
+      `INSERT INTO department_leaders (department, leader_user_id) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE leader_user_id = VALUES(leader_user_id)`,
+      [dept, userId],
+    );
+  },
+
+  async removeDepartmentLeader(dept: string, conn?: PoolConnection): Promise<void> {
+    const db = conn ?? pool;
+    await db.execute('DELETE FROM department_leaders WHERE department = ?', [dept]);
+  },
 };
 
 /** Map a raw chain row to the API shape (camelCase). */

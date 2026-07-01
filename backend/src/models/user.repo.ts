@@ -17,4 +17,12 @@ export const userRepo = {
     );
     return rows[0] ?? null;
   },
+
+  /** Active users, for approver pickers (it_support/admin only via the route). */
+  async listActive(): Promise<UserRow[]> {
+    const [rows] = await pool.query<UserRow[]>(
+      "SELECT * FROM users WHERE is_active = 1 ORDER BY FIELD(role,'admin','it_support','requester'), full_name",
+    );
+    return rows;
+  },
 };

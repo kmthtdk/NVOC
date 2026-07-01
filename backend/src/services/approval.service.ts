@@ -124,4 +124,66 @@ export const approvalService = {
     const rows = await approvalRepo.getChain(ticketId, conn);
     return engine.chainState(toEngineSteps(rows)) === 'in_progress';
   },
+
+  /** Open mode: insert an extra signer after `afterStep` into a live chain. */
+  async addSigner(ticketId: number, afterStep: number, userId: number) {
+    return withTransaction(async (conn) => {
+      const rows = await approvalRepo.getChain(ticketId, conn);
+      if (rows.length === 0) throw AppError.badRequest('This ticket has no approval chain');
+      if (!rows.some((r) => r.step_order === afterStep)) {
+        throw AppError.badRequest('afterStep must be an existing step');
+      }
+      await approvalRepo.insertSigner(ticketId, afterStep, userId, null, conn);
+      await notifyActive(conn, ticketId, await approvalRepo.getChain(ticketId, conn));
+      return (await approvalRepo.getChain(ticketId, conn)).map(mapApproval);
+    });
+  },
+
+  /** Admin: read the default flow + leader resolution settings. */
+  async getConfig() {
+    const [steps, departmentLeaders, itLeader, enabled] = await Promise.all([
+      approvalRepo.getDefaultFlowSteps(),
+      approvalRepo.listDepartmentLeaders(),
+      approvalRepo.getSetting('it_leader_user_id'),
+      approvalRepo.getSetting('approval_enabled'),
+    ]);
+    return {
+      steps: steps.map((s) => ({
+        stepOrder: s.step_order,
+        approverType: s.approver_type,
+        approverUserId: s.approver_user_id,
+        label: s.label,
+      })),
+      departmentLeaders,
+      itLeaderUserId: itLeader ? Number(itLeader) : null,
+      approvalEnabled: enabled === '1',
+    };
+  },
+
+  /** Admin: update the default flow steps + leader settings. */
+  async updateConfig(input: {
+    steps?: Array<{ approverType: 'requester_leader' | 'it_leader' | 'user' | 'role'; approverUserId?: number | null; label?: string | null }>;
+    itLeaderUserId?: number | null;
+    approvalEnabled?: boolean;
+    departmentLeaders?: Array<{ department: string; leaderUserId: number | null }>;
+  }) {
+    await withTransaction(async (conn) => {
+      if (input.steps) await approvalRepo.replaceDefaultFlowSteps(input.steps, conn);
+      if (input.itLeaderUserId !== undefined) {
+        await approvalRepo.setSetting(
+          'it_leader_user_id',
+          input.itLeaderUserId == null ? '' : String(input.itLeaderUserId),
+          conn,
+        );
+      }
+      if (input.approvalEnabled !== undefined) {
+        await approvalRepo.setSetting('approval_enabled', input.approvalEnabled ? '1' : '0', conn);
+      }
+      for (const dl of input.departmentLeaders ?? []) {
+        if (dl.leaderUserId == null) await approvalRepo.removeDepartmentLeader(dl.department, conn);
+        else await approvalRepo.setDepartmentLeader(dl.department, dl.leaderUserId, conn);
+      }
+    });
+    return this.getConfig();
+  },
 };

@@ -17,6 +17,9 @@ import type {
   PublicUser,
   ApprovalStep,
   ApprovalInboxItem,
+  AdminUser,
+  ApprovalConfig,
+  ApprovalConfigUpdate,
 } from '../types';
 
 const BASE_URL =
@@ -431,6 +434,22 @@ export const api = {
   },
   getApprovalInbox(signal?: AbortSignal): Promise<{ pending: ApprovalInboxItem[] }> {
     return request<{ pending: ApprovalInboxItem[] }>('/tickets/approvals/inbox', { signal });
+  },
+  addSigner(ticketId: string, afterStep: number, userId: number): Promise<{ chain: ApprovalStep[] }> {
+    return request(`/tickets/${ticketId}/approvals/add-signer`, {
+      method: 'POST',
+      body: { afterStep, userId },
+    });
+  },
+  // Admin
+  listUsers(signal?: AbortSignal): Promise<{ users: AdminUser[] }> {
+    return request<{ users: AdminUser[] }>('/admin/users', { signal });
+  },
+  getApprovalConfig(signal?: AbortSignal): Promise<ApprovalConfig> {
+    return request<ApprovalConfig>('/admin/approval/config', { signal });
+  },
+  updateApprovalConfig(payload: ApprovalConfigUpdate): Promise<ApprovalConfig> {
+    return request<ApprovalConfig>('/admin/approval/config', { method: 'PUT', body: payload });
   },
   addComment(
     id: string,

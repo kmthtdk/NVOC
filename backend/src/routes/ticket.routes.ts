@@ -12,6 +12,7 @@ import {
   approvalController,
   decideSchema,
   assignApproverSchema,
+  addSignerSchema,
 } from '../controllers/approval.controller.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validate.js';
@@ -96,6 +97,12 @@ ticketRoutes.post(
   requireRole('it_support', 'admin'),
   validateBody(assignApproverSchema),
   asyncHandler(approvalController.assign),
+);
+ticketRoutes.post(
+  '/:id/approvals/add-signer',
+  requireRole('it_support', 'admin'),
+  validateBody(addSignerSchema),
+  asyncHandler(approvalController.addSigner),
 );
 
 // Link device to ticket (create ticket_device_link)

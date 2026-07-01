@@ -12,7 +12,7 @@
 // ============================================================================
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import type { Ticket, TicketStatus, TicketPriority, ApprovalStep } from '../types';
+import type { Ticket, TicketStatus, TicketPriority, ApprovalStep, AdminUser } from '../types';
 import { api, ApiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -61,6 +61,9 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [approvals, setApprovals] = useState<ApprovalStep[]>([]);
   const [decidingStep, setDecidingStep] = useState<number | null>(null);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [showAddSigner, setShowAddSigner] = useState(false);
+  const [addSignerUserId, setAddSignerUserId] = useState<number | ''>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -133,6 +136,36 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
       onMutated();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not submit your decision.');
+    } finally {
+      setDecidingStep(null);
+    }
+  };
+
+  const openAddSigner = async () => {
+    setShowAddSigner(true);
+    if (users.length === 0) {
+      try {
+        const r = await api.listUsers();
+        setUsers(r.users);
+      } catch {
+        /* non-fatal: picker just shows empty */
+      }
+    }
+  };
+
+  const addSigner = async () => {
+    if (!ticket || !addSignerUserId) return;
+    const lastStep = approvals.reduce((m, a) => Math.max(m, a.stepOrder), 0);
+    setDecidingStep(-1);
+    try {
+      const res = await api.addSigner(ticket.id, lastStep, Number(addSignerUserId));
+      setApprovals(res.chain);
+      setShowAddSigner(false);
+      setAddSignerUserId('');
+      toast.success('Signer added to the chain.');
+      onMutated();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not add the signer.');
     } finally {
       setDecidingStep(null);
     }
@@ -445,9 +478,51 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
               {/* Approval chain */}
               {approvals.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-amber-600" /> Approval Chain
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-amber-600" /> Approval Chain
+                    </h3>
+                    {isITSupport && !showAddSigner && (
+                      <button
+                        type="button"
+                        onClick={openAddSigner}
+                        className="text-[11px] font-bold text-amber-600 hover:text-amber-700"
+                      >
+                        + Add signer
+                      </button>
+                    )}
+                  </div>
+                  {isITSupport && showAddSigner && (
+                    <div className="flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2">
+                      <select
+                        value={addSignerUserId}
+                        onChange={(e) => setAddSignerUserId(e.target.value ? Number(e.target.value) : '')}
+                        className="flex-1 text-xs p-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                      >
+                        <option value="">Select a signer…</option>
+                        {users.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.fullName} · {u.role}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={!addSignerUserId || decidingStep !== null}
+                        onClick={addSigner}
+                        className="px-2.5 py-1.5 text-[11px] font-bold rounded-md bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowAddSigner(false); setAddSignerUserId(''); }}
+                        className="px-2 py-1.5 text-[11px] text-slate-500 hover:text-slate-700"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                   <ol className="space-y-2">
                     {approvals.map((a) => {
                       const firstPending = approvals.find((s) => s.status === 'pending');

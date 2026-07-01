@@ -26,6 +26,7 @@ import ConfirmationModal from './components/ConfirmationModal';
 import DeviceManagement from './components/DeviceManagement';
 import DeviceReportsPage from './components/DeviceReportsPage';
 import TicketReportsPage from './components/TicketReportsPage';
+import ApprovalSettings from './components/ApprovalSettings';
 import { LoadingPanel, ErrorState } from './components/ui/Spinner';
 
 import {
@@ -55,7 +56,7 @@ export default function App() {
   const toast = useToast();
 
   const [view, setView] = useState<PortalView>('user');
-  const [adminTab, setAdminTab] = useState<'tickets' | 'devices' | 'reports'>('tickets');
+  const [adminTab, setAdminTab] = useState<'tickets' | 'devices' | 'reports' | 'approval'>('tickets');
   const [deviceSubTab, setDeviceSubTab] = useState<'management' | 'reports'>('management');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [showAdminSimulation, setShowAdminSimulation] = useState(true);
@@ -390,8 +391,8 @@ function AdminWorkspace({
   onSelectTicket,
 }: {
   reloadKey: number;
-  adminTab: 'tickets' | 'devices' | 'reports';
-  onAdminTabChange: (tab: 'tickets' | 'devices' | 'reports') => void;
+  adminTab: 'tickets' | 'devices' | 'reports' | 'approval';
+  onAdminTabChange: (tab: 'tickets' | 'devices' | 'reports' | 'approval') => void;
   deviceSubTab: 'management' | 'reports';
   onDeviceSubTabChange: (tab: 'management' | 'reports') => void;
   showSim: boolean;
@@ -456,6 +457,17 @@ function AdminWorkspace({
         >
           <BarChart3 className="w-4 h-4" />
           Reports &amp; Trends
+        </button>
+        <button
+          onClick={() => onAdminTabChange('approval')}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-colors ${
+            adminTab === 'approval'
+              ? 'border-amber-500 text-amber-600 dark:text-amber-400'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <Shield className="w-4 h-4" />
+          Approval
         </button>
       </div>
 
@@ -542,6 +554,9 @@ function AdminWorkspace({
       {/* Reports & Trends Tab Content — request reports: pending hardware,
           fulfillment time, age buckets, and category trend over time. */}
       {adminTab === 'reports' && <TicketReportsPage />}
+
+      {/* Approval settings — configurable default flow + leader resolution. */}
+      {adminTab === 'approval' && <ApprovalSettings />}
     </div>
   );
 }

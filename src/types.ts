@@ -151,3 +151,42 @@ export interface ApprovalInboxItem {
   created_at: string;
   step_order: number;
 }
+
+export interface AdminUser {
+  id: number;
+  fullName: string;
+  email: string;
+  role: UserRole;
+  department: string | null;
+}
+
+export interface ApprovalConfigStep {
+  stepOrder?: number;
+  approverType: 'requester_leader' | 'it_leader' | 'user' | 'role';
+  approverUserId: number | null;
+  label: string | null;
+}
+
+export interface DepartmentLeaderRow {
+  department: string;
+  leader_user_id: number;
+  leader_name: string | null;
+}
+
+export interface ApprovalConfig {
+  steps: ApprovalConfigStep[];
+  departmentLeaders: DepartmentLeaderRow[];
+  itLeaderUserId: number | null;
+  approvalEnabled: boolean;
+}
+
+export interface ApprovalConfigUpdate {
+  approvalEnabled?: boolean;
+  itLeaderUserId?: number | null;
+  steps?: Array<{
+    approverType: 'requester_leader' | 'it_leader' | 'user' | 'role';
+    approverUserId?: number | null;
+    label?: string | null;
+  }>;
+  departmentLeaders?: Array<{ department: string; leaderUserId: number | null }>;
+}
