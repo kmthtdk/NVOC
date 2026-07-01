@@ -12,7 +12,7 @@
 // ============================================================================
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import type { Ticket, TicketStatus, TicketPriority } from '../types';
+import type { Ticket, TicketStatus, TicketPriority, ApprovalStep } from '../types';
 import { api, ApiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -21,7 +21,7 @@ import DeviceAssignmentModal from './DeviceAssignmentModal';
 import DeviceCheckoutModal from './DeviceCheckoutModal';
 import {
   X, Clock, User, Send, Building, Server, MessageSquare, History, Paperclip,
-  Download, Settings2, Save,
+  Download, Settings2, Save, CheckCircle2, XCircle, CircleDot, ShieldCheck,
 } from 'lucide-react';
 
 interface TicketDetailModalProps {
@@ -59,6 +59,8 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
   const toast = useToast();
 
   const [ticket, setTicket] = useState<Ticket | null>(null);
+  const [approvals, setApprovals] = useState<ApprovalStep[]>([]);
+  const [decidingStep, setDecidingStep] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,8 +100,9 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
       setError(null);
       return api
         .getTicket(ticketId, signal)
-        .then(({ ticket: t }) => {
+        .then(({ ticket: t, approvals: a }) => {
           setTicket(t);
+          setApprovals(a ?? []);
           setEditStatus(t.status);
           setEditPriority(t.priority);
           setEditAssignee(t.assignedTo && t.assignedTo !== 'Unassigned' ? t.assignedTo : '');
@@ -118,6 +121,22 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
     load(ctrl.signal);
     return () => ctrl.abort();
   }, [load]);
+
+  const decide = async (step: number, decision: 'approve' | 'reject') => {
+    if (!ticket) return;
+    setDecidingStep(step);
+    try {
+      const res = await api.decideApproval(ticket.id, step, { decision });
+      setApprovals(res.chain);
+      toast.success(decision === 'approve' ? 'Step approved.' : 'Request rejected.');
+      await load(); // ticket status may have advanced to waiting / rejected
+      onMutated();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not submit your decision.');
+    } finally {
+      setDecidingStep(null);
+    }
+  };
 
   // Escape closes the modal.
   useEffect(() => {
@@ -420,6 +439,84 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {/* Approval chain */}
+              {approvals.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-amber-600" /> Approval Chain
+                  </h3>
+                  <ol className="space-y-2">
+                    {approvals.map((a) => {
+                      const firstPending = approvals.find((s) => s.status === 'pending');
+                      const isActive = firstPending?.stepOrder === a.stepOrder;
+                      const canAct =
+                        isActive && (isITSupport || (!!user && a.approverUserId === Number(user.id)));
+                      const Icon =
+                        a.status === 'approved'
+                          ? CheckCircle2
+                          : a.status === 'rejected'
+                            ? XCircle
+                            : isActive
+                              ? CircleDot
+                              : Clock;
+                      const color =
+                        a.status === 'approved'
+                          ? 'text-emerald-600'
+                          : a.status === 'rejected'
+                            ? 'text-rose-600'
+                            : isActive
+                              ? 'text-amber-600'
+                              : 'text-slate-400';
+                      return (
+                        <li
+                          key={a.stepOrder}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-2.5"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[10px] font-mono text-slate-400 w-4 text-right">{a.stepOrder}</span>
+                            <Icon className={`w-4 h-4 shrink-0 ${color}`} />
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">
+                                {a.approverLabel ?? a.approverType}
+                                {a.approverUserId == null && (
+                                  <span className="ml-1.5 text-[10px] font-medium text-amber-600">
+                                    (unassigned — admin to assign)
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-[10px] uppercase tracking-wide text-slate-400">
+                                {a.status}
+                                {a.note ? ` · ${a.note}` : ''}
+                              </p>
+                            </div>
+                          </div>
+                          {canAct && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                disabled={decidingStep !== null}
+                                onClick={() => decide(a.stepOrder, 'approve')}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+                              >
+                                <CheckCircle2 className="w-3 h-3" /> Approve
+                              </button>
+                              <button
+                                type="button"
+                                disabled={decidingStep !== null}
+                                onClick={() => decide(a.stepOrder, 'reject')}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-md bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50"
+                              >
+                                <XCircle className="w-3 h-3" /> Reject
+                              </button>
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
                 </div>
               )}
 

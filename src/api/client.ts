@@ -15,6 +15,8 @@ import type {
   AttachmentMeta,
   CategorySpec,
   PublicUser,
+  ApprovalStep,
+  ApprovalInboxItem,
 } from '../types';
 
 const BASE_URL =
@@ -399,8 +401,8 @@ export const api = {
   listTickets(params: ListTicketsParams = {}, signal?: AbortSignal): Promise<TicketListResponse> {
     return request<TicketListResponse>(`/tickets${buildQuery(params as Record<string, unknown>)}`, { signal });
   },
-  getTicket(id: string, signal?: AbortSignal): Promise<{ ticket: Ticket }> {
-    return request<{ ticket: Ticket }>(`/tickets/${id}`, { signal });
+  getTicket(id: string, signal?: AbortSignal): Promise<{ ticket: Ticket; approvals?: ApprovalStep[] }> {
+    return request<{ ticket: Ticket; approvals?: ApprovalStep[] }>(`/tickets/${id}`, { signal });
   },
   createTicket(payload: CreateTicketPayload): Promise<{ ticket: Ticket }> {
     return request<{ ticket: Ticket }>('/tickets', { method: 'POST', body: payload });
@@ -411,6 +413,24 @@ export const api = {
   },
   deleteTicket(id: string): Promise<void> {
     return request<void>(`/tickets/${id}`, { method: 'DELETE' });
+  },
+  // Approval workflow
+  decideApproval(
+    ticketId: string,
+    step: number,
+    payload: { decision: 'approve' | 'reject'; note?: string | null },
+  ): Promise<{ ticketAction: 'advance' | 'reject' | 'none'; chain: ApprovalStep[] }> {
+    return request(`/tickets/${ticketId}/approvals/${step}/decide`, { method: 'POST', body: payload });
+  },
+  assignApprover(
+    ticketId: string,
+    step: number,
+    userId: number,
+  ): Promise<{ chain: ApprovalStep[] }> {
+    return request(`/tickets/${ticketId}/approvals/${step}/assign`, { method: 'POST', body: { userId } });
+  },
+  getApprovalInbox(signal?: AbortSignal): Promise<{ pending: ApprovalInboxItem[] }> {
+    return request<{ pending: ApprovalInboxItem[] }>('/tickets/approvals/inbox', { signal });
   },
   addComment(
     id: string,

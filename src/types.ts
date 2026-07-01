@@ -126,3 +126,28 @@ export interface CategorySpec {
   description: string;
   subcategories: ITSubcategory[];
 }
+
+// ---- Approval workflow ----
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'skipped';
+
+export interface ApprovalStep {
+  stepOrder: number;
+  approverType: 'requester_leader' | 'it_leader' | 'user' | 'role';
+  approverUserId: number | null;
+  approverLabel: string | null;
+  status: ApprovalStatus;
+  decidedBy: number | null;
+  decidedAt: string | null;
+  note: string | null;
+  isAdHoc: boolean;
+}
+
+export interface ApprovalInboxItem {
+  id: number;
+  code: string;
+  title: string;
+  requester_name: string;
+  category_id: string;
+  created_at: string;
+  step_order: number;
+}
