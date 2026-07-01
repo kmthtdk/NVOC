@@ -7,7 +7,6 @@ import { approvalRepo } from '../models/approval.repo.js';
 import { approvalService } from '../services/approval.service.js';
 import { AppError } from '../utils/AppError.js';
 import { pool } from '../config/db.js';
-import { logger } from '../config/logger.js';
 
 const PRIORITY = ['low', 'medium', 'high', 'urgent'] as const;
 const STATUS = ['submitted', 'waiting', 'resolved', 'rejected'] as const;
@@ -166,12 +165,8 @@ export const ticketController = {
       specifications: body.specifications,
     });
 
-    // Instantiate the approval chain (no-op when approval is disabled). Non-fatal:
-    // a chain failure must not fail ticket creation — it can be re-instantiated.
-    await approvalService.startApproval(Number(ticket.id), body.requesterDept).catch((err) => {
-      logger.warn({ err, ticketId: ticket.id }, 'Non-fatal: approval chain instantiation failed');
-    });
-
+    // Approval chain is materialized inside ticketRepo.create's transaction
+    // (atomic with the ticket), so there's nothing to do here.
     res.status(201).json({ ticket });
   },
 

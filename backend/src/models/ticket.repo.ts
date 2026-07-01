@@ -5,6 +5,7 @@ import { mapTicket } from './mappers.js';
 import { commentRepo, historyRepo } from './comment.repo.js';
 import { attachmentRepo } from './attachment.repo.js';
 import { deviceRepo } from './device.repo.js';
+import { approvalRepo } from './approval.repo.js';
 import type {
   Ticket,
   TicketPriority,
@@ -259,6 +260,11 @@ export const ticketRepo = {
           }
         }
       }
+
+      // Materialize the approval chain in THIS transaction so a failure rolls the
+      // whole ticket back (never leave a ticket with 0 approval rows that would
+      // silently bypass the approval gate).
+      await approvalRepo.instantiateForNewTicket(ticketId, input.requesterDept, conn);
 
       return ticketId;
     });

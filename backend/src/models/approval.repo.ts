@@ -119,6 +119,36 @@ export const approvalRepo = {
     return this.getChain(ticketId, conn);
   },
 
+  /**
+   * Instantiate the approval chain for a brand-new ticket + notify the first
+   * approver — all on the caller's transaction so it commits/rolls back together
+   * with the ticket INSERT (no silently-orphaned tickets that would otherwise
+   * bypass the approval gate). No-op when approval is disabled.
+   */
+  async instantiateForNewTicket(
+    ticketId: number,
+    requesterDept: string,
+    conn: PoolConnection,
+  ): Promise<void> {
+    if (!(await this.isApprovalEnabled(conn))) return;
+    const rows = await this.instantiate(ticketId, requesterDept, conn);
+    const active = [...rows]
+      .sort((a, b) => a.step_order - b.step_order)
+      .find((r) => r.status === 'pending');
+    if (!active) return;
+    if (active.approver_user_id) {
+      await this.enqueueNotification(
+        { event: 'approval_requested', recipientUserId: active.approver_user_id, ticketId, payload: { stepOrder: active.step_order } },
+        conn,
+      );
+    } else {
+      await this.enqueueNotification(
+        { event: 'approval_unassigned', ticketId, payload: { stepOrder: active.step_order } },
+        conn,
+      );
+    }
+  },
+
   async getChain(ticketId: number, conn?: PoolConnection): Promise<TicketApprovalRow[]> {
     const db = conn ?? pool;
     const [rows] = await db.query<TicketApprovalRow[]>(
