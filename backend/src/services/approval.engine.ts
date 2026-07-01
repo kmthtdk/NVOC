@@ -62,18 +62,6 @@ export function applyDecision(
   return { steps: nextSteps, chainState: state, ticketAction };
 }
 
-/**
- * Insert an ad-hoc signer (open mode) at `atOrder`, shifting existing steps at
- * or after that position down by one. The new step is pending.
- */
-export function insertAdHoc(
-  steps: ApprovalStep[],
-  atOrder: number,
-  approverUserId: number | null,
-): ApprovalStep[] {
-  const shifted = steps.map((s) =>
-    s.stepOrder >= atOrder ? { ...s, stepOrder: s.stepOrder + 1 } : s,
-  );
-  const inserted: ApprovalStep = { stepOrder: atOrder, status: 'pending', approverUserId };
-  return [...shifted, inserted].sort((a, b) => a.stepOrder - b.stepOrder);
-}
+// NOTE: ad-hoc signer insertion is done in the DB (approvalRepo.insertSigner —
+// renumber via UPDATE ... ORDER BY DESC + INSERT), not here, so there is no pure
+// insertAdHoc to keep the two in sync.

@@ -57,9 +57,14 @@ export const updateTicketSchema = z
     assignedTo: z.string().max(150).optional(),
     notes: z.string().max(2000).optional(),
   })
-  .refine((v) => v.status !== undefined || v.priority !== undefined || v.assignedTo !== undefined, {
-    message: 'At least one of status, priority, or assignedTo is required',
-  });
+  .refine(
+    (v) =>
+      v.status !== undefined ||
+      v.priority !== undefined ||
+      v.assignedTo !== undefined ||
+      v.notes !== undefined,
+    { message: 'At least one of status, priority, assignedTo, or notes is required' },
+  );
 
 export const listQuerySchema = z.object({
   status: z.enum(STATUS).optional(),

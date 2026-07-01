@@ -24,9 +24,11 @@ const deviceMutationLimiter = rateLimit({
   message: 'Too many requests. Please try again later.',
 });
 
-// Read endpoints — any authenticated user.
+// Read endpoints — it_support/admin only. Device inventory exposes serials,
+// personnel assignment (PII), and procurement data (cost/supplier/PO); requesters
+// have no legitimate need for it (H-2).
 // NOTE: /search and /reports must be registered before /:id so they aren't captured as ids.
-deviceRoutes.get('/search', authenticate, asyncHandler(deviceController.search));
+deviceRoutes.get('/search', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.search));
 deviceRoutes.get('/reports/history', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getHistoryReport));
 deviceRoutes.get('/reports/summary', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getSummaryReport));
 deviceRoutes.get('/reports/assignments', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getAssignmentsReport));
@@ -37,8 +39,8 @@ deviceRoutes.get('/reports/stock-movement', authenticate, requireRole('it_suppor
 deviceRoutes.get('/reports/stock-by-type', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getStockByTypeReport));
 deviceRoutes.get('/reports/unassigned', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getUnassignedReport));
 deviceRoutes.get('/reports/by-user', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getByUserReport));
-deviceRoutes.get('/', authenticate, asyncHandler(deviceController.list));
-deviceRoutes.get('/:id', authenticate, asyncHandler(deviceController.get));
+deviceRoutes.get('/', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.list));
+deviceRoutes.get('/:id', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.get));
 
 // Mutations — it_support and admin.
 deviceRoutes.post(

@@ -46,6 +46,15 @@ const attachmentLimiter = rateLimit({
   message: 'Too many file uploads. Please try again later.',
 });
 
+// Throttle approval decisions/mutations (M-2).
+const approvalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many approval actions. Please try again later.',
+});
+
 // All ticket routes require a valid session.
 ticketRoutes.use(authenticate);
 
@@ -89,17 +98,20 @@ ticketRoutes.post(
 // approver (or it_support/admin); assigning an approver is it_support/admin only.
 ticketRoutes.post(
   '/:id/approvals/:step/decide',
+  approvalLimiter,
   validateBody(decideSchema),
   asyncHandler(approvalController.decide),
 );
 ticketRoutes.post(
   '/:id/approvals/:step/assign',
+  approvalLimiter,
   requireRole('it_support', 'admin'),
   validateBody(assignApproverSchema),
   asyncHandler(approvalController.assign),
 );
 ticketRoutes.post(
   '/:id/approvals/add-signer',
+  approvalLimiter,
   requireRole('it_support', 'admin'),
   validateBody(addSignerSchema),
   asyncHandler(approvalController.addSigner),

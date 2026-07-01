@@ -1,6 +1,7 @@
 import type { PoolConnection } from 'mysql2/promise';
 import type { RowDataPacket } from 'mysql2';
 import { pool } from '../config/db.js';
+import { AppError } from '../utils/AppError.js';
 
 export type ApproverType = 'requester_leader' | 'it_leader' | 'user' | 'role';
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'skipped';
@@ -29,6 +30,7 @@ interface FlowStepRow extends RowDataPacket {
 }
 
 interface TicketMetaRow extends RowDataPacket {
+  requester_id: number | null;
   requester_email: string;
   requester_dept: string;
   status: string;
@@ -143,13 +145,16 @@ export const approvalRepo = {
     deciderId: number,
     note: string | null,
     conn: PoolConnection,
-  ): Promise<void> {
-    await conn.execute(
+  ): Promise<number> {
+    // `AND status = 'pending'` makes concurrent double-decisions safe: the loser
+    // of a race matches 0 rows and the caller aborts (H-6).
+    const [result] = await conn.execute(
       `UPDATE ticket_approvals
           SET status = ?, decided_by = ?, decided_at = NOW(), note = ?
-        WHERE ticket_id = ? AND step_order = ?`,
+        WHERE ticket_id = ? AND step_order = ? AND status = 'pending'`,
       [status, deciderId, note, ticketId, stepOrder],
     );
+    return (result as { affectedRows: number }).affectedRows;
   },
 
   async assignApprover(
@@ -169,7 +174,7 @@ export const approvalRepo = {
   async getTicketMeta(ticketId: number, conn?: PoolConnection): Promise<TicketMetaRow | null> {
     const db = conn ?? pool;
     const [rows] = await db.query<TicketMetaRow[]>(
-      'SELECT requester_email, requester_dept, status FROM tickets WHERE id = ? LIMIT 1',
+      'SELECT requester_id, requester_email, requester_dept, status FROM tickets WHERE id = ? LIMIT 1',
       [ticketId],
     );
     return rows[0] ?? null;
@@ -201,6 +206,7 @@ export const approvalRepo = {
          JOIN tickets t ON t.id = ta.ticket_id
         WHERE ta.approver_user_id = ?
           AND ta.status = 'pending'
+          AND t.status NOT IN ('resolved', 'rejected')
           AND ta.step_order = (
             SELECT MIN(ta2.step_order) FROM ticket_approvals ta2
              WHERE ta2.ticket_id = ta.ticket_id AND ta2.status = 'pending'
@@ -266,7 +272,7 @@ export const approvalRepo = {
       "SELECT id FROM approval_flows WHERE scope_type = 'default' LIMIT 1",
     );
     const flowId = flowRows[0]?.id as number | undefined;
-    if (!flowId) throw new Error('Default approval flow is missing');
+    if (!flowId) throw AppError.internal('Default approval flow is missing — run the DB seed');
     await conn.execute('DELETE FROM approval_flow_steps WHERE flow_id = ?', [flowId]);
     let order = 1;
     for (const s of steps) {

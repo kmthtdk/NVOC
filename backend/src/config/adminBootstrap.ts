@@ -8,7 +8,7 @@ import { logger } from './logger.js';
  * database/init/02_seed.sql (cost 10). In production we disable any account
  * still carrying it, so the well-known demo credentials can never grant access.
  */
-const DEMO_PASSWORD_HASH = '$2a$10$S4stxttvBHccVzRgHnKaQ.HCLXNNIAj0.O90RWAf0BayEzmnBMZ/W';
+export const DEMO_PASSWORD_HASH = '$2a$10$S4stxttvBHccVzRgHnKaQ.HCLXNNIAj0.O90RWAf0BayEzmnBMZ/W';
 
 /**
  * Boot-time auth hardening. Runs once at startup:
@@ -18,6 +18,15 @@ const DEMO_PASSWORD_HASH = '$2a$10$S4stxttvBHccVzRgHnKaQ.HCLXNNIAj0.O90RWAf0BayE
  *     hash — closing the known-credential hole (SEC-CRIT-2).
  */
 export async function bootstrapAuth(): Promise<void> {
+  // Weak-secret warning (C-2): a guessable JWT_SECRET lets anyone forge admin
+  // tokens. Zod enforces length ≥16 but not entropy.
+  if (/demo|change|secret|example|test|password/i.test(env.JWT_SECRET) || env.JWT_SECRET.length < 32) {
+    logger.warn(
+      'JWT_SECRET looks weak or guessable — generate a random 32+ byte secret ' +
+        '(`openssl rand -hex 32`) and set it via a secrets manager before production.',
+    );
+  }
+
   if (env.ADMIN_EMAIL && env.ADMIN_PASSWORD) {
     const hash = await bcrypt.hash(env.ADMIN_PASSWORD, 12);
     await pool.query(

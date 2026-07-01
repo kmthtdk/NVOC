@@ -4,7 +4,6 @@ import {
   activeStep,
   canDecide,
   applyDecision,
-  insertAdHoc,
   type ApprovalStep,
 } from '../services/approval.engine.js';
 
@@ -73,24 +72,5 @@ describe('applyDecision', () => {
 
   it('throws when deciding a non-active step (out of order)', () => {
     expect(() => applyDecision(chain(), 2, 'approve')).toThrow();
-  });
-});
-
-describe('insertAdHoc', () => {
-  it('inserts a pending signer at position, shifting later steps down', () => {
-    const steps = [step(1, 'approved', 10), step(2, 'pending', 20)];
-    const out = insertAdHoc(steps, 2, 99);
-    // old step2 becomes step3; new ad-hoc is step2 pending with approver 99
-    expect(out.map((s) => s.stepOrder)).toEqual([1, 2, 3]);
-    const inserted = out.find((s) => s.stepOrder === 2)!;
-    expect(inserted.approverUserId).toBe(99);
-    expect(inserted.status).toBe('pending');
-    expect(out.find((s) => s.stepOrder === 3)?.approverUserId).toBe(20);
-  });
-
-  it('the inserted step becomes the next active step', () => {
-    const steps = [step(1, 'approved', 10), step(2, 'pending', 20)];
-    const out = insertAdHoc(steps, 2, 99);
-    expect(activeStep(out)?.approverUserId).toBe(99);
   });
 });

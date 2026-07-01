@@ -72,17 +72,28 @@ export const approvalService = {
       const meta = await approvalRepo.getTicketMeta(ticketId, conn);
       const uid = Number(user.sub);
       const isAssigned = active.approverUserId != null && active.approverUserId === uid;
+      const isUnassigned = active.approverUserId == null;
       const isPrivileged = user.role === 'admin' || user.role === 'it_support';
-      if (!isAssigned && !isPrivileged) {
-        throw AppError.forbidden('This is not your approval step');
+      // Named approvers are binding (separation of duties). it_support/admin may
+      // only act on UNASSIGNED steps (the no-deadlock fallback); to act on a step
+      // assigned to someone else they must reassign it first (audited).
+      if (!isAssigned && !(isPrivileged && isUnassigned)) {
+        throw AppError.forbidden('This step is assigned to another approver');
       }
-      if (meta && meta.requester_email.toLowerCase() === user.email.toLowerCase()) {
+      // Self-approval guard anchored to the requester_id captured from the JWT at
+      // creation — NOT the body-supplied requester_email, which can be spoofed to
+      // slip a self-filed request past this check.
+      if (meta && meta.requester_id != null && meta.requester_id === uid) {
         throw AppError.forbidden('You cannot approve your own request');
       }
 
       const { ticketAction } = engine.applyDecision(steps, stepOrder, decision);
       const status = decision === 'approve' ? 'approved' : 'rejected';
-      await approvalRepo.decideStep(ticketId, stepOrder, status, uid, note, conn);
+      const affected = await approvalRepo.decideStep(ticketId, stepOrder, status, uid, note, conn);
+      if (affected === 0) {
+        // Lost a concurrent race — the step was already decided.
+        throw AppError.conflict('This step has already been decided');
+      }
 
       const requesterEmail = meta?.requester_email ?? null;
       if (ticketAction === 'advance') {
@@ -130,6 +141,11 @@ export const approvalService = {
     return withTransaction(async (conn) => {
       const rows = await approvalRepo.getChain(ticketId, conn);
       if (rows.length === 0) throw AppError.badRequest('This ticket has no approval chain');
+      // Only mutate a live chain — inserting into an already approved/rejected
+      // chain could drive a settled ticket back to 'rejected' (H-5).
+      if (engine.chainState(toEngineSteps(rows)) !== 'in_progress') {
+        throw AppError.conflict('Approval chain is already complete');
+      }
       if (!rows.some((r) => r.step_order === afterStep)) {
         throw AppError.badRequest('afterStep must be an existing step');
       }

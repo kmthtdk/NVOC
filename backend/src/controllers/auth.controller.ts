@@ -2,10 +2,11 @@ import type { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { env } from '../config/env.js';
+import { env, isProd } from '../config/env.js';
 import { userRepo } from '../models/user.repo.js';
 import { mapPublicUser } from '../models/mappers.js';
 import { AppError } from '../utils/AppError.js';
+import { DEMO_PASSWORD_HASH } from '../config/adminBootstrap.js';
 import type { JwtPayload } from '../types/index.js';
 
 export const loginSchema = z.object({
@@ -28,6 +29,13 @@ export const authController = {
     const ok = await bcrypt.compare(password, hash);
 
     if (!user || !ok) {
+      throw AppError.unauthorized('Invalid email or password');
+    }
+
+    // Defense-in-depth (M-5): reject seeded demo accounts (still on the default
+    // password) in production at LOGIN time — survives a DB re-seed that would
+    // otherwise re-activate them without a backend restart.
+    if (isProd && user.password_hash === DEMO_PASSWORD_HASH) {
       throw AppError.unauthorized('Invalid email or password');
     }
 

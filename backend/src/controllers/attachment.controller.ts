@@ -1,7 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import type { Request, Response } from 'express';
-import { ticketRepo } from '../models/ticket.repo.js';
 import { attachmentRepo } from '../models/attachment.repo.js';
 import { UPLOAD_DIR } from '../middleware/upload.js';
 import { AppError } from '../utils/AppError.js';
@@ -16,9 +15,15 @@ export const attachmentController = {
   /** POST /tickets/:id/attachments — multipart upload; persists metadata. */
   async upload(req: Request, res: Response): Promise<void> {
     const ticketId = parseId(req.params.id, 'ticket');
-    if (!(await ticketRepo.exists(ticketId))) {
-      // Clean up any files multer already wrote to disk before bailing.
-      cleanupFiles(req.files);
+    // Existence + ownership in one lookup. A requester may only attach to a ticket
+    // they filed (H-1: previously any requester could inject files onto any
+    // ticket). 404 (not 403) so ticket existence isn't leaked. it/admin pass.
+    const ownerEmail = await attachmentRepo.findTicketOwnerEmail(ticketId);
+    if (
+      !ownerEmail ||
+      (req.user?.role === 'requester' && ownerEmail.toLowerCase() !== req.user.email.toLowerCase())
+    ) {
+      cleanupFiles(req.files); // remove anything multer already wrote to disk
       throw AppError.notFound('Ticket not found');
     }
 
