@@ -32,6 +32,7 @@ CREATE TABLE categories (
   name        VARCHAR(120) NOT NULL,
   icon        VARCHAR(50)  NOT NULL,                   -- lucide-react icon name
   description TEXT NULL,
+  code_prefix VARCHAR(8) NULL,                         -- ticket code prefix, e.g. 'HW' (NULL -> 'REQ')
   sort_order  INT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -56,12 +57,15 @@ CREATE TABLE request_types (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------------------------------------------------------
--- TICKET_SEQUENCE — transaction-safe source for REQ-YYYY-NNNN codes.
--- One row per year; SELECT ... FOR UPDATE serializes concurrent code generation.
+-- TICKET_SEQUENCE — transaction-safe source for <PREFIX>-YYYY-NNNN codes.
+-- One row per (prefix, year) so each main category numbers independently
+-- (HW-2026-0001, SE-2026-0001, ...). SELECT ... FOR UPDATE serializes generation.
 -- ----------------------------------------------------------------------------
 CREATE TABLE ticket_sequence (
-  year     INT UNSIGNED PRIMARY KEY,
-  last_seq INT UNSIGNED NOT NULL DEFAULT 0
+  prefix   VARCHAR(8)   NOT NULL DEFAULT 'REQ',
+  year     INT UNSIGNED NOT NULL,
+  last_seq INT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (prefix, year)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------------------------------------------------------

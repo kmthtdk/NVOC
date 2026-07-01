@@ -55,23 +55,40 @@ export interface UpdateTicketInput {
 }
 
 /**
- * Allocate the next REQ-YYYY-NNNN code inside a transaction.
- * SELECT ... FOR UPDATE on the per-year counter row serializes concurrent POSTs,
- * preventing duplicate codes under load.
+ * Allocate the next <PREFIX>-YYYY-NNNN code inside a transaction. The counter is
+ * per (prefix, year), so each main category numbers independently (HW-2026-0001,
+ * SE-2026-0001, ...). SELECT ... FOR UPDATE serializes concurrent POSTs.
  */
-async function nextTicketCode(conn: PoolConnection, year: number): Promise<string> {
+async function nextTicketCode(
+  conn: PoolConnection,
+  prefix: string,
+  year: number,
+): Promise<string> {
   await conn.execute(
-    'INSERT INTO ticket_sequence (year, last_seq) VALUES (?, 0) ON DUPLICATE KEY UPDATE year = year',
-    [year],
+    'INSERT INTO ticket_sequence (prefix, year, last_seq) VALUES (?, ?, 0) ON DUPLICATE KEY UPDATE prefix = prefix',
+    [prefix, year],
   );
   const [rows] = await conn.query<RowDataPacket[]>(
-    'SELECT last_seq FROM ticket_sequence WHERE year = ? FOR UPDATE',
-    [year],
+    'SELECT last_seq FROM ticket_sequence WHERE prefix = ? AND year = ? FOR UPDATE',
+    [prefix, year],
   );
   const current = Number(rows[0]?.last_seq ?? 0);
   const next = current + 1;
-  await conn.execute('UPDATE ticket_sequence SET last_seq = ? WHERE year = ?', [next, year]);
-  return `REQ-${year}-${String(next).padStart(4, '0')}`;
+  await conn.execute(
+    'UPDATE ticket_sequence SET last_seq = ? WHERE prefix = ? AND year = ?',
+    [next, prefix, year],
+  );
+  return `${prefix}-${year}-${String(next).padStart(4, '0')}`;
+}
+
+/** Resolve a category's ticket-code prefix; falls back to 'REQ' if unset. */
+async function categoryPrefix(conn: PoolConnection, categoryId: string): Promise<string> {
+  const [rows] = await conn.query<RowDataPacket[]>(
+    'SELECT code_prefix FROM categories WHERE id = ? LIMIT 1',
+    [categoryId],
+  );
+  const p = rows[0]?.code_prefix as string | null | undefined;
+  return p && p.trim() ? p.trim() : 'REQ';
 }
 
 export const ticketRepo = {
@@ -154,7 +171,8 @@ export const ticketRepo = {
     const year = new Date().getUTCFullYear();
 
     const newId = await withTransaction(async (conn) => {
-      const code = await nextTicketCode(conn, year);
+      const prefix = await categoryPrefix(conn, input.category);
+      const code = await nextTicketCode(conn, prefix, year);
 
       const [result] = await conn.execute(
         `INSERT INTO tickets

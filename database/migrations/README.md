@@ -33,3 +33,4 @@ mysql -h <host> -P <port> -u root -p voc_system \
 | `2026-07-01_01_condition_state_damaged.sql` | 2026-07-01 | Add `'damaged'` to `device_history.condition_state` (C-2 fix) |
 | `2026-07-01_02_device_purchase_fields.sql` | 2026-07-01 | Add procurement fields to `devices` (supplier, purchase_cost, currency, po_number, invoice_no) |
 | `2026-07-01_03_approvals.sql` | 2026-07-01 | Approval workflow: app_settings, department_leaders, approval_flows/steps, ticket_approvals, notifications + default-flow seed |
+| `2026-07-01_04_category_code_prefix.sql` | 2026-07-01 | Per-category ticket code prefixes (categories.code_prefix); re-key ticket_sequence by (prefix, year) |

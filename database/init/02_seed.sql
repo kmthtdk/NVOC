@@ -18,13 +18,13 @@ INSERT INTO users (id, full_name, email, password_hash, role, department, title)
   (3, 'Alex Mercer',   'alex.mercer@company.com', '$2a$10$S4stxttvBHccVzRgHnKaQ.HCLXNNIAj0.O90RWAf0BayEzmnBMZ/W', 'requester',  'R&D / Software Engineering','Software Engineer');
 
 -- ----------------------------------------------------------- CATEGORIES ----
-INSERT INTO categories (id, name, icon, description, sort_order) VALUES
-  ('general_request',  'General Request',  'Laptop',  'General support requests, troubleshooting, or office specific workspace requests / VOC.', 1),
-  ('network_request',  'Network Request',  'Wifi',    'Register LAN network connections, static address assignment, or unblock connections.',   2),
-  ('network_security', 'Network Security', 'Shield',  'Secure corporate networking access, boundary routing permissions, and firewall rule configurations.', 3),
-  ('server_request',   'Server Request',   'Server',  'Shared file directories, folder expand requests, directory data restorations, or standard permissions.', 4),
-  ('security_request', 'Security Request', 'Lock',    'Special authorization for network control exemptions, USB access, and data decryption operations.', 5),
-  ('hardware_request', 'Hardware Request', 'Monitor', 'Request new, repair, upgrade, return, or replacement of physical devices.', 6);
+INSERT INTO categories (id, name, icon, description, code_prefix, sort_order) VALUES
+  ('general_request',  'General Request',  'Laptop',  'General support requests, troubleshooting, or office specific workspace requests / VOC.', 'GR', 1),
+  ('network_request',  'Network Request',  'Wifi',    'Register LAN network connections, static address assignment, or unblock connections.',   'NW', 2),
+  ('network_security', 'Network Security', 'Shield',  'Secure corporate networking access, boundary routing permissions, and firewall rule configurations.', 'NS', 3),
+  ('server_request',   'Server Request',   'Server',  'Shared file directories, folder expand requests, directory data restorations, or standard permissions.', 'SV', 4),
+  ('security_request', 'Security Request', 'Lock',    'Special authorization for network control exemptions, USB access, and data decryption operations.', 'SE', 5),
+  ('hardware_request', 'Hardware Request', 'Monitor', 'Request new, repair, upgrade, return, or replacement of physical devices.', 'HW', 6);
 
 -- -------------------------------------------------------- SUBCATEGORIES ----
 INSERT INTO subcategories (id, category_id, name, description, sort_order) VALUES
