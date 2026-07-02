@@ -264,6 +264,7 @@ function UserPortal({
   onSelectTicket: (t: Ticket) => void;
   requesterEmail: string | null;
 }) {
+  const { user } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -318,8 +319,32 @@ function UserPortal({
         : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
     }`;
 
+  const firstName = (user?.fullName ?? 'there').split(' ')[0];
+  const openCount = listToShow.filter((t) => t.status === 'submitted' || t.status === 'waiting').length;
+  const resolvedCount = listToShow.filter((t) => t.status === 'resolved').length;
+
   return (
     <div className="space-y-6">
+      {/* Welcome hero (stitch user-dashboard) */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-800 via-violet-700 to-violet-600 text-white p-6 sm:p-8 shadow-sm">
+        <div className="relative z-10">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Welcome back, {firstName}!</h2>
+          <p className="mt-1.5 text-sm text-white/80 max-w-2xl leading-relaxed">
+            {listToShow.length === 0 ? (
+              <>You have no requests yet. Use <span className="font-semibold text-white">Create Request</span> to file your first VOC.</>
+            ) : (
+              <>
+                You have <span className="font-bold text-white">{openCount}</span> open request{openCount === 1 ? '' : 's'}
+                {resolvedCount > 0 && <> · <span className="font-bold text-white">{resolvedCount}</span> resolved</>}.
+                Track status or chat with IT under <span className="font-semibold text-white">Your VOC Requests</span>.
+              </>
+            )}
+          </p>
+        </div>
+        {/* subtle grid texture */}
+        <div className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(rgba(255,255,255,.6)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.6)_1px,transparent_1px)] [background-size:22px_22px]" />
+      </div>
+
       {/* Portal tabs — Create Request vs the requester's own VOC list */}
       <div className="flex gap-1 border-b border-slate-200 dark:border-slate-800">
         <button type="button" onClick={() => setTab('new')} className={tabCls('new')}>
@@ -527,7 +552,7 @@ function AdminWorkspace({
           </div>
 
           {/* Unified Dashboard: metrics + breakdowns */}
-          <StatusDashboard tickets={metricsTickets} total={metricsTotal} />
+          <StatusDashboard tickets={metricsTickets} total={metricsTotal} onSelectTicket={onSelectTicket} />
 
           {/* Dispatch console */}
           {showSim && (
