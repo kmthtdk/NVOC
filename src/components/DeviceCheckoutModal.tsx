@@ -111,7 +111,7 @@ export default function DeviceCheckoutModal({
             {description} ({ticketCode})
           </p>
           {isReturn && (
-            <div className="mt-3 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/50 rounded-lg text-green-700 dark:text-green-300 text-xs">
+            <div className="mt-3 p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 rounded-lg text-emerald-700 dark:text-emerald-300 text-xs">
               <strong>Device Return:</strong> Once processed, device status will change to "In Stock" and will be available for reassignment.
             </div>
           )}

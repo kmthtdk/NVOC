@@ -89,15 +89,15 @@ export default function TicketReportsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-          <BarChart3 className="w-8 h-8 text-blue-600" />
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+          <BarChart3 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           Ticket Analytics Reports
         </h1>
-        <p className="text-gray-600 mt-2">Hardware requests, fulfillment times, and ticket aging analysis</p>
+        <p className="text-slate-600 dark:text-slate-400 mt-2">Hardware requests, fulfillment times, and ticket aging analysis</p>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-gray-200 flex-wrap">
+      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 flex-wrap">
         {[
           { id: 'pending-hardware', label: 'Pending Hardware', icon: ListTodo },
           { id: 'fulfillment', label: 'Fulfillment Time', icon: Clock },
@@ -109,8 +109,8 @@ export default function TicketReportsPage() {
             onClick={() => setActiveTab(id as TabType)}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all ${
               activeTab === id
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <Icon className="w-4 h-4" />
@@ -124,14 +124,14 @@ export default function TicketReportsPage() {
         <div className="p-8 text-center">
           <div className="inline-flex flex-col items-center gap-3">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-            <p className="text-gray-600">Loading report...</p>
+            <p className="text-slate-600 dark:text-slate-400">Loading report...</p>
           </div>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800 font-medium">Error: {error}</p>
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <p className="text-red-800 dark:text-red-300 font-medium">Error: {error}</p>
         </div>
       )}
 
@@ -139,48 +139,48 @@ export default function TicketReportsPage() {
         <>
           {/* Pending Hardware Requests */}
           {activeTab === 'pending-hardware' && (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-              <div className="bg-blue-50 border-b border-gray-200 px-6 py-4">
-                <h2 className="font-semibold text-gray-900">Open Hardware Requests ({pendingRequests.length})</h2>
+            <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+              <div className="bg-blue-50 dark:bg-blue-950/30 border-b border-slate-200 dark:border-slate-800 px-6 py-4">
+                <h2 className="font-semibold text-slate-900 dark:text-white">Open Hardware Requests ({pendingRequests.length})</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Code</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Title</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Requester</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Created</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Priority</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Code</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Title</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Requester</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Created</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Priority</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {pendingRequests.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-3 text-center text-gray-500">
+                        <td colSpan={6} className="px-4 py-3 text-center text-slate-500 dark:text-slate-400">
                           No pending hardware requests
                         </td>
                       </tr>
                     ) : (
                       pendingRequests.map((req, idx) => (
-                        <tr key={idx} className="border-t border-gray-200 hover:bg-gray-50">
-                          <td className="px-4 py-3 font-mono text-gray-900">{req.code}</td>
-                          <td className="px-4 py-3 text-gray-900">{req.title}</td>
-                          <td className="px-4 py-3 text-gray-600">{req.requester_name}</td>
-                          <td className="px-4 py-3 text-gray-600 text-xs">
+                        <tr key={idx} className="border-t border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                          <td className="px-4 py-3 font-mono text-slate-900 dark:text-white">{req.code}</td>
+                          <td className="px-4 py-3 text-slate-900 dark:text-white">{req.title}</td>
+                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{req.requester_name}</td>
+                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
                             {new Date(req.created_at).toLocaleDateString()}
                           </td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              req.priority === 'urgent' ? 'bg-red-100 text-red-700' :
-                              req.priority === 'high' ? 'bg-orange-100 text-orange-700' :
-                              'bg-blue-100 text-blue-700'
+                              req.priority === 'urgent' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
+                              req.priority === 'high' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
+                              'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
                             }`}>
                               {req.priority}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-gray-600">{req.status}</td>
+                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{req.status}</td>
                         </tr>
                       ))
                     )}
@@ -194,20 +194,20 @@ export default function TicketReportsPage() {
           {activeTab === 'fulfillment' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {fulfillmentStats.map((stat, idx) => (
-                <div key={idx} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                  <h3 className="font-semibold text-gray-900 mb-4">{stat.category_id}</h3>
+                <div key={idx} className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                  <h3 className="font-semibold text-slate-900 dark:text-white mb-4">{stat.category_id}</h3>
                   <div className="space-y-3">
                     <div>
-                      <p className="text-gray-600 text-sm">Average Fulfillment</p>
-                      <p className="text-2xl font-bold text-blue-600">{formatHours(stat.avg_hours)}</p>
+                      <p className="text-slate-600 dark:text-slate-400 text-sm">Average Fulfillment</p>
+                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{formatHours(stat.avg_hours)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600 text-sm">Min - Max</p>
-                      <p className="text-gray-900">{formatHours(stat.min_hours)} - {formatHours(stat.max_hours)}</p>
+                      <p className="text-slate-600 dark:text-slate-400 text-sm">Min - Max</p>
+                      <p className="text-slate-900 dark:text-white">{formatHours(stat.min_hours)} - {formatHours(stat.max_hours)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600 text-sm">Resolved</p>
-                      <p className="text-gray-900 font-semibold">{stat.total_resolved} tickets</p>
+                      <p className="text-slate-600 dark:text-slate-400 text-sm">Resolved</p>
+                      <p className="text-slate-900 dark:text-white font-semibold">{stat.total_resolved} tickets</p>
                     </div>
                   </div>
                 </div>
@@ -219,13 +219,13 @@ export default function TicketReportsPage() {
           {activeTab === 'age-buckets' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.entries(ageBuckets).map(([bucket, statuses]) => (
-                <div key={bucket} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                  <h3 className="font-semibold text-gray-900 mb-4">{bucket}</h3>
+                <div key={bucket} className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                  <h3 className="font-semibold text-slate-900 dark:text-white mb-4">{bucket}</h3>
                   <div className="space-y-2">
                     {Object.entries(statuses).map(([status, count]) => (
                       <div key={status} className="flex justify-between items-center">
-                        <span className="text-gray-600 text-sm">{status}</span>
-                        <span className="font-bold text-gray-900">{count}</span>
+                        <span className="text-slate-600 dark:text-slate-400 text-sm">{status}</span>
+                        <span className="font-bold text-slate-900 dark:text-white">{count}</span>
                       </div>
                     ))}
                   </div>
@@ -236,35 +236,35 @@ export default function TicketReportsPage() {
 
           {/* Category Trend */}
           {activeTab === 'category-trend' && (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-              <div className="bg-blue-50 border-b border-gray-200 px-6 py-4">
-                <h2 className="font-semibold text-gray-900">6-Month Category Trends</h2>
+            <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+              <div className="bg-blue-50 dark:bg-blue-950/30 border-b border-slate-200 dark:border-slate-800 px-6 py-4">
+                <h2 className="font-semibold text-slate-900 dark:text-white">6-Month Category Trends</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Month</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Category</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Count</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Visual</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Month</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Category</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Count</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Visual</th>
                     </tr>
                   </thead>
                   <tbody>
                     {categoryTrend.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-4 py-3 text-center text-gray-500">
+                        <td colSpan={4} className="px-4 py-3 text-center text-slate-500 dark:text-slate-400">
                           No data available
                         </td>
                       </tr>
                     ) : (
                       categoryTrend.map((item, idx) => (
-                        <tr key={idx} className="border-t border-gray-200 hover:bg-gray-50">
-                          <td className="px-4 py-3 font-mono text-gray-900">{item.month}</td>
-                          <td className="px-4 py-3 text-gray-900">{item.category_id}</td>
-                          <td className="px-4 py-3 text-gray-900 font-semibold">{item.count}</td>
+                        <tr key={idx} className="border-t border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                          <td className="px-4 py-3 font-mono text-slate-900 dark:text-white">{item.month}</td>
+                          <td className="px-4 py-3 text-slate-900 dark:text-white">{item.category_id}</td>
+                          <td className="px-4 py-3 text-slate-900 dark:text-white font-semibold">{item.count}</td>
                           <td className="px-4 py-3">
-                            <div className="w-24 bg-gray-200 rounded h-6 overflow-hidden">
+                            <div className="w-24 bg-slate-200 dark:bg-slate-700 rounded h-6 overflow-hidden">
                               <div
                                 className="bg-blue-500 h-full"
                                 style={{ width: `${Math.min((item.count / 10) * 100, 100)}%` }}

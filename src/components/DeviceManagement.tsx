@@ -56,13 +56,13 @@ export default function DeviceManagement({ user }: DeviceManagementProps) {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      'In Stock': 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
+      'In Stock': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
       'Active': 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
       'In Repair': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
-      'Retired': 'bg-gray-100 text-gray-700 dark:bg-gray-950 dark:text-gray-300',
+      'Retired': 'bg-slate-100 text-slate-700 dark:bg-slate-950 dark:text-slate-300',
       'Lost': 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
     };
-    return colors[status] || 'bg-gray-100 text-gray-700';
+    return colors[status] || 'bg-slate-100 text-slate-700';
   };
 
   const handleDeviceSaved = async () => {
@@ -85,8 +85,8 @@ export default function DeviceManagement({ user }: DeviceManagementProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Device Inventory</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Manage IT devices and track assignments</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Device Inventory</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">Manage IT devices and track assignments</p>
         </div>
         <button
           onClick={handleOpenModal}
@@ -104,13 +104,13 @@ export default function DeviceManagement({ user }: DeviceManagementProps) {
             placeholder="Search by code, model, or serial..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
           />
         </div>
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+          className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
         >
           <option value="">All Status</option>
           <option value="In Stock">In Stock</option>
@@ -134,9 +134,9 @@ export default function DeviceManagement({ user }: DeviceManagementProps) {
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th className="px-6 py-3 text-left font-semibold">Code</th>
                 <th className="px-6 py-3 text-left font-semibold">Model</th>
@@ -146,32 +146,32 @@ export default function DeviceManagement({ user }: DeviceManagementProps) {
                 <th className="px-6 py-3 text-left font-semibold">Department</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
                     No devices found
                   </td>
                 </tr>
               ) : (
                 filtered.map((device) => (
-                  <tr key={device.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                    <td className="px-6 py-4 font-mono font-bold text-gray-900 dark:text-white">{device.code}</td>
-                    <td className="px-6 py-4 text-gray-900 dark:text-white">{device.model}</td>
-                    <td className="px-6 py-4 text-xs font-mono text-gray-600 dark:text-gray-400">{device.serialNumber}</td>
+                  <tr key={device.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">{device.code}</td>
+                    <td className="px-6 py-4 text-slate-900 dark:text-white">{device.model}</td>
+                    <td className="px-6 py-4 text-xs font-mono text-slate-600 dark:text-slate-400">{device.serialNumber}</td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(device.status)}`}>
                         {device.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{device.assignedTo || '-'}</td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{device.department || '-'}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{device.assignedTo || '-'}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{device.department || '-'}</td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
-          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 text-sm text-gray-600 dark:text-gray-400">
+          <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-400">
             Showing {filtered.length} of {devices.length} devices
           </div>
         </div>

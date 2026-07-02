@@ -495,9 +495,9 @@ export default function DeviceFormModal({
   const fieldClass = (field: string, customErrors?: Record<string, string>) => {
     const errMap = customErrors ?? errors;
     return (
-      `w-full rounded-md border px-3 py-2 text-sm bg-white dark:bg-gray-800 ` +
-      `text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ` +
-      (errMap[field] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600')
+      `w-full rounded-md border px-3 py-2 text-sm bg-white dark:bg-slate-800 ` +
+      `text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ` +
+      (errMap[field] ? 'border-red-500' : 'border-slate-300 dark:border-slate-600')
     );
   };
 
@@ -508,15 +508,15 @@ export default function DeviceFormModal({
       aria-modal="true"
       aria-labelledby="device-form-title"
     >
-      <div className="w-full max-w-2xl rounded-lg bg-white dark:bg-gray-900 shadow-xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-          <h2 id="device-form-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <div className="w-full max-w-2xl rounded-lg bg-white dark:bg-slate-900 shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-6 py-4">
+          <h2 id="device-form-title" className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             {isEditMode ? 'Edit Device' : 'Add Device'}
           </h2>
           <button
             ref={closeRef}
             onClick={onClose}
-            className="rounded p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="rounded p-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -526,22 +526,22 @@ export default function DeviceFormModal({
         <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
           {isEditMode && (
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Asset Code
               </label>
               <input
                 type="text"
                 value={device?.code ?? ''}
                 readOnly
-                className="w-full cursor-not-allowed rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+                className="w-full cursor-not-allowed rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
               />
-              <p className="mt-1 text-xs text-gray-500">Generated automatically by the system.</p>
+              <p className="mt-1 text-xs text-slate-500">Generated automatically by the system.</p>
             </div>
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Device Type <span className="text-red-500">*</span>
               </label>
               <select
@@ -560,7 +560,7 @@ export default function DeviceFormModal({
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Status <span className="text-red-500">*</span>
               </label>
               <select
@@ -578,7 +578,7 @@ export default function DeviceFormModal({
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Model <span className="text-red-500">*</span>
               </label>
               <input
@@ -592,7 +592,7 @@ export default function DeviceFormModal({
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Serial Number <span className="text-red-500">*</span>
               </label>
               <input
@@ -608,7 +608,7 @@ export default function DeviceFormModal({
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Assigned To
               </label>
               <input
@@ -621,7 +621,7 @@ export default function DeviceFormModal({
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Department
               </label>
               <input
@@ -633,7 +633,7 @@ export default function DeviceFormModal({
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Purchase Date
               </label>
               <input
@@ -648,7 +648,7 @@ export default function DeviceFormModal({
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Warranty Expiry
               </label>
               <input
@@ -664,13 +664,13 @@ export default function DeviceFormModal({
           </div>
 
           {/* Purchase / Procurement Section */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+            <h3 className="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
               Purchase / Procurement
             </h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Supplier
                 </label>
                 <input
@@ -683,7 +683,7 @@ export default function DeviceFormModal({
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Purchase Cost
                 </label>
                 <div className="flex gap-2">
@@ -715,7 +715,7 @@ export default function DeviceFormModal({
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   PO Number
                 </label>
                 <input
@@ -728,7 +728,7 @@ export default function DeviceFormModal({
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Invoice No.
                 </label>
                 <input
@@ -743,9 +743,9 @@ export default function DeviceFormModal({
           </div>
 
           {/* MAC Address Management Section */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 MAC Addresses
               </h3>
               <button
@@ -769,14 +769,14 @@ export default function DeviceFormModal({
                   return (
                     <div
                       key={mac.id}
-                      className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3"
+                      className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3"
                     >
                       {isEditing ? (
                         // Edit Mode
                         <div className="space-y-2">
                           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             <div>
-                              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                              <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
                                 Type
                               </label>
                               <select
@@ -794,7 +794,7 @@ export default function DeviceFormModal({
                               </select>
                             </div>
                             <div>
-                              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                              <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
                                 Address
                               </label>
                               <input
@@ -817,7 +817,7 @@ export default function DeviceFormModal({
                             <button
                               type="button"
                               onClick={handleCancelEditMac}
-                              className="rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
+                              className="rounded px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700"
                             >
                               Cancel
                             </button>
@@ -835,14 +835,14 @@ export default function DeviceFormModal({
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
                                 {mac.macAddress}
                               </span>
-                              <span className="rounded bg-gray-200 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-700 dark:text-gray-300">
+                              <span className="rounded bg-slate-200 dark:bg-slate-700 px-2 py-0.5 text-xs text-slate-700 dark:text-slate-300">
                                 {mac.macType}
                               </span>
                               {status === 'new' && (
-                                <span className="inline-flex items-center gap-1 rounded bg-green-100 dark:bg-green-900/30 px-2 py-0.5 text-xs text-green-700 dark:text-green-300">
+                                <span className="inline-flex items-center gap-1 rounded bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 text-xs text-emerald-700 dark:text-emerald-300">
                                   <CheckCircle className="h-3 w-3" />
                                   New
                                 </span>
@@ -860,7 +860,7 @@ export default function DeviceFormModal({
                               type="button"
                               onClick={() => handleEditMacClick(mac)}
                               disabled={saving || loading}
-                              className="rounded p-1 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700"
+                              className="rounded p-1 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700"
                               aria-label="Edit MAC address"
                             >
                               <Edit2 className="h-4 w-4" />
@@ -869,7 +869,7 @@ export default function DeviceFormModal({
                               type="button"
                               onClick={() => handleDeleteMac(mac.id)}
                               disabled={saving || loading}
-                              className="rounded p-1 text-gray-500 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                              className="rounded p-1 text-slate-500 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                               aria-label="Delete MAC address"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -885,13 +885,13 @@ export default function DeviceFormModal({
 
             {/* New MAC Address Form */}
             {editingMacId === null && (
-              <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 p-3">
+              <div className="rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 p-3">
                 {showNewMacForm || newMacForm.macAddress || Object.keys(newMacErrors).length > 0 ? (
                   // Form Visible
                   <div className="space-y-2">
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                        <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
                           Type
                         </label>
                         <select
@@ -907,7 +907,7 @@ export default function DeviceFormModal({
                         </select>
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                        <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
                           Address
                         </label>
                         <input
@@ -930,7 +930,7 @@ export default function DeviceFormModal({
                           setNewMacErrors({});
                           setShowNewMacForm(false);
                         }}
-                        className="rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
+                        className="rounded px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700"
                       >
                         Cancel
                       </button>
@@ -945,7 +945,7 @@ export default function DeviceFormModal({
                   </div>
                 ) : (
                   // Empty State
-                  <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                     <AlertCircle className="h-4 w-4 flex-shrink-0" />
                     <p className="text-xs">No MAC addresses. Click "Add MAC Address" to add one.</p>
                   </div>
@@ -955,7 +955,7 @@ export default function DeviceFormModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
               Notes
             </label>
             <textarea
@@ -967,13 +967,13 @@ export default function DeviceFormModal({
           </div>
 
           {/* Device Specifications Section */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-            <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">Device Specifications</h3>
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4">
+            <h3 className="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Device Specifications</h3>
 
             <div className="grid grid-cols-2 gap-4">
               {/* CPU */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   CPU
                 </label>
                 <input
@@ -982,13 +982,13 @@ export default function DeviceFormModal({
                   onChange={(e) => setSpecifications({ ...specifications, cpu: e.target.value || null })}
                   placeholder="e.g., Intel i7-10700K"
                   disabled={isEditMode}
-                  className={`rounded-md border border-gray-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'}`}
+                  className={`rounded-md border border-slate-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed' : 'dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100'}`}
                 />
               </div>
 
               {/* RAM */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   RAM (GB)
                 </label>
                 <input
@@ -999,13 +999,13 @@ export default function DeviceFormModal({
                   max="1024"
                   placeholder="16"
                   disabled={isEditMode}
-                  className={`rounded-md border border-gray-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'}`}
+                  className={`rounded-md border border-slate-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed' : 'dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100'}`}
                 />
               </div>
 
               {/* Storage */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Storage (GB)
                 </label>
                 <input
@@ -1016,13 +1016,13 @@ export default function DeviceFormModal({
                   max="10000"
                   placeholder="512"
                   disabled={isEditMode}
-                  className={`rounded-md border border-gray-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'}`}
+                  className={`rounded-md border border-slate-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed' : 'dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100'}`}
                 />
               </div>
 
               {/* GPU */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   GPU (Optional)
                 </label>
                 <input
@@ -1031,13 +1031,13 @@ export default function DeviceFormModal({
                   onChange={(e) => setSpecifications({ ...specifications, gpu: e.target.value || null })}
                   placeholder="e.g., NVIDIA RTX 3060"
                   disabled={isEditMode}
-                  className={`rounded-md border border-gray-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'}`}
+                  className={`rounded-md border border-slate-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed' : 'dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100'}`}
                 />
               </div>
 
               {/* PSU */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   PSU Watts (Optional)
                 </label>
                 <input
@@ -1048,18 +1048,18 @@ export default function DeviceFormModal({
                   max="2000"
                   placeholder="130"
                   disabled={isEditMode}
-                  className={`rounded-md border border-gray-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'}`}
+                  className={`rounded-md border border-slate-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed' : 'dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100'}`}
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700 pt-4">
+          <div className="flex justify-end gap-3 border-t border-slate-200 dark:border-slate-700 pt-4">
             <button
               type="button"
               onClick={onClose}
               disabled={saving || loading}
-              className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               Cancel
             </button>

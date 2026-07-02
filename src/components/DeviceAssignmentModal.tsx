@@ -212,7 +212,7 @@ export default function DeviceAssignmentModal({
                         <div>Serial: <span className="font-mono text-slate-700 dark:text-slate-300">{device.serialNumber || 'N/A'}</span></div>
                         <div className="flex justify-between">
                           <span>Type: <span className="capitalize font-medium">{device.deviceType}</span></span>
-                          <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 rounded text-[10px] font-semibold">
+                          <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 rounded text-[10px] font-semibold">
                             In Stock
                           </span>
                         </div>

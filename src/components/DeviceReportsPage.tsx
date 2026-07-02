@@ -117,11 +117,11 @@ export default function DeviceReportsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-          <BarChart3 className="w-8 h-8 text-blue-600" />
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+          <BarChart3 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           Device Inventory Reports
         </h1>
-        <p className="text-gray-600 mt-2">Comprehensive device tracking and allocation reports</p>
+        <p className="text-slate-600 dark:text-slate-400 mt-2">Comprehensive device tracking and allocation reports</p>
       </div>
 
       {/* Filter Bar */}
@@ -133,7 +133,7 @@ export default function DeviceReportsPage() {
       />
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-gray-200 flex-wrap">
+      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 flex-wrap">
         {[
           { id: 'summary', label: 'Summary', icon: Package },
           { id: 'assignments', label: 'Assignments', icon: Users },
@@ -146,8 +146,8 @@ export default function DeviceReportsPage() {
             onClick={() => handleTabChange(id as TabType)}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === id
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <Icon className="w-4 h-4" />
@@ -161,14 +161,14 @@ export default function DeviceReportsPage() {
         <div className="min-h-96 flex items-center justify-center p-8">
           <div className="inline-flex flex-col items-center gap-3">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-            <p className="text-gray-600">Loading report...</p>
+            <p className="text-slate-600 dark:text-slate-400">Loading report...</p>
           </div>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800 font-medium">Error: {error}</p>
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <p className="text-red-800 dark:text-red-300 font-medium">Error: {error}</p>
         </div>
       )}
 
@@ -178,32 +178,32 @@ export default function DeviceReportsPage() {
           {activeTab === 'summary' && summary && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Total Devices */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                <p className="text-gray-500 text-sm font-medium">Total Devices</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{summary.total}</p>
+              <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Devices</p>
+                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">{summary.total}</p>
               </div>
 
               {/* By Status */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                <p className="text-gray-700 font-semibold mb-4">Status Breakdown</p>
+              <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                <p className="text-slate-700 dark:text-slate-300 font-semibold mb-4">Status Breakdown</p>
                 <div className="space-y-2 text-sm">
                   {Object.entries(summary.by_status).map(([status, count]) => (
                     <div key={status} className="flex justify-between">
-                      <span className="text-gray-600">{status}</span>
-                      <span className="font-semibold text-gray-900">{count}</span>
+                      <span className="text-slate-600 dark:text-slate-400">{status}</span>
+                      <span className="font-semibold text-slate-900 dark:text-white">{count}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* By Type */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                <p className="text-gray-700 font-semibold mb-4">Device Type</p>
+              <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                <p className="text-slate-700 dark:text-slate-300 font-semibold mb-4">Device Type</p>
                 <div className="space-y-2 text-sm">
                   {Object.entries(summary.by_type).map(([type, count]) => (
                     <div key={type} className="flex justify-between">
-                      <span className="text-gray-600">{type}</span>
-                      <span className="font-semibold text-gray-900">{count}</span>
+                      <span className="text-slate-600 dark:text-slate-400">{type}</span>
+                      <span className="font-semibold text-slate-900 dark:text-white">{count}</span>
                     </div>
                   ))}
                 </div>
@@ -213,36 +213,36 @@ export default function DeviceReportsPage() {
 
           {/* Assignments Tab */}
           {activeTab === 'assignments' && (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Code</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Model</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Serial</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Assigned To</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Department</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Code</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Model</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Serial</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Assigned To</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Department</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {assignments.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-3 text-center text-gray-500">
+                        <td colSpan={6} className="px-4 py-3 text-center text-slate-500 dark:text-slate-400">
                           No devices assigned
                         </td>
                       </tr>
                     ) : (
                       assignments.map((device) => (
-                        <tr key={device.device_code} className="border-t border-gray-200 hover:bg-gray-50">
-                          <td className="px-4 py-3 font-mono text-gray-900">{device.device_code}</td>
-                          <td className="px-4 py-3 text-gray-900">{device.model}</td>
-                          <td className="px-4 py-3 text-gray-600 text-xs">{device.serial_number}</td>
-                          <td className="px-4 py-3 text-gray-900">{device.assigned_to || '-'}</td>
-                          <td className="px-4 py-3 text-gray-600">{device.department || '-'}</td>
+                        <tr key={device.device_code} className="border-t border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                          <td className="px-4 py-3 font-mono text-slate-900 dark:text-white">{device.device_code}</td>
+                          <td className="px-4 py-3 text-slate-900 dark:text-white">{device.model}</td>
+                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">{device.serial_number}</td>
+                          <td className="px-4 py-3 text-slate-900 dark:text-white">{device.assigned_to || '-'}</td>
+                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{device.department || '-'}</td>
                           <td className="px-4 py-3">
-                            <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                            <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
                               {device.status}
                             </span>
                           </td>
@@ -257,22 +257,22 @@ export default function DeviceReportsPage() {
 
           {/* Aging Tab */}
           {activeTab === 'aging' && (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Code</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Model</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Assigned To</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Warranty Expiry</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Days Remaining</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Code</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Model</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Assigned To</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Warranty Expiry</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Days Remaining</th>
                     </tr>
                   </thead>
                   <tbody>
                     {aging.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-3 text-center text-gray-500">
+                        <td colSpan={5} className="px-4 py-3 text-center text-slate-500 dark:text-slate-400">
                           No devices nearing warranty expiry
                         </td>
                       </tr>
@@ -280,22 +280,22 @@ export default function DeviceReportsPage() {
                       aging.map((device) => (
                         <tr
                           key={device.device_code}
-                          className={`border-t border-gray-200 ${
-                            device.days_until_expiry <= 30 ? 'bg-red-50' : device.days_until_expiry <= 60 ? 'bg-yellow-50' : ''
+                          className={`border-t border-slate-200 dark:border-slate-800 ${
+                            device.days_until_expiry <= 30 ? 'bg-red-50 dark:bg-red-950/30' : device.days_until_expiry <= 60 ? 'bg-yellow-50 dark:bg-yellow-950/30' : ''
                           }`}
                         >
-                          <td className="px-4 py-3 font-mono text-gray-900">{device.device_code}</td>
-                          <td className="px-4 py-3 text-gray-900">{device.model}</td>
-                          <td className="px-4 py-3 text-gray-600">{device.assigned_to || '-'}</td>
-                          <td className="px-4 py-3 text-gray-600">{device.warranty_expiry || '-'}</td>
+                          <td className="px-4 py-3 font-mono text-slate-900 dark:text-white">{device.device_code}</td>
+                          <td className="px-4 py-3 text-slate-900 dark:text-white">{device.model}</td>
+                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{device.assigned_to || '-'}</td>
+                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{device.warranty_expiry || '-'}</td>
                           <td className="px-4 py-3">
                             <span
                               className={`px-2 py-1 rounded text-xs font-medium ${
                                 device.days_until_expiry <= 30
-                                  ? 'bg-red-100 text-red-700'
+                                  ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
                                   : device.days_until_expiry <= 60
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-green-100 text-green-700'
+                                  ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'
+                                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
                               }`}
                             >
                               {device.days_until_expiry} days
@@ -319,11 +319,11 @@ export default function DeviceReportsPage() {
           {activeTab === 'availability' && availability && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {[
-                { label: 'In Stock', value: availability.in_stock, color: 'bg-blue-100 text-blue-700' },
-                { label: 'Active', value: availability.active, color: 'bg-green-100 text-green-700' },
-                { label: 'In Repair', value: availability.in_repair, color: 'bg-yellow-100 text-yellow-700' },
-                { label: 'Retired', value: availability.retired, color: 'bg-gray-100 text-gray-700' },
-                { label: 'Lost', value: availability.lost, color: 'bg-red-100 text-red-700' },
+                { label: 'In Stock', value: availability.in_stock, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
+                { label: 'Active', value: availability.active, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' },
+                { label: 'In Repair', value: availability.in_repair, color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' },
+                { label: 'Retired', value: availability.retired, color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+                { label: 'Lost', value: availability.lost, color: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
               ].map((item) => (
                 <div key={item.label} className={`rounded-lg p-6 ${item.color}`}>
                   <p className="text-sm font-medium opacity-90">{item.label}</p>

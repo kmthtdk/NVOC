@@ -206,7 +206,7 @@ export default function AdminSimulation({ tickets, onMutated }: AdminSimulationP
 
   return (
     <>
-      <div className="bg-slate-900 text-slate-150 rounded-lg border border-slate-800 shadow-md p-6 sm:p-7 space-y-6">
+      <div className="bg-slate-900 text-slate-200 rounded-lg border border-slate-800 shadow-md p-6 sm:p-7 space-y-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold tracking-wider text-amber-500 uppercase bg-amber-500/10 rounded-full mb-3 border border-amber-500/20 font-mono">

@@ -273,7 +273,7 @@ export default function TicketList({ reloadKey, onSelectTicket }: TicketListProp
                   className="p-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 cursor-pointer space-y-3"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-100 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-150 dark:border-slate-700 px-2 py-0.5 rounded">
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-100 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded">
                       {ticket.code}
                     </span>
                     <span className="text-[11px] font-mono text-slate-400">{formatDate(ticket.createdAt)}</span>

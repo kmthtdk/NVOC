@@ -47,7 +47,7 @@ const getCategoryIcon = (iconName: string) => {
     case 'Shield': return <Shield className="w-5 h-5 text-emerald-600" />;
     case 'Monitor': return <Monitor className="w-5 h-5 text-amber-600" />;
     case 'Lock': return <Lock className="w-5 h-5 text-rose-600" />;
-    case 'Cpu': return <Cpu className="w-5 h-5 text-purple-600" />;
+    case 'Cpu': return <Cpu className="w-5 h-5 text-violet-600" />;
     case 'Server': return <Server className="w-5 h-5 text-blue-600" />;
     default: return <FileText className="w-5 h-5 text-slate-600" />;
   }
@@ -465,21 +465,21 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
   const currentTypeObj = currentSubcategoryObj?.types.find(t => t.id === selectedType);
 
   return (
-    <div id="request-form-container" className="bg-white rounded-xl border border-slate-200 shadow-[0_2px_12px_rgba(0,0,0,0.015)] p-6 sm:p-8">
-      <div className="border-b border-slate-200 pb-5 mb-6">
-        <h3 className="text-xl font-extrabold text-slate-900 tracking-tight font-sans">New Request</h3>
-        <p className="mt-1 text-xs text-slate-500 leading-relaxed font-sans">
+    <div id="request-form-container" className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-[0_2px_12px_rgba(0,0,0,0.015)] p-6 sm:p-8">
+      <div className="border-b border-slate-200 dark:border-slate-800 pb-5 mb-6">
+        <h3 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight font-sans">New Request</h3>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-sans">
           Complete the required fields for automated dispatch routing and live SLA assignment.
         </p>
       </div>
 
       {success && (
-        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-3 text-emerald-800 animate-fade-in-smooth">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+        <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-start gap-3 text-emerald-800 dark:text-emerald-200 animate-fade-in-smooth">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
           <div>
             <h4 className="font-semibold text-sm">Request Submitted Successfully!</h4>
-            <p className="text-xs text-emerald-600 mt-1">
-              Your VOC ID is <strong className="font-mono bg-emerald-100 px-1.5 py-0.5 rounded text-emerald-900">{success}</strong>. 
+            <p className="text-xs text-emerald-600 dark:text-emerald-300 mt-1">
+              Your VOC ID is <strong className="font-mono bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.5 rounded text-emerald-900 dark:text-emerald-200">{success}</strong>.
               You can track real-time resolution logs in the dashboard list below.
             </p>
           </div>
@@ -487,11 +487,11 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
       )}
 
       {errorMsg && (
-        <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-3 text-rose-800">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+        <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl flex items-start gap-3 text-rose-800 dark:text-rose-200">
+          <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
           <div>
             <h4 className="font-semibold text-sm">Validation Alert</h4>
-            <p className="text-xs text-rose-600 mt-1">{errorMsg}</p>
+            <p className="text-xs text-rose-600 dark:text-rose-300 mt-1">{errorMsg}</p>
           </div>
         </div>
       )}
@@ -500,31 +500,31 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
         {/* Section 1: Requester Information */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider font-mono">Your Full Name</label>
+            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider font-mono">Your Full Name</label>
             <input 
               type="text" 
               required
               value={requesterName}
               onChange={(e) => setRequesterName(e.target.value)}
-              className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all bg-slate-50/50 hover:bg-slate-50 font-sans"
+              className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all bg-slate-50/50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100 font-sans"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider font-mono">Corporate Email</label>
+            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider font-mono">Corporate Email</label>
             <input 
               type="email" 
               required
               value={requesterEmail}
               onChange={(e) => setRequesterEmail(e.target.value)}
-              className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all bg-slate-50/50 hover:bg-slate-50 font-sans"
+              className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all bg-slate-50/50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100 font-sans"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider font-mono">Department / Suite</label>
+            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider font-mono">Department / Suite</label>
             <select 
               value={requesterDept}
               onChange={(e) => setRequesterDept(e.target.value)}
-              className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all bg-white font-medium text-slate-800 font-sans"
+              className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all bg-white dark:bg-slate-800 font-medium text-slate-800 dark:text-slate-100 font-sans"
             >
               <option value="Engineering & Infrastructure">Engineering & Infrastructure</option>
               <option value="R&D / Software Engineering">R&D / Software Engineering</option>
@@ -538,7 +538,7 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
 
         {/* Section 2: Main Request Group */}
         <div>
-          <label className="block text-[10px] font-bold text-slate-500 mb-2.5 uppercase tracking-wider font-mono">Select Main IT Request Group</label>
+          <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-2.5 uppercase tracking-wider font-mono">Select Main IT Request Group</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {taxonomy.map((cat) => {
               const isSelected = selectedCategory === cat.id;
@@ -549,11 +549,11 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
                   onClick={() => handleCategoryChange(cat.id)}
                   className={`flex flex-col items-center justify-center p-3 rounded-lg border text-center transition-all cursor-pointer ${
                     isSelected 
-                      ? 'border-violet-600 bg-violet-50/40 ring-1 ring-violet-600 text-violet-950 shadow-sm' 
-                      : 'border-slate-200 hover:border-slate-350 hover:bg-slate-50 text-slate-700'
+                      ? 'border-violet-600 bg-violet-50/40 dark:bg-violet-950/40 ring-1 ring-violet-600 text-violet-950 dark:text-violet-200 shadow-sm'
+                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
                   }`}
                 >
-                  <div className="mb-2 p-1.5 rounded-md bg-white border border-slate-200/60 shadow-xs">
+                  <div className="mb-2 p-1.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 shadow-xs">
                     {getCategoryIcon(cat.icon)}
                   </div>
                   <span className="text-[10px] font-extrabold leading-tight tracking-tight uppercase font-mono">{cat.name}</span>
@@ -566,11 +566,11 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
         {/* Section 3: Classification Category & Type Selection */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider font-mono">1. Category Selection</label>
+            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider font-mono">1. Category Selection</label>
             <select
               value={selectedSubcategory}
               onChange={(e) => handleSubcategoryChange(e.target.value)}
-              className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all bg-white font-medium text-slate-800 font-sans"
+              className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all bg-white dark:bg-slate-800 font-medium text-slate-800 dark:text-slate-100 font-sans"
             >
               {taxonomy.find(c => c.id === selectedCategory)?.subcategories.map(sub => (
                 <option key={sub.id} value={sub.id}>{sub.name}</option>
@@ -582,11 +582,11 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider font-mono">2. Type Selection</label>
+            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider font-mono">2. Type Selection</label>
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all bg-white font-bold text-violet-800 font-sans"
+              className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all bg-white dark:bg-slate-800 font-bold text-violet-800 dark:text-violet-300 font-sans"
             >
               {taxonomy.find(c => c.id === selectedCategory)
                 ?.subcategories.find(s => s.id === selectedSubcategory)
@@ -597,7 +597,7 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
             {currentTypeObj && (
               <div className="mt-1.5 flex items-center justify-between text-[10px]">
                 <span className="text-slate-400">Required Period Authorization:</span>
-                <span className={`px-2 py-0.5 rounded font-mono font-bold uppercase tracking-wider ${currentTypeObj.period === 'Apply' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-500'}`}>
+                <span className={`px-2 py-0.5 rounded font-mono font-bold uppercase tracking-wider ${currentTypeObj.period === 'Apply' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
                   {currentTypeObj.period}
                 </span>
               </div>
@@ -607,23 +607,23 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
 
         {/* Period Selection form (Only shown when period format is "Apply") */}
         {currentTypeObj?.period === 'Apply' && (
-          <div className="p-4 bg-violet-50/30 border border-violet-100 rounded-xl space-y-3.5 animate-fade-in-smooth">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-violet-800 uppercase tracking-widest font-mono">
+          <div className="p-4 bg-violet-50/30 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900 rounded-xl space-y-3.5 animate-fade-in-smooth">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-violet-800 dark:text-violet-300 uppercase tracking-widest font-mono">
               📅 Period Constraints Validation (Target Period)
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider font-mono">Authorization Start Date *</label>
+                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider font-mono">Authorization Start Date *</label>
                 <input 
                   type="date"
                   required
                   value={periodFrom}
                   onChange={(e) => setPeriodFrom(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-250 bg-white text-slate-800"
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider font-mono">Authorization End Date *</label>
+                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider font-mono">Authorization End Date *</label>
                 <input 
                   type="date"
                   required
@@ -632,18 +632,18 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
                   disabled={duration !== 'By Project Term'}
                   className={`w-full text-xs px-3 py-2 rounded-lg border focus:outline-none transition-all font-sans font-medium ${
                     duration !== 'By Project Term' 
-                      ? 'bg-slate-100/90 text-slate-450 border-slate-200 cursor-not-allowed select-none' 
-                      : 'bg-white text-slate-800 border-slate-255 focus:ring-1 focus:ring-violet-400 focus:border-violet-400'
+                      ? 'bg-slate-100/90 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 cursor-not-allowed select-none'
+                      : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-violet-400 focus:border-violet-400'
                   }`}
                 />
 
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider font-mono font-mono">Authorized Duration</label>
+                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider font-mono font-mono">Authorized Duration</label>
                 <select
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-medium text-slate-800"
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium text-slate-800 dark:text-slate-100"
                 >
                   <option value="1 Day">1 Day</option>
                   <option value="3 Days">3 Days</option>
@@ -658,8 +658,8 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
         )}
 
         {/* Dynamic Category Specifications Form Sections */}
-        <div className="p-5 rounded-xl bg-slate-50/40 border border-slate-200/70 space-y-4">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-2 mb-3 font-mono">
+        <div className="p-5 rounded-xl bg-slate-50/40 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700 space-y-4">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-700 pb-2 mb-3 font-mono">
             <span>Specific Technical Detail Specifications</span>
             <span className="text-[9px] lowercase font-normal italic text-slate-400"> (Dynamically loaded according to your selected classification)</span>
           </div>
@@ -670,11 +670,11 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
               {selectedSubcategory === 'troubleshooting' ? (
                 <>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Operating System (OS)</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Operating System (OS)</label>
                     <select
                       value={osType}
                       onChange={(e) => setOsType(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                     >
                       <option value="Windows 11">Windows 11 Home/Pro</option>
                       <option value="Windows 10">Windows 10 Enterprise/Pro</option>
@@ -682,13 +682,13 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1 font-sans">Affected Software Name & Version</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1 font-sans">Affected Software Name & Version</label>
                     <input
                       type="text"
                       placeholder="e.g. MS Outlook 365, Figma Pro, Adobe CC..."
                       value={softwareName}
                       onChange={(e) => setSoftwareName(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-sans"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-sans"
                     />
                   </div>
                 </>
@@ -708,42 +708,42 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
               {selectedSubcategory === 'network_registration' ? (
                 <>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Requested Static IP (Optional)</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Requested Static IP (Optional)</label>
                     <input
                       type="text"
                       placeholder="e.g., 10.20.15.55 or specific static block"
                       value={ipAddress}
                       onChange={(e) => setIpAddress(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-mono"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Target Device MAC Address *</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Target Device MAC Address *</label>
                     <input
                       type="text"
                       required
                       placeholder="Format: AA:BB:CC:DD:EE:FF"
                       value={macAddress}
                       onChange={(e) => setMacAddress(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-mono"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Domain Account / WiFi User</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Domain Account / WiFi User</label>
                     <input
                       type="text"
                       placeholder="Domain username (e.g., alan.turing)"
                       value={wifiUserName}
                       onChange={(e) => setWifiUserName(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1 font-sans">Access Device Type</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1 font-sans">Access Device Type</label>
                     <select
                       value={wifiDeviceType}
                       onChange={(e) => setWifiDeviceType(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-sans"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-sans"
                     >
                       <option value="Corporate Laptop">Corporate Laptop</option>
                       <option value="Mobile Phone (BYOD)">Mobile/BYOD Device</option>
@@ -753,13 +753,13 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
                 </>
               ) : (
                 <div className="col-span-2 space-y-3">
-                  <label className="block text-xs font-semibold text-slate-700">Target System / Connection details</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200">Target System / Connection details</label>
                   <input
                     type="text"
                     placeholder="e.g. Deskphone model, connection failure description..."
                     value={serviceName}
                     onChange={(e) => setServiceName(e.target.value)}
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                   />
                   <p className="text-[10px] text-slate-400 italic">Unblocks or call permissions require standard line routing guidelines.</p>
                 </div>
@@ -773,44 +773,44 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
               {selectedSubcategory === 'firewall' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Source IP / Segment</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Source IP / Segment</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. 10.20.15.5"
                       value={sourceIp}
                       onChange={(e) => setSourceIp(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-mono"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Destination IP Endpoint</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Destination IP Endpoint</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. 192.168.100.12"
                       value={destinationIp}
                       onChange={(e) => setDestinationIp(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-mono"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Protocol / Port</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Protocol / Port</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. TCP-8080 or UDP-500"
                       value={protocolPort}
                       onChange={(e) => setProtocolPort(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-mono"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Rules Policy Action</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Rules Policy Action</label>
                     <select
                       value={firewallAction}
                       onChange={(e) => setFirewallAction(e.target.value as 'allow' | 'deny')}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-bold"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold"
                     >
                       <option value="allow" className="text-emerald-600">ALLOW</option>
                       <option value="deny" className="text-rose-600">DENY</option>
@@ -818,8 +818,8 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
                   </div>
                 </div>
               ) : (
-                <div className="p-3 bg-slate-100 rounded-lg">
-                  <p className="text-xs text-slate-500 italic leading-relaxed">
+                <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 italic leading-relaxed">
                     * Network Security requests require secondary compliance authorization and Department Head digital audit signatures.
                   </p>
                 </div>
@@ -833,25 +833,25 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
               {selectedSubcategory === 'folder' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-smooth">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1 font-sans">Folder Action</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1 font-sans">Folder Action</label>
                     <select
                       value={folderActionType}
                       onChange={(e) => setFolderActionType(e.target.value as any)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-medium font-sans"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium font-sans"
                     >
                       <option value="create">Create New Workspace Folder</option>
                       <option value="restore">Restore Deleted File / Snapshot</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Server Root Folder Absolute Path *</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Server Root Folder Absolute Path *</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g., S:\Workspace\Active_Projects\..."
                       value={folderPath}
                       onChange={(e) => setFolderPath(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-mono"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
                     />
                   </div>
                 </div>
@@ -861,30 +861,30 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
                 <div className="space-y-4 animate-fade-in-smooth">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Target End-User Account Username</label>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Target End-User Account Username</label>
                       <input
                         type="text"
                         required
                         placeholder="Full Name or @company domain email"
                         value={targetUser}
                         onChange={(e) => setTargetUser(e.target.value)}
-                        className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-sans font-medium"
+                        className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-sans font-medium"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Target Shared Resource / Folder Path *</label>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Target Shared Resource / Folder Path *</label>
                       <input
                         type="text"
                         required
                         placeholder="e.g., S:\Finance\Audit_Reports\"
                         value={folderPath}
                         onChange={(e) => setFolderPath(e.target.value)}
-                        className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-mono"
+                        className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Requested Rights / Permission Levels (Multiple Choice)</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">Requested Rights / Permission Levels (Multiple Choice)</label>
                     <div className="flex flex-wrap gap-2">
                       {[
                         { id: 'read', label: 'Read-Only Access' },
@@ -900,8 +900,8 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
                             onClick={() => togglePermission(perm.id)}
                             className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
                               isChecked
-                                ? 'bg-violet-50 border-violet-400 text-violet-700 font-bold'
-                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                ? 'bg-violet-50 dark:bg-violet-950/50 border-violet-400 dark:border-violet-700 text-violet-700 dark:text-violet-300 font-bold'
+                                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                           >
                             {perm.label} {isChecked ? '✓' : '+'}
@@ -916,23 +916,23 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
               {selectedSubcategory === 'ai' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-smooth">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1 font-sans">AI Workspace Subscription / Model Type</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1 font-sans">AI Workspace Subscription / Model Type</label>
                     <input
                       type="text"
                       disabled
                       value={aiModelName}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-100 bg-slate-50 text-slate-500 font-medium font-sans select-none cursor-not-allowed"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-medium font-sans select-none cursor-not-allowed"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">AI Access Purpose & Justification *</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">AI Access Purpose & Justification *</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g., R&D automated code documentation assistance..."
                       value={aiPurposeOnly}
                       onChange={(e) => setAiPurposeOnly(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-sans font-medium"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-sans font-medium"
                     />
                   </div>
                 </div>
@@ -946,11 +946,11 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
               {selectedSubcategory === 'e' ? (
                 <>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Requested USB Device Duration</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Requested USB Device Duration</label>
                     <select
                       value={usbDuration}
                       onChange={(e) => setUsbDuration(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                     >
                       <option value="1 Day">1 Day Duration</option>
                       <option value="3 Days">3 Days Duration</option>
@@ -959,50 +959,50 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Administrative Reason / Justification</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Administrative Reason / Justification</label>
                     <input
                       type="text"
                       placeholder="Backup off-site client assets..."
                       value={usbJustification}
                       onChange={(e) => setUsbJustification(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                     />
                   </div>
                 </>
               ) : selectedSubcategory === 'pc_security' ? (
                 <>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Target Hostname / Device IP</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Target Hostname / Device IP</label>
                     <input
                       type="text"
                       placeholder="e.g., PC-KHOATPV-12A or 10.150.12.8"
                       value={pcSecurityHost}
                       onChange={(e) => setPcSecurityHost(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-sans font-medium"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-sans font-medium"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Exemption Justification & Software Details</label>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Exemption Justification & Software Details</label>
                     <input
                       type="text"
                       placeholder="Testing un-signed compiled executable or MDS exception..."
                       value={pcSecurityReason}
                       onChange={(e) => setPcSecurityReason(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-sans font-medium"
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-sans font-medium"
                       required
                     />
                   </div>
                 </>
               ) : (
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1 font-mono">Target Encryption Archive / Description</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1 font-mono">Target Encryption Archive / Description</label>
                   <input
                     type="text"
                     placeholder="e.g., Audit_Reports_Q1_Secured.pdf or automatic comparison reason..."
                     value={decryptionFiles}
                     onChange={(e) => setDecryptionFiles(e.target.value)}
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-mono"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
                   />
                   <p className="text-[10px] text-slate-400 mt-1 font-sans">Requires a Department Head or Director digital signature.</p>
                 </div>
@@ -1014,11 +1014,11 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
           {selectedCategory === 'hardware_request' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in-smooth">
               <div>
-                <label className="block text-xs font-semibold text-slate-755 mb-1">Request Purpose / Action</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Request Purpose / Action</label>
                 <select
                   disabled
                   value={deviceActionType}
-                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed font-medium"
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 cursor-not-allowed font-medium"
                 >
                   <option value="new">Procure New Hardware</option>
                   <option value="replace">Replace / Component Upgrade</option>
@@ -1027,15 +1027,15 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-755 mb-1">Hardware Category</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Hardware Category</label>
                 <select
                   disabled={selectedSubcategory !== 'accessories'}
                   value={deviceType}
                   onChange={(e) => setDeviceType(e.target.value)}
-                  className={`w-full text-xs px-3 py-2 rounded-lg border border-slate-200 font-medium ${
-                    selectedSubcategory === 'accessories' 
-                      ? 'bg-white text-slate-900 cursor-pointer' 
-                      : 'bg-slate-50 text-slate-500 cursor-not-allowed'
+                  className={`w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 font-medium ${
+                    selectedSubcategory === 'accessories'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 cursor-pointer'
+                      : 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 cursor-not-allowed'
                   }`}
                 >
                   {selectedSubcategory === 'accessories' ? (
@@ -1076,7 +1076,7 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
         {/* Section 4: General info - Title and description */}
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-bold text-slate-800 mb-1.5 font-sans">Issue Title & Brief Summary *</label>
+            <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-1.5 font-sans">Issue Title & Brief Summary *</label>
             <input
               type="text"
               required
@@ -1084,13 +1084,13 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
               placeholder="e.g., Create Marketing shared directory, Swollen laptop battery overheating..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full text-sm px-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all font-medium text-slate-900 bg-slate-50/10 hover:bg-slate-50/20 font-sans"
+              className="w-full text-sm px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all font-medium text-slate-900 dark:text-slate-100 bg-slate-50/10 dark:bg-slate-800 hover:bg-slate-50/20 dark:hover:bg-slate-800 font-sans"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-sm font-bold text-slate-800 font-sans">Detailed Context & Justification *</label>
+              <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 font-sans">Detailed Context & Justification *</label>
               <button
                 type="button"
                 onClick={handleTriage}
@@ -1107,17 +1107,17 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
               placeholder="State your request guidelines, system settings, desktop location, or error prompt context in detail..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full text-sm px-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all text-slate-800 bg-slate-50/10 hover:bg-slate-50/20 font-sans"
+              className="w-full text-sm px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all text-slate-800 dark:text-slate-100 bg-slate-50/10 dark:bg-slate-800 hover:bg-slate-50/20 dark:hover:bg-slate-800 font-sans"
             />
           </div>
 
           {/* Priority selector */}
           <div>
-            <label className="block text-sm font-bold text-slate-800 mb-1.5 font-sans">Priority Level</label>
+            <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-1.5 font-sans">Priority Level</label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as TicketPriority)}
-              className="w-full text-sm px-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all font-medium text-slate-800 bg-white font-sans cursor-pointer"
+              className="w-full text-sm px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-100/50 focus:border-violet-600 transition-all font-medium text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 font-sans cursor-pointer"
             >
               {PRIORITY_OPTIONS.map((p) => (
                 <option key={p.value} value={p.value}>{p.label}</option>
@@ -1127,10 +1127,10 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
 
           {/* Attachments */}
           <div>
-            <label className="block text-sm font-bold text-slate-800 mb-1.5 font-sans">Attachments <span className="text-slate-400 font-normal">(optional, up to {MAX_FILES} files / 10 MB each)</span></label>
+            <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-1.5 font-sans">Attachments <span className="text-slate-400 font-normal">(optional, up to {MAX_FILES} files / 10 MB each)</span></label>
             <label
               htmlFor="request-attachments"
-              className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg border border-dashed border-slate-300 hover:border-violet-400 hover:bg-violet-50/30 text-slate-500 text-xs font-semibold cursor-pointer transition-all"
+              className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 hover:border-violet-400 hover:bg-violet-50/30 dark:hover:bg-violet-950/20 text-slate-500 dark:text-slate-400 text-xs font-semibold cursor-pointer transition-all"
             >
               <Paperclip className="w-4 h-4" /> Click to attach screenshots, logs, or supporting documents
             </label>
@@ -1146,11 +1146,11 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
                 {files.map((f, idx) => (
                   <li
                     key={`${f.name}-${idx}`}
-                    className="flex items-center justify-between gap-3 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                    className="flex items-center justify-between gap-3 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                   >
                     <span className="flex items-center gap-2 min-w-0">
                       <FileText className="w-3.5 h-3.5 text-violet-600 shrink-0" />
-                      <span className="truncate font-medium text-slate-700">{f.name}</span>
+                      <span className="truncate font-medium text-slate-700 dark:text-slate-200">{f.name}</span>
                       <span className="text-slate-400 font-mono shrink-0">{(f.size / 1024).toFixed(0)} KB</span>
                     </span>
                     <button
@@ -1169,11 +1169,11 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
         </div>
 
         {/* Submit */}
-        <div className="pt-3 border-t border-slate-200/80 flex items-center justify-end">
+        <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-end">
           <button
             type="submit"
             disabled={submitting}
-            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-violet-600 hover:bg-violet-700 active:bg-violet-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold text-sm shadow-[0_2px_6px_rgba(124,58,237,0.15)] hover:shadow-[0_4px_12px_rgba(124,58,237,0.25)] transition-all cursor-pointer font-sans"
+            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-violet-600 hover:bg-violet-700 active:bg-violet-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold text-sm shadow-[0_2px_6px_rgba(8,148,175,0.15)] hover:shadow-[0_4px_12px_rgba(8,148,175,0.25)] transition-all cursor-pointer font-sans"
           >
             {submitting ? <Spinner label="Submitting…" /> : (<><Send className="w-4 h-4" /> Submit Request</>)}
           </button>
