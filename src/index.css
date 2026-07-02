@@ -45,6 +45,32 @@
   --color-violet-800: #004e61;
   --color-violet-900: #003a49;
   --color-violet-950: #001f28;
+
+  /* Secondary "cool accent" (blue/sky) also unified to teal so the whole UI is
+     single-accent per the Cyber-Ops design. Status colors stay distinct. */
+  --color-blue-50:  #e3f7fc;
+  --color-blue-100: #bdecf7;
+  --color-blue-200: #8fdff0;
+  --color-blue-300: #4cd7f6;
+  --color-blue-400: #22c4e3;
+  --color-blue-500: #06b6d4;
+  --color-blue-600: #0894af;
+  --color-blue-700: #00647c;
+  --color-blue-800: #004e61;
+  --color-blue-900: #003a49;
+  --color-blue-950: #001f28;
+
+  --color-sky-50:  #e3f7fc;
+  --color-sky-100: #bdecf7;
+  --color-sky-200: #8fdff0;
+  --color-sky-300: #4cd7f6;
+  --color-sky-400: #22c4e3;
+  --color-sky-500: #06b6d4;
+  --color-sky-600: #0894af;
+  --color-sky-700: #00647c;
+  --color-sky-800: #004e61;
+  --color-sky-900: #003a49;
+  --color-sky-950: #001f28;
 }
 
 @layer base {
