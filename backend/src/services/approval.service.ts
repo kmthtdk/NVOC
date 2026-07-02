@@ -64,6 +64,11 @@ export const approvalService = {
       if (rows.length === 0) throw AppError.badRequest('This ticket has no approval chain');
 
       const steps = toEngineSteps(rows);
+      // Reject decisions on an already-settled chain (stale tab re-rejecting an
+      // approved/rejected ticket). Mirrors the guard in addSigner.
+      if (engine.chainState(steps) !== 'in_progress') {
+        throw AppError.conflict('This approval chain is already settled');
+      }
       const active = engine.activeStep(steps);
       if (!active || active.stepOrder !== stepOrder) {
         throw AppError.badRequest('That step is not the active approval step');

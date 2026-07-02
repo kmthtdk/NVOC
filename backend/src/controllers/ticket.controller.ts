@@ -22,11 +22,14 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 
 // ---- Validation schemas ----
 export const createTicketSchema = z.object({
-  title: z.string().min(3).max(255),
-  description: z.string().min(1),
-  requesterName: z.string().min(1).max(150),
-  requesterEmail: z.string().email(),
-  requesterDept: z.string().min(1).max(150),
+  // .trim() before .min() so whitespace-only values (e.g. "   ") are rejected —
+  // .min() alone counts spaces. The frontend already blocks these; this closes
+  // the direct-API gap.
+  title: z.string().trim().min(3).max(255),
+  description: z.string().trim().min(1),
+  requesterName: z.string().trim().min(1).max(150),
+  requesterEmail: z.string().trim().email(),
+  requesterDept: z.string().trim().min(1).max(150),
   category: z.string().min(1).max(50),
   subcategory: z.string().min(1).max(60),
   type: z.string().max(60).nullish(),
@@ -78,7 +81,7 @@ export const listQuerySchema = z.object({
 });
 
 export const createCommentSchema = z.object({
-  content: z.string().min(1).max(5000),
+  content: z.string().trim().min(1).max(5000),
 });
 
 export const linkDeviceSchema = z.object({

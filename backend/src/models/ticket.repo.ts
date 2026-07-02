@@ -66,7 +66,10 @@ async function nextTicketCode(
   year: number,
 ): Promise<string> {
   await conn.execute(
-    'INSERT INTO ticket_sequence (prefix, year, last_seq) VALUES (?, ?, 0) ON DUPLICATE KEY UPDATE prefix = prefix',
+    // Touch last_seq (not a no-op like `prefix = prefix`) so the row gets an
+    // exclusive lock immediately — avoids a shared->exclusive upgrade deadlock
+    // when two requests create the first ticket of a (prefix, year) concurrently.
+    'INSERT INTO ticket_sequence (prefix, year, last_seq) VALUES (?, ?, 0) ON DUPLICATE KEY UPDATE last_seq = last_seq',
     [prefix, year],
   );
   const [rows] = await conn.query<RowDataPacket[]>(
@@ -325,6 +328,18 @@ export const ticketRepo = {
           statusLabel: 'Reassigned',
           updatedBy: actor,
           notes: notes ?? `Assigned to ${input.assignedTo}.`,
+        });
+      } else if (input.priority !== undefined || (notes && notes.trim())) {
+        // Priority-only change or a standalone note — still record it (previously
+        // the note was silently discarded with no audit entry).
+        const [rows] = await conn.query<RowDataPacket[]>('SELECT status FROM tickets WHERE id = ?', [id]);
+        const status = (rows[0]?.status as TicketStatus) ?? 'submitted';
+        await historyRepo.append(conn, {
+          ticketId: id,
+          status,
+          statusLabel: input.priority !== undefined ? 'Priority updated' : 'Note added',
+          updatedBy: actor,
+          notes: notes ?? `Priority set to ${input.priority}.`,
         });
       }
     });

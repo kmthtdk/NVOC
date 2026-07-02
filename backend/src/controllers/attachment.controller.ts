@@ -4,6 +4,7 @@ import type { Request, Response } from 'express';
 import { attachmentRepo } from '../models/attachment.repo.js';
 import { UPLOAD_DIR } from '../middleware/upload.js';
 import { AppError } from '../utils/AppError.js';
+import { logger } from '../config/logger.js';
 
 function parseId(raw: string, label: string): number {
   const id = Number(raw);
@@ -71,13 +72,24 @@ export const attachmentController = {
       'Content-Disposition',
       `attachment; filename="${encodeURIComponent(row.original_name)}"`,
     );
-    fs.createReadStream(filePath).pipe(res);
+    // Handle stream errors (file deleted/disk error mid-send). asyncHandler only
+    // catches thrown exceptions, not stream 'error' events — without this an
+    // unhandled stream error crashes the worker.
+    const stream = fs.createReadStream(filePath);
+    stream.on('error', (err) => {
+      logger.error({ err, id }, 'Attachment stream error');
+      if (!res.headersSent) res.status(500).end();
+      else res.destroy();
+    });
+    stream.pipe(res);
   },
 };
 
 function cleanupFiles(files: Request['files']): void {
   const list = Array.isArray(files) ? files : [];
   for (const f of list) {
-    fs.promises.unlink(f.path).catch(() => undefined);
+    fs.promises
+      .unlink(f.path)
+      .catch((err) => logger.warn({ err, path: f.path }, 'Failed to clean up uploaded file'));
   }
 }
