@@ -1,18 +1,61 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+/* Fonts: Space Grotesk (display/headings) + Inter (body) + JetBrains Mono (codes/IDs).
+   Cyber-Ops design system. */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /* Class-based dark mode: `dark:` variants apply when <html> has the `dark`
    class (driven by ThemeContext) rather than only via OS preference. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ==========================================================================
+   Cyber-Ops theme. Colors are applied by OVERRIDING Tailwind's built-in scales
+   so existing `slate-*` / `violet-*` utility classes recolor app-wide (light +
+   dark) with no component/markup changes:
+     - slate  -> blue-navy neutrals   (light surface #f8f9ff … dark #051424)
+     - violet -> teal/cyan primary    (light #00647c … dark #4cd7f6)
+     - amber / emerald / rose kept as status colors (fit the SOC palette).
+   ========================================================================== */
 @theme {
-  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Neutrals — blue-navy (replaces slate) */
+  --color-slate-50:  #f5f8fd;
+  --color-slate-100: #e8f0f9;
+  --color-slate-200: #d3e2f1;
+  --color-slate-300: #b1c6de;
+  --color-slate-400: #7f9bba;
+  --color-slate-500: #57738f;
+  --color-slate-600: #3e5168;
+  --color-slate-700: #273647;
+  --color-slate-800: #182838;
+  --color-slate-900: #0d1c2d;
+  --color-slate-950: #051424;
+
+  /* Primary accent — teal/cyan (replaces violet) */
+  --color-violet-50:  #e3f7fc;
+  --color-violet-100: #bdecf7;
+  --color-violet-200: #8fdff0;
+  --color-violet-300: #4cd7f6;
+  --color-violet-400: #22c4e3;
+  --color-violet-500: #06b6d4;
+  --color-violet-600: #0894af;
+  --color-violet-700: #00647c;
+  --color-violet-800: #004e61;
+  --color-violet-900: #003a49;
+  --color-violet-950: #001f28;
 }
 
 @layer base {
   html {
     overflow-y: scroll;
+  }
+  /* Headings use the display font (Space Grotesk) without touching component
+     markup. Body inherits Inter via --font-sans. */
+  h1, h2, h3, h4, h5 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
   }
 }
 
@@ -22,6 +65,10 @@
   }
   .animate-scaleUp {
     animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  /* Display/heading font as an opt-in utility for non-heading brand text. */
+  .font-display {
+    font-family: var(--font-display);
   }
 }
 
