@@ -147,8 +147,8 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
       try {
         const r = await api.listUsers();
         setUsers(r.users);
-      } catch {
-        /* non-fatal: picker just shows empty */
+      } catch (err) {
+        toast.error(err instanceof ApiError ? err.message : 'Could not load users to add as signer.');
       }
     }
   };

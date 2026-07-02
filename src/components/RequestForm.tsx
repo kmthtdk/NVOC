@@ -388,16 +388,17 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
               if (selectedSubcategory === 'ai') return { aiModelName, aiPurposeOnly };
               return {};
             case 'security_request':
+              // Save the USB-duration dropdown the user actually sees (usbDuration),
+              // not the unrelated period-section 'duration' field.
               if (selectedSubcategory === 'e')
-                return {
-                  usbDuration: currentTypeObj?.period === 'Apply' ? duration : usbDuration,
-                  usbJustification,
-                };
+                return { usbDuration, usbJustification };
               if (selectedSubcategory === 'pc_security')
                 return { pcSecurityHost, pcSecurityReason };
               return { decryptionFiles };
             case 'hardware_request':
-              return { deviceActionType, deviceType, deviceModelName, reasonForChange };
+              // deviceModelName / reasonForChange have no input in the hardware
+              // section — omit them instead of storing empty strings.
+              return { deviceActionType, deviceType };
             default:
               return {};
           }
@@ -449,6 +450,11 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
           : 'Could not submit your request. Please try again.';
       setErrorMsg(msg);
       toast.error(msg);
+      // The error banner is at the top of a long form — bring it into view so the
+      // user (at the submit button) actually sees why submission failed.
+      document
+        .getElementById('request-form-container')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } finally {
       setSubmitting(false);
     }
@@ -1071,9 +1077,10 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-bold text-slate-800 mb-1.5 font-sans">Issue Title & Brief Summary *</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               required
+              maxLength={255}
               placeholder="e.g., Create Marketing shared directory, Swollen laptop battery overheating..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
