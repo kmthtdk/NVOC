@@ -43,6 +43,10 @@ import {
   BarChart3,
   FilePlus2,
   Inbox,
+  Activity,
+  Send,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 
 type PortalView = 'user' | 'admin';
@@ -303,6 +307,12 @@ function UserPortal({
     : st === 'waiting' ? 'Waiting for Review'
     : st === 'resolved' ? 'Resolved'
     : 'Rejected';
+  // Priority as a subtle left accent on each request card (echoes the mock's colour-coding).
+  const getPriorityAccent = (p: string) =>
+    p === 'urgent' ? 'border-l-rose-400 dark:border-l-rose-500'
+    : p === 'high' ? 'border-l-amber-400 dark:border-l-amber-500'
+    : p === 'medium' ? 'border-l-violet-400 dark:border-l-violet-500'
+    : 'border-l-slate-300 dark:border-l-slate-600';
 
   const listToShow = tickets;
 
@@ -322,6 +332,27 @@ function UserPortal({
   const firstName = (user?.fullName ?? 'there').split(' ')[0];
   const openCount = listToShow.filter((t) => t.status === 'submitted' || t.status === 'waiting').length;
   const resolvedCount = listToShow.filter((t) => t.status === 'resolved').length;
+
+  // Active Request Tracker: the requester's most-recent non-closed ticket.
+  // `listToShow` is server-sorted newest-first, so the first open match is the latest.
+  const activeTicket = listToShow.find((t) => t.status === 'submitted' || t.status === 'waiting');
+  const trackerStepIndex = activeTicket ? (activeTicket.status === 'submitted' ? 0 : 1) : -1;
+  const trackerIsWaiting = activeTicket?.status === 'waiting';
+  const trackerSteps: { label: string; icon: typeof Send; sub: string }[] = [
+    {
+      label: 'Submitted',
+      icon: Send,
+      sub: activeTicket
+        ? new Date(activeTicket.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+        : '',
+    },
+    {
+      label: 'Waiting for Review',
+      icon: Clock,
+      sub: trackerStepIndex === 1 ? 'In review' : trackerStepIndex > 1 ? 'Done' : 'Pending',
+    },
+    { label: 'Resolved', icon: CheckCircle2, sub: 'Pending' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -361,6 +392,101 @@ function UserPortal({
       {tab === 'new' && <RequestForm onCreated={handleCreated} />}
 
       {tab === 'requests' && (
+        <div className="space-y-6">
+        {/* Active Request Tracker — mirrors the mock's "Active Incident Tracker".
+            Only shown once the list has loaded so we never flash an empty tracker. */}
+        {!loading && !error && (
+          <div className="relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.015)] p-6">
+            <div className="flex items-start justify-between gap-4 mb-6">
+              <div className="min-w-0">
+                <h3 className="text-xs font-extrabold text-slate-900 dark:text-white tracking-tight uppercase flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-violet-500" /> Active Request Tracker
+                </h3>
+                {activeTicket ? (
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug truncate">
+                    <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{activeTicket.code}</span>
+                    {' · '}
+                    {activeTicket.title}
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                    Nothing in progress right now
+                  </p>
+                )}
+              </div>
+              {activeTicket && (
+                <button
+                  type="button"
+                  onClick={() => onSelectTicket(activeTicket)}
+                  className="shrink-0 text-[11px] font-bold text-violet-600 dark:text-violet-400 hover:underline"
+                >
+                  View Details
+                </button>
+              )}
+            </div>
+
+            {activeTicket ? (
+              <>
+                <div className="flex items-start">
+                  {trackerSteps.map((step, i) => {
+                    const isDone = i < trackerStepIndex;
+                    const isCurrent = i === trackerStepIndex;
+                    const StepIcon = isDone ? CheckCircle2 : step.icon;
+                    const circleCls = isDone
+                      ? 'bg-violet-500 text-white border-2 border-transparent'
+                      : isCurrent
+                        ? `bg-white dark:bg-slate-900 border-2 animate-pulse ${
+                            trackerIsWaiting
+                              ? 'border-amber-400 dark:border-amber-500 text-amber-600 dark:text-amber-400'
+                              : 'border-violet-500 dark:border-violet-400 text-violet-600 dark:text-violet-400'
+                          }`
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-2 border-transparent';
+                    const labelCls = isDone
+                      ? 'text-slate-700 dark:text-slate-300'
+                      : isCurrent
+                        ? trackerIsWaiting
+                          ? 'text-amber-600 dark:text-amber-400 font-bold'
+                          : 'text-violet-600 dark:text-violet-400 font-bold'
+                        : 'text-slate-400 dark:text-slate-500';
+                    return (
+                      <div key={step.label} className="flex-1 flex flex-col items-center relative">
+                        {/* connector to the next step; fills violet once this step is complete */}
+                        {i < trackerSteps.length - 1 && (
+                          <div className="absolute top-5 left-1/2 w-full h-0.5">
+                            <div className="h-full w-full bg-slate-200 dark:bg-slate-700" />
+                            {isDone && <div className="absolute inset-0 bg-violet-500 dark:bg-violet-400" />}
+                          </div>
+                        )}
+                        <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${circleCls}`}>
+                          <StepIcon className="w-4 h-4" />
+                        </div>
+                        <p className={`mt-2 text-[10px] text-center leading-tight ${labelCls}`}>{step.label}</p>
+                        <p className="text-[9px] text-slate-400 dark:text-slate-500 text-center leading-tight">{step.sub}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Rejected is a terminal branch, never an active step — surfaced as a legend. */}
+                <div className="mt-5 flex items-center justify-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500">
+                  <XCircle className="w-3 h-3 text-rose-400" />
+                  <span>
+                    Requests may alternatively close as{' '}
+                    <span className="font-semibold text-rose-500 dark:text-rose-400">Rejected</span> after review.
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="py-6 px-4 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
+                <CheckCircle2 className="w-7 h-7 text-emerald-300 dark:text-emerald-700" />
+                <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">You&apos;re all caught up</p>
+                <p className="text-[10px] text-slate-400 leading-tight max-w-xs mx-auto">
+                  No open requests to track. New submissions will appear here with a live status timeline.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-[0_2px_12px_rgba(0,0,0,0.015)] p-6 space-y-4">
           <div className="border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center justify-between">
             <div>
@@ -394,7 +520,7 @@ function UserPortal({
                 <div
                   key={ticket.id}
                   onClick={() => onSelectTicket(ticket)}
-                  className="p-3.5 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100/30 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 rounded-lg transition-all cursor-pointer group flex flex-col gap-2.5"
+                  className={`p-3.5 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100/30 dark:hover:bg-slate-800 border border-l-4 border-slate-200 dark:border-slate-700 hover:border-slate-300 rounded-lg transition-all cursor-pointer group flex flex-col gap-2.5 ${getPriorityAccent(ticket.priority)}`}
                 >
                   <div className="flex items-center justify-between gap-1.5">
                     <span className="font-mono text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded">
@@ -413,8 +539,14 @@ function UserPortal({
                     </p>
                   </div>
                   <div className="flex items-center justify-between border-t border-slate-200/60 dark:border-slate-700/60 pt-2 text-[10px] text-slate-400 font-medium font-mono">
-                    <span>IT: {ticket.assignedTo || 'Unassigned'}</span>
-                    <div className="flex items-center gap-1 text-violet-600 font-sans font-semibold">
+                    <span className="truncate">
+                      IT: {ticket.assignedTo || 'Unassigned'}
+                      <span className="text-slate-300 dark:text-slate-600">
+                        {' · '}
+                        {new Date(ticket.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </span>
+                    </span>
+                    <div className="flex items-center gap-1 text-violet-600 font-sans font-semibold shrink-0">
                       <MessageSquare className="w-3.5 h-3.5" /> Details &amp; Chat
                     </div>
                   </div>
@@ -422,6 +554,7 @@ function UserPortal({
               ))}
             </div>
           )}
+        </div>
         </div>
       )}
     </div>
