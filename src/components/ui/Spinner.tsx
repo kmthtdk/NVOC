@@ -1,5 +1,4 @@
 // Reusable loading primitives: an inline spinner and a full-panel loading state.
-import React from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface SpinnerProps {

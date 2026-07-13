@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { env } from '../config/env.js';
+import { AppError } from '../utils/AppError.js';
 
 // Ensure the upload directory exists at boot.
 const uploadDir = path.resolve(env.UPLOAD_DIR);
@@ -39,8 +40,14 @@ export const upload = multer({
   storage,
   limits: { fileSize: env.MAX_UPLOAD_BYTES, files: 10 },
   fileFilter: (_req, file, cb) => {
-    if (ALLOWED_MIME.has(file.mimetype)) cb(null, true);
-    else cb(new Error(`Unsupported file type: ${file.mimetype}`));
+    if (ALLOWED_MIME.has(file.mimetype)) {
+      cb(null, true);
+      return;
+    }
+    // A bare Error() here has no `.code`, so the central handler would fall
+    // through to its catch-all and answer 500 — logging ordinary user input as
+    // an "Unhandled error". AppError is matched first and maps to a clean 400.
+    cb(AppError.badRequest(`Unsupported file type: ${file.mimetype}`));
   },
 });
 

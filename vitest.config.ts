@@ -16,6 +16,10 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
+      // Without an explicit `include`, v8 only counts files a test actually
+      // imports — untested files vanish from the report instead of scoring 0,
+      // which made the old headline (~60%) a measure of one file, not the app.
+      include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'node_modules/',
         'dist/',
@@ -24,12 +28,22 @@ export default defineConfig({
         '**/*.test.ts',
         '**/*.test.tsx',
         '**/types.ts',
+        'src/test/**',
+        'src/main.tsx',
+        'src/vite-env.d.ts',
       ],
-      // Target: 40%+ overall coverage
-      lines: 40,
-      functions: 40,
-      branches: 35,
-      statements: 40,
+      // Thresholds must live under `thresholds` — Vitest 2+ ignores them at the
+      // top level, so the previous 40/35 numbers were never actually enforced.
+      // These are set to the real measured floor so the build fails on a
+      // regression; raise them as coverage is added (project standard: 80).
+      // Real measured coverage as of 2026-07-13: 3.39% lines / 4.31% funcs.
+      // Only src/api/client.ts is exercised; all 20 components are untested.
+      thresholds: {
+        lines: 3,
+        functions: 4,
+        branches: 2,
+        statements: 3,
+      },
     },
 
     // Test file patterns — only our src/test files, never node_modules
@@ -44,7 +58,10 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      // Must match vite.config.ts and tsconfig.json, which both map '@' to the
+      // project root. Pointing it at ./src here would resolve under Vitest but
+      // break the Vite build for the same import.
+      '@': path.resolve(__dirname, '.'),
     },
   },
 });

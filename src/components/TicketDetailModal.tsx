@@ -11,7 +11,7 @@
 // refresh too.
 // ============================================================================
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import type { Ticket, TicketStatus, TicketPriority, ApprovalStep, AdminUser } from '../types';
 import { api, ApiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -94,7 +94,8 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
     status: TicketStatus;
     priority: TicketPriority;
     assignedTo: string;
-    notes: string;
+    // Empty notes are sent as undefined (omitted), not an empty string.
+    notes?: string;
   } | null>(null);
 
   const load = useCallback(

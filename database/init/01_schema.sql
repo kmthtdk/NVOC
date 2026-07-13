@@ -111,6 +111,10 @@ CREATE TABLE tickets (
   INDEX idx_t_category (category_id),
   INDEX idx_t_priority (priority),
   INDEX idx_t_created  (created_at),
+  INDEX idx_tickets_assigned_to (assigned_to),
+  -- Functional index: the "my tickets" filter compares LOWER(requester_email),
+  -- which a plain column index cannot serve.
+  INDEX idx_tickets_requester_email_lower ((LOWER(requester_email))),
   FULLTEXT KEY ft_t_search (title, description, requester_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

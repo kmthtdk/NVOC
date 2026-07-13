@@ -5,7 +5,7 @@
 // device update + ticket resolution.
 // ============================================================================
 
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, X, Package, AlertCircle } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { api, ApiError } from '../api/client';

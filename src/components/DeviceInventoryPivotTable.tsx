@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { BarChart3, AlertTriangle } from 'lucide-react';
 import { api, DeviceReportFilters } from '../api/client';
 

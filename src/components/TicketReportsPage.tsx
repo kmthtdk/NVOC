@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart3, AlertTriangle, TrendingUp, Clock, ListTodo } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { BarChart3, TrendingUp, Clock, ListTodo } from 'lucide-react';
 import { api } from '../api/client';
 
 interface PendingRequest {

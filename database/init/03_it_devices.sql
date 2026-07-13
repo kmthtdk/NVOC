@@ -134,11 +134,14 @@ CREATE TABLE IF NOT EXISTS mac_addresses (
 -- ============================================================================
 INSERT INTO mac_addresses (device_id, mac_address, mac_type, is_active)
 VALUES
-  (1, '00:1A:2B:3C:4D:5E', 'wireless',  TRUE),
-  (1, '00:1A:2B:3C:4D:5F', 'wired',     TRUE),
-  (5, '00:1A:2B:3C:4D:60', 'wireless',  TRUE),
-  (5, '00:1A:2B:3C:4D:61', 'ethernet',  TRUE),
-  (1, '00:1A:2B:3C:4D:62', 'bluetooth', FALSE)
+  -- Values must match the MacAddressType union the API validates against
+  -- (zod enum: Ethernet | WiFi | Bluetooth | Other). Lowercase free-text here
+  -- would render as an unselectable value in the device form's type dropdown.
+  (1, '00:1A:2B:3C:4D:5E', 'WiFi',      TRUE),
+  (1, '00:1A:2B:3C:4D:5F', 'Ethernet',  TRUE),
+  (5, '00:1A:2B:3C:4D:60', 'WiFi',      TRUE),
+  (5, '00:1A:2B:3C:4D:61', 'Ethernet',  TRUE),
+  (1, '00:1A:2B:3C:4D:62', 'Bluetooth', FALSE)
 ON DUPLICATE KEY UPDATE is_active = VALUES(is_active);
 
 -- ============================================================================

@@ -14,11 +14,6 @@ import { test, expect } from './fixtures';
 import { getToken, createInStockDevice, deleteDevice } from './fixtures';
 
 const ADMIN = { email: 'admin@company.com', password: 'Passw0rd!' };
-const REQUESTER = {
-  name: 'Alex Mercer',
-  email: 'alex.mercer@company.com',
-  password: 'Passw0rd!',
-};
 
 test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
   let adminToken: string;

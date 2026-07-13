@@ -398,7 +398,7 @@ describe('Ticket Operations Integration', () => {
 
       expect(global.fetch).toHaveBeenCalled();
       expect(result.ticket.linkedDevices).toHaveLength(1);
-      expect(result.ticket.linkedDevices[0].deviceId).toBe(1);
+      expect(result.ticket.linkedDevices?.[0].deviceId).toBe(1);
     });
   });
 

@@ -15,5 +15,21 @@ export default defineConfig({
       DB_PASSWORD: 'test',
       JWT_SECRET: 'test_jwt_secret_at_least_16_chars',
     },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json'],
+      // See the frontend config: without an explicit `include`, files that no
+      // test imports are absent from the report rather than scored 0.
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.test.ts', 'src/types/**', 'src/models/rows.ts', 'src/index.ts'],
+      // Real measured floor. Only ticket.controller, approval.engine/service and
+      // AppError are exercised; device.repo.ts (887 lines) has zero coverage.
+      thresholds: {
+        lines: 10,
+        functions: 12,
+        branches: 10,
+        statements: 10,
+      },
+    },
   },
 });

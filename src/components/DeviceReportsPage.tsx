@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart3, AlertTriangle, TrendingUp, Users, Package, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { BarChart3, TrendingUp, Users, Package, Clock } from 'lucide-react';
 import { api, DeviceReportFilters } from '../api/client';
 import DeviceInventoryPivotTable from './DeviceInventoryPivotTable';
 import DeviceReportFilterBar from './DeviceReportFilterBar';
@@ -29,13 +29,6 @@ interface AgingReport {
   status: string;
 }
 
-interface DepartmentReport {
-  department: string;
-  total: number;
-  active: number;
-  in_repair: number;
-  retired: number;
-}
 
 interface AvailabilityReport {
   in_stock: number;
@@ -58,7 +51,6 @@ export default function DeviceReportsPage() {
   const [summary, setSummary] = useState<SummaryReport | null>(null);
   const [assignments, setAssignments] = useState<AssignmentReport[]>([]);
   const [aging, setAging] = useState<AgingReport[]>([]);
-  const [department, setDepartment] = useState<DepartmentReport[]>([]);
   const [availability, setAvailability] = useState<AvailabilityReport | null>(null);
 
   const loadReport = async (tab: TabType, activeFilters: DeviceReportFilters = {}) => {

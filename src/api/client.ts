@@ -171,6 +171,23 @@ export interface TicketListResponse {
   pageSize: number;
   total: number;
 }
+/** GET /tickets/stats/summary — counts aggregated in SQL over the whole table. */
+export interface TicketStatsSummary {
+  period: 'current_month' | 'all';
+  summary: {
+    total: number;
+    submitted: number;
+    waiting: number;
+    resolved: number;
+    rejected: number;
+    pending: number;
+    resolutionRate: number;
+  };
+  /** Keyed by category_id. */
+  categories: Record<string, number>;
+  priorities: Record<TicketPriority, number>;
+  lastUpdated: string;
+}
 export interface TriageResponse {
   suggestedCategory: string;
   suggestedPriority: TicketPriority;
@@ -403,6 +420,16 @@ export const api = {
   // Tickets
   listTickets(params: ListTicketsParams = {}, signal?: AbortSignal): Promise<TicketListResponse> {
     return request<TicketListResponse>(`/tickets${buildQuery(params as Record<string, unknown>)}`, { signal });
+  },
+  /**
+   * Server-side aggregated counts. Prefer this over deriving breakdowns from a
+   * page of tickets — a page is capped and silently under-reports at scale.
+   */
+  getStatsSummary(
+    period: 'current_month' | 'all' = 'all',
+    signal?: AbortSignal,
+  ): Promise<TicketStatsSummary> {
+    return request<TicketStatsSummary>(`/tickets/stats/summary?period=${period}`, { signal });
   },
   getTicket(id: string, signal?: AbortSignal): Promise<{ ticket: Ticket; approvals?: ApprovalStep[] }> {
     return request<{ ticket: Ticket; approvals?: ApprovalStep[] }>(`/tickets/${id}`, { signal });

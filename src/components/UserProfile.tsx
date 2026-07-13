@@ -3,10 +3,10 @@
 // Shows the authenticated user's identity/role, a dark-mode toggle, and logout.
 // ============================================================================
 
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { User, LogOut, Moon, Sun, ChevronDown, ShieldCheck, Briefcase } from 'lucide-react';
+import { LogOut, Moon, Sun, ChevronDown, ShieldCheck, Briefcase } from 'lucide-react';
 import type { UserRole } from '../types';
 
 const ROLE_LABEL: Record<UserRole, string> = {

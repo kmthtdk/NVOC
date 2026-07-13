@@ -10,6 +10,9 @@ import { pool } from '../config/db.js';
 
 const PRIORITY = ['low', 'medium', 'high', 'urgent'] as const;
 const STATUS = ['submitted', 'waiting', 'resolved', 'rejected'] as const;
+
+/** Rows per bucket returned by GET /stats/recent. */
+const RECENT_LIMIT = 5;
 const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD');
 
 // Valid ticket status transitions state machine
@@ -262,21 +265,34 @@ export const ticketController = {
     res.status(201).json({ success: true, ticketId: id, deviceId: body.deviceId });
   },
 
-  /** GET /stats/summary — Dashboard summary statistics for current month */
-  async getStatsSummary(_req: Request, res: Response): Promise<void> {
+  /**
+   * GET /stats/summary?period=current_month|all — dashboard summary counts,
+   * aggregated in SQL.
+   *
+   * `period` defaults to current_month (the original behaviour). The admin
+   * dashboard asks for `all`: it used to derive these breakdowns client-side
+   * from a 100-row page, which silently under-reported once the table grew past
+   * 100 tickets.
+   */
+  async getStatsSummary(req: Request, res: Response): Promise<void> {
+    const period = req.query.period === 'all' ? 'all' : 'current_month';
+
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
 
-    // Get status counts for current month using SQL GROUP BY
+    // One period predicate reused by all three aggregates.
+    const periodSql = period === 'all' ? '' : 'WHERE YEAR(created_at) = ? AND MONTH(created_at) = ?';
+    const periodParams = period === 'all' ? [] : [year, month];
+
     const [statusRows] = await pool.query<any[]>(`
       SELECT
         status,
         COUNT(*) as count
       FROM tickets
-      WHERE YEAR(created_at) = ? AND MONTH(created_at) = ?
+      ${periodSql}
       GROUP BY status
-    `, [year, month]);
+    `, periodParams);
 
     const statusCounts: Record<string, number> = {
       submitted: 0,
@@ -295,9 +311,9 @@ export const ticketController = {
     const [categoryRows] = await pool.query<any[]>(`
       SELECT category_id, COUNT(*) as count
       FROM tickets
-      WHERE YEAR(created_at) = ? AND MONTH(created_at) = ?
+      ${periodSql}
       GROUP BY category_id
-    `, [year, month]);
+    `, periodParams);
 
     const categoryCounts: Record<string, number> = {};
     categoryRows.forEach((row: any) => {
@@ -308,9 +324,9 @@ export const ticketController = {
     const [priorityRows] = await pool.query<any[]>(`
       SELECT priority, COUNT(*) as count
       FROM tickets
-      WHERE YEAR(created_at) = ? AND MONTH(created_at) = ?
+      ${periodSql}
       GROUP BY priority
-    `, [year, month]);
+    `, periodParams);
 
     const priorityCounts = {
       low: 0,
@@ -332,7 +348,7 @@ export const ticketController = {
     const pendingTickets = statusCounts.submitted + statusCounts.waiting;
 
     res.json({
-      period: 'current_month',
+      period,
       summary: {
         total: totalTickets,
         submitted: statusCounts.submitted,
@@ -350,28 +366,19 @@ export const ticketController = {
 
   /** GET /stats/recent — Recent ticket activity */
   async getStatsRecent(_req: Request, res: Response): Promise<void> {
-    const { data: allTickets } = await ticketRepo.list({
-      page: 1,
-      pageSize: 100,
-      sort: 'newest',
-    });
-
-    const submitted = allTickets
-      .filter(t => t.status === 'submitted')
-      .slice(0, 5);
-
-    const resolved = allTickets
-      .filter(t => t.status === 'resolved')
-      .slice(0, 5);
-
-    const pending = allTickets
-      .filter(t => t.status === 'submitted')
-      .filter(t => !t.assignedTo || t.assignedTo === 'Unassigned')
-      .slice(0, 5);
+    // Three targeted queries, not one 100-row fetch filtered in JS. The old
+    // approach sliced the 100 newest tickets by status, so recent_resolved came
+    // back empty whenever none of the 100 newest happened to be resolved — even
+    // with plenty of older resolved tickets in the table.
+    const [submitted, resolved, pending] = await Promise.all([
+      ticketRepo.list({ page: 1, pageSize: RECENT_LIMIT, sort: 'newest', status: 'submitted' }),
+      ticketRepo.list({ page: 1, pageSize: RECENT_LIMIT, sort: 'newest', status: 'resolved' }),
+      ticketRepo.listUnassignedPending(RECENT_LIMIT),
+    ]);
 
     res.json({
-      recent_submitted: submitted,
-      recent_resolved: resolved,
+      recent_submitted: submitted.data,
+      recent_resolved: resolved.data,
       unassigned_pending: pending,
     });
   },

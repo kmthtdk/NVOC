@@ -18,13 +18,20 @@ export const DEMO_PASSWORD_HASH = '$2a$10$S4stxttvBHccVzRgHnKaQ.HCLXNNIAj0.O90RW
  *     hash — closing the known-credential hole (SEC-CRIT-2).
  */
 export async function bootstrapAuth(): Promise<void> {
-  // Weak-secret warning (C-2): a guessable JWT_SECRET lets anyone forge admin
-  // tokens. Zod enforces length ≥16 but not entropy.
-  if (/demo|change|secret|example|test|password/i.test(env.JWT_SECRET) || env.JWT_SECRET.length < 32) {
-    logger.warn(
-      'JWT_SECRET looks weak or guessable — generate a random 32+ byte secret ' +
-        '(`openssl rand -hex 32`) and set it via a secrets manager before production.',
-    );
+  // Weak-secret guard (C-2): a guessable JWT_SECRET lets anyone forge admin
+  // tokens. Zod enforces length ≥16 but not entropy. In production this is fatal
+  // — starting anyway would leave admin impersonation wide open.
+  const isWeakSecret =
+    /demo|change|secret|example|test|password/i.test(env.JWT_SECRET) || env.JWT_SECRET.length < 32;
+  if (isWeakSecret) {
+    const advice =
+      'JWT_SECRET is weak or guessable — generate a random 32+ byte secret ' +
+      '(`openssl rand -hex 32`) and supply it via a secrets manager.';
+    if (isProd) {
+      logger.fatal(advice);
+      process.exit(1);
+    }
+    logger.warn(`${advice} (refusing to start with this secret once NODE_ENV=production)`);
   }
 
   if (env.ADMIN_EMAIL && env.ADMIN_PASSWORD) {

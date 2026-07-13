@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, AlertCircle } from 'lucide-react';
-import { api, ApiError, getAuthToken } from '../api/client';
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, AlertCircle } from 'lucide-react';
+import { api, ApiError } from '../api/client';
 import { useToast } from '../context/ToastContext';
 import DeviceFormModal from './DeviceFormModal';
 
@@ -15,11 +15,7 @@ interface Device {
   department: string | null;
 }
 
-interface DeviceManagementProps {
-  user?: { role: string };
-}
-
-export default function DeviceManagement({ user }: DeviceManagementProps) {
+export default function DeviceManagement() {
   const toast = useToast();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,11 +174,7 @@ export default function DeviceManagement({ user }: DeviceManagementProps) {
       )}
 
       {showFormModal && (
-        <DeviceFormModal
-          onClose={handleCloseModal}
-          onSaved={handleDeviceSaved}
-          authToken={getAuthToken() || undefined}
-        />
+        <DeviceFormModal onClose={handleCloseModal} onSaved={handleDeviceSaved} />
       )}
     </div>
   );

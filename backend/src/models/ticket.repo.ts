@@ -147,6 +147,22 @@ export const ticketRepo = {
     return { data, total };
   },
 
+  /**
+   * Submitted tickets nobody has picked up yet. `assigned_to` is free text and
+   * the seed/UI both use the literal 'Unassigned' alongside NULL, so match both.
+   */
+  async listUnassignedPending(limit: number): Promise<Ticket[]> {
+    const [rows] = await pool.query<TicketRow[]>(
+      `SELECT * FROM tickets
+        WHERE status = 'submitted'
+          AND (assigned_to IS NULL OR assigned_to = '' OR assigned_to = 'Unassigned')
+        ORDER BY created_at DESC, id DESC
+        LIMIT ?`,
+      [limit],
+    );
+    return rows.map((r) => mapTicket(r, [], []));
+  },
+
   /** Full ticket with nested comments, history, and attachments. */
   async getByIdFull(id: number): Promise<Ticket | null> {
     const [rows] = await pool.query<TicketRow[]>('SELECT * FROM tickets WHERE id = ? LIMIT 1', [id]);
@@ -251,7 +267,13 @@ export const ticketRepo = {
             await deviceRepo.createLink(conn, ticketId, existingDevice.id, input.deviceAction);
             // Update device status for repair/return
             if (input.deviceAction === 'repair' || input.deviceAction === 'return') {
-              await deviceRepo.setStatus(conn, existingDevice.id, 'In Repair');
+              await deviceRepo.setStatus(
+                conn,
+                existingDevice.id,
+                'In Repair',
+                ticketId,
+                `Device sent for ${input.deviceAction} via ticket`,
+              );
             }
             await historyRepo.append(conn, {
               ticketId,

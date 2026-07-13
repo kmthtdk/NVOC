@@ -4,6 +4,17 @@ import type { DeviceRow, MacAddressRow } from './rows.js';
 import { mapDevice, mapMacAddress } from './mappers.js';
 import type { Device, DeviceStatus, DeviceActionType, MacAddress, MacAddressInput, DeviceSpecifications } from '../types/index.js';
 
+/**
+ * Device status -> device_history.action_type. Only the statuses that are not
+ * already logged by a dedicated flow appear here; 'In Stock' and 'Active' are
+ * reached via checkout/assign, which write their own 'returned'/'assigned' rows.
+ */
+const STATUS_HISTORY_ACTION: Partial<Record<DeviceStatus, 'repaired' | 'retired' | 'lost'>> = {
+  'In Repair': 'repaired',
+  Retired: 'retired',
+  Lost: 'lost',
+};
+
 export interface DeviceListFilters {
   deviceType?: string;
   status?: DeviceStatus;
@@ -467,8 +478,28 @@ export const deviceRepo = {
    * Set device status (used within transactions by other repos).
    * conn is required for transactional consistency.
    */
-  async setStatus(conn: PoolConnection, deviceId: number, status: DeviceStatus): Promise<void> {
+  async setStatus(
+    conn: PoolConnection,
+    deviceId: number,
+    status: DeviceStatus,
+    ticketId: number | null = null,
+    reason: string | null = null,
+  ): Promise<void> {
     await conn.execute('UPDATE devices SET status = ? WHERE id = ?', [status, deviceId]);
+
+    // Mirror the status change into device_history. Without this, moving a
+    // device to In Repair/Retired/Lost leaves no audit trail, and the
+    // stock-movement report's `repaired` column can never be anything but 0.
+    // 'In Stock'/'Active' are reached via checkout/assign, which log their own
+    // 'returned'/'assigned' rows — logging here too would double-count them.
+    const action = STATUS_HISTORY_ACTION[status];
+    if (!action) return;
+
+    await conn.execute(
+      `INSERT INTO device_history (device_id, ticket_id, action_type, reason, created_by)
+       VALUES (?, ?, ?, ?, ?)`,
+      [deviceId, ticketId, action, reason || `Status changed to ${status}`, 'System'],
+    );
   },
 
   /**
@@ -788,9 +819,10 @@ export const deviceRepo = {
         DATE(created_at) as date,
         SUM(IF(action_type = 'assigned', 1, 0)) as assigned,
         SUM(IF(action_type = 'returned', 1, 0)) as returned,
-        SUM(IF(action_type IN ('repair', 'in_repair'), 1, 0)) as repaired
+        SUM(IF(action_type = 'repaired', 1, 0)) as repaired
       FROM device_history
-      WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+      -- Not DATE(created_at) >= ... : wrapping the column kills index use.
+      WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
       GROUP BY DATE(created_at)
       ORDER BY date DESC
     `);

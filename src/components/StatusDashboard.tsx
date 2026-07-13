@@ -1,18 +1,21 @@
 // ============================================================================
 // StatusDashboard — Cyber-Ops style admin dashboard for the current ticket set.
-// Pure presentational: derives counts from the tickets passed in. Layout follows
-// the stitch admin dashboard: KPI strip -> priority queue table + insight side
-// panel -> category breakdown. Data/logic unchanged.
+// Presentational: KPI counts come from the server's SQL aggregate (`stats`), the
+// priority queue and category breakdown from the loaded page. Layout follows the
+// stitch admin dashboard: KPI strip -> priority queue + insight panel -> categories.
 // ============================================================================
 
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import type { Ticket, TicketStatus, TicketPriority } from '../types';
+import type { TicketStatsSummary } from '../api/client';
 import { IT_CATEGORIES } from '../data/categories';
 import { Activity, AlertTriangle, CheckCircle2, Clock, Inbox, TrendingUp, Flame } from 'lucide-react';
 
 interface StatusDashboardProps {
   tickets: Ticket[];
   total?: number; // server-reported total (may exceed loaded page)
+  /** SQL-aggregated counts over the whole table; preferred over deriving from `tickets`. */
+  stats?: TicketStatsSummary | null;
   onSelectTicket?: (t: Ticket) => void;
 }
 
@@ -48,25 +51,48 @@ const PRIORITY_META: Record<TicketPriority, { label: string; cls: string; badge:
 
 const PRIORITY_RANK: Record<TicketPriority, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
 
-export default function StatusDashboard({ tickets, total, onSelectTicket }: StatusDashboardProps) {
+export default function StatusDashboard({ tickets, total, stats, onSelectTicket }: StatusDashboardProps) {
   const metrics = useMemo(() => {
+    // Counts come from the server's SQL aggregate when available. Deriving them
+    // from `tickets` only sees one capped page, so the breakdowns silently
+    // under-report once the table grows past that page size.
+    const byCategory: Record<string, number> = {};
+    for (const t of tickets) {
+      byCategory[t.category] = (byCategory[t.category] ?? 0) + 1;
+    }
+    const topCategories = Object.entries(byCategory).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+    if (stats) {
+      const s = stats.summary;
+      return {
+        byStatus: {
+          submitted: s.submitted,
+          waiting: s.waiting,
+          resolved: s.resolved,
+          rejected: s.rejected,
+        } as Record<TicketStatus, number>,
+        byPriority: stats.priorities,
+        open: s.pending,
+        closed: s.resolved + s.rejected,
+        resolutionRate: s.resolutionRate,
+        topCategories,
+      };
+    }
+
+    // Fallback while the stats request is in flight or has failed.
     const byStatus: Record<TicketStatus, number> = { submitted: 0, waiting: 0, resolved: 0, rejected: 0 };
     const byPriority: Record<TicketPriority, number> = { low: 0, medium: 0, high: 0, urgent: 0 };
-    const byCategory: Record<string, number> = {};
-
     for (const t of tickets) {
       byStatus[t.status]++;
       byPriority[t.priority]++;
-      byCategory[t.category] = (byCategory[t.category] ?? 0) + 1;
     }
 
     const open = byStatus.submitted + byStatus.waiting;
     const closed = byStatus.resolved + byStatus.rejected;
     const resolutionRate = tickets.length ? Math.round((byStatus.resolved / tickets.length) * 100) : 0;
-    const topCategories = Object.entries(byCategory).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
     return { byStatus, byPriority, open, closed, resolutionRate, topCategories };
-  }, [tickets]);
+  }, [tickets, stats]);
 
   // Priority queue — open tickets, highest priority first (stitch "Critical Incidents").
   const priorityQueue = useMemo(

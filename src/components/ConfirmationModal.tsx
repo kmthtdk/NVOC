@@ -4,7 +4,7 @@
 // straight into the new ticket's detail view.
 // ============================================================================
 
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Ticket } from '../types';
 import { CheckCircle2, X, ArrowRight, Copy } from 'lucide-react';
 import { useToast } from '../context/ToastContext';

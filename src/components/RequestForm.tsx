@@ -109,8 +109,6 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
 
   const [deviceActionType, setDeviceActionType] = useState<'new' | 'replace' | 'repair' | 'return'>('new');
   const [deviceType, setDeviceType] = useState('Laptop');
-  const [deviceModelName, setDeviceModelName] = useState('');
-  const [reasonForChange, setReasonForChange] = useState('');
 
   const [usbDuration, setUsbDuration] = useState('1 Day');
   const [usbJustification, setUsbJustification] = useState('');
@@ -119,9 +117,7 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
   const [pcSecurityReason, setPcSecurityReason] = useState('');
 
   const [serviceName, setServiceName] = useState('');
-  const [serviceDescription, setServiceDescription] = useState('');
 
-  const [serverAction, setServerAction] = useState<'folder' | 'permission' | 'ai'>('folder');
   const [folderActionType, setFolderActionType] = useState<'create' | 'restore'>('create');
   const [folderPath, setFolderPath] = useState('');
   const [permissionActions, setPermissionActions] = useState<string[]>(['read']);
@@ -181,7 +177,6 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
 
     if (selectedCategory === 'server_request') {
       if (selectedSubcategory === 'folder') {
-        setServerAction('folder');
         if (selectedType === 'create_folder') {
           setFolderActionType('create');
         } else if (selectedType === 'restore_data') {
@@ -190,7 +185,6 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
           setFolderActionType('create');
         }
       } else if (selectedSubcategory === 'permission') {
-        setServerAction('permission');
         if (selectedType === 'read_folder') {
           setPermissionActions(['read']);
         } else if (selectedType === 'write_folder') {
@@ -201,7 +195,6 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
           setPermissionActions(['read', 'write', 'modify', 'full']);
         }
       } else if (selectedSubcategory === 'ai') {
-        setServerAction('ai');
         if (selectedType === 'gemini') {
           setAiModelName('Gemini Enterprise Workspace API');
         } else if (selectedType === 'gpt') {

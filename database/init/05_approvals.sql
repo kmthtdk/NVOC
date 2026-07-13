@@ -63,6 +63,8 @@ CREATE TABLE IF NOT EXISTS ticket_approvals (
   KEY idx_ta_ticket (ticket_id),
   KEY idx_ta_approver (approver_user_id),
   KEY idx_ta_status (status),
+  -- pendingForUser() filters on both at once; the composite beats an index merge.
+  KEY idx_ta_approver_status (approver_user_id, status),
   CONSTRAINT fk_ta_ticket FOREIGN KEY (ticket_id) REFERENCES tickets (id) ON DELETE CASCADE,
   CONSTRAINT fk_ta_user FOREIGN KEY (approver_user_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

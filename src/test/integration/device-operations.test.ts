@@ -100,7 +100,7 @@ describe('Device Operations Integration', () => {
         headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
       });
 
-      const result = await api.updateDevice(1, { status: 'Retired' });
+      await api.updateDevice(1, { status: 'Retired' });
 
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/devices/1'),

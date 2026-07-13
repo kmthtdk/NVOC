@@ -166,7 +166,14 @@ test.describe('Workflow 2: Device Checkout / Return', () => {
 
     // Select the ticket in the dispatch select
     const ticketSelect = adminPage.locator('select').first();
-    await ticketSelect.selectOption({ label: new RegExp(ticket.code) });
+    // selectOption's `label` only accepts an exact string, never a RegExp — the
+    // option text carries extra chrome around the code, so resolve the option's
+    // value by substring first, then select by value.
+    const ticketOptionValue = await ticketSelect
+      .locator('option', { hasText: ticket.code })
+      .getAttribute('value');
+    if (!ticketOptionValue) throw new Error(`No dispatch option found for ${ticket.code}`);
+    await ticketSelect.selectOption(ticketOptionValue);
 
     // Set status to "Resolved"
     const statusSelect = adminPage.locator('select').nth(1);

@@ -63,10 +63,6 @@ interface DeviceFormModalProps {
   onClose: () => void;
   /** Called after a successful save so the parent can refresh its list. */
   onSaved: (device: Device) => void;
-  /** Optional API base; defaults to relative /api (same-origin via nginx proxy). */
-  apiBaseUrl?: string;
-  /** Bearer token for the request. */
-  authToken?: string;
 }
 
 const DEVICE_TYPE_OPTIONS = [
@@ -156,13 +152,7 @@ function getMacStatus(mac: MacAddressState): 'new' | 'edited' | 'unchanged' {
   return 'unchanged';
 }
 
-export default function DeviceFormModal({
-  device,
-  onClose,
-  onSaved,
-  apiBaseUrl = '/api',
-  authToken = '',
-}: DeviceFormModalProps) {
+export default function DeviceFormModal({ device, onClose, onSaved }: DeviceFormModalProps) {
   const toast = useToast();
   const isEditMode = !!device?.id;
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -197,7 +187,6 @@ export default function DeviceFormModal({
   const [specifications, setSpecifications] = useState<DeviceSpecifications>(() =>
     device?.specifications ?? {}
   );
-  const [specErrors, setSpecErrors] = useState<Record<string, string>>({});
 
   // Load full device data on mount (edit mode) to fetch MACs
   useEffect(() => {

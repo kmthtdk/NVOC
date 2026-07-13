@@ -8,12 +8,12 @@
 // - Role-gates the IT Admin workspace on it_support/admin.
 // ============================================================================
 
-import React, { useCallback, useEffect, useState } from 'react';
-import type { Ticket } from './types';
+import { useCallback, useEffect, useState } from 'react';
+import type { Ticket, CategorySpec } from './types';
 import { api, ApiError } from './api/client';
+import type { TicketStatsSummary } from './api/client';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
-import { useToast } from './context/ToastContext';
 
 import Login from './components/Login';
 import UserProfile from './components/UserProfile';
@@ -51,15 +51,15 @@ import {
 
 type PortalView = 'user' | 'admin';
 
-// Pull a wide page for dashboard metrics so breakdowns reflect the whole set,
-// not just the paginated list page. (No dedicated stats endpoint exists.)
+// Rows for the dispatch console and the dashboard's priority queue. KPI counts
+// do NOT come from this page — they come from the SQL aggregate in
+// api.getStatsSummary(), so they stay correct past this page size.
 // Max allowed by backend is 100.
 const METRICS_PAGE_SIZE = 100;
 
 export default function App() {
   const { isAuthenticated, isBootstrapping, user, isITSupport } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const toast = useToast();
 
   const [view, setView] = useState<PortalView>('user');
   const [adminTab, setAdminTab] = useState<'tickets' | 'devices' | 'reports' | 'approval'>('tickets');
@@ -74,6 +74,24 @@ export default function App() {
 
   // Confirmation modal shown after a ticket is created.
   const [createdTicket, setCreatedTicket] = useState<Ticket | null>(null);
+
+  // Taxonomy from the DB — the same tables the ticket FKs point at. The bundled
+  // src/data/categories.ts is only a fallback: adding a category there without
+  // seeding the DB makes ticket creation fail on an FK violation.
+  const [categories, setCategories] = useState<CategorySpec[]>([]);
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    api
+      .getCategories(ctrl.signal)
+      .then(setCategories)
+      .catch((err) => {
+        if ((err as Error)?.name === 'AbortError') return;
+        // Non-fatal: RequestForm falls back to the bundled static taxonomy.
+        console.error('[Taxonomy] Falling back to the bundled category list:', err);
+      });
+    return () => ctrl.abort();
+  }, []);
 
   // Real-time clock for the header.
   useEffect(() => {
@@ -214,6 +232,7 @@ export default function App() {
             onCreated={handleCreated}
             onSelectTicket={(t) => setSelectedTicketId(t.id)}
             requesterEmail={user?.email ?? null}
+            categories={categories}
           />
         ) : (
           <AdminWorkspace
@@ -262,11 +281,13 @@ function UserPortal({
   onCreated,
   onSelectTicket,
   requesterEmail,
+  categories,
 }: {
   reloadKey: number;
   onCreated: (t: Ticket) => void;
   onSelectTicket: (t: Ticket) => void;
   requesterEmail: string | null;
+  categories: CategorySpec[];
 }) {
   const { user } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -389,7 +410,7 @@ function UserPortal({
         </button>
       </div>
 
-      {tab === 'new' && <RequestForm onCreated={handleCreated} />}
+      {tab === 'new' && <RequestForm onCreated={handleCreated} categories={categories} />}
 
       {tab === 'requests' && (
         <div className="space-y-6">
@@ -585,24 +606,34 @@ function AdminWorkspace({
   onMutated: () => void;
   onSelectTicket: (t: Ticket) => void;
 }) {
-  // Wide fetch purely for dashboard + dispatch console (whole-set metrics).
+  // Ticket rows for the dispatch console and the dashboard's priority queue.
   const [metricsTickets, setMetricsTickets] = useState<Ticket[]>([]);
   const [metricsTotal, setMetricsTotal] = useState(0);
+  // Whole-table counts, aggregated in SQL. The KPI numbers must not be derived
+  // from the capped page above, or they under-report past METRICS_PAGE_SIZE.
+  const [stats, setStats] = useState<TicketStatsSummary | null>(null);
 
   useEffect(() => {
     const ctrl = new AbortController();
+    const ignoreAbort = (err: unknown) => {
+      if ((err as Error)?.name === 'AbortError') return;
+      console.error('[Dashboard] Failed to load metrics:', err);
+      // Non-fatal: the dashboard falls back to page-derived counts.
+    };
+
     api
       .listTickets({ page: 1, pageSize: METRICS_PAGE_SIZE, sort: 'newest' }, ctrl.signal)
       .then((res) => {
-
         setMetricsTickets(res.data);
         setMetricsTotal(res.total);
       })
-      .catch((err) => {
-        if ((err as Error)?.name === 'AbortError') return;
-        console.error('[Dashboard] Failed to load tickets:', err);
-        // Non-fatal: the dashboard simply shows zeros if this fails.
-      });
+      .catch(ignoreAbort);
+
+    api
+      .getStatsSummary('all', ctrl.signal)
+      .then(setStats)
+      .catch(ignoreAbort);
+
     return () => ctrl.abort();
   }, [reloadKey]);
 
@@ -685,7 +716,12 @@ function AdminWorkspace({
           </div>
 
           {/* Unified Dashboard: metrics + breakdowns */}
-          <StatusDashboard tickets={metricsTickets} total={metricsTotal} onSelectTicket={onSelectTicket} />
+          <StatusDashboard
+            tickets={metricsTickets}
+            total={metricsTotal}
+            stats={stats}
+            onSelectTicket={onSelectTicket}
+          />
 
           {/* Dispatch console */}
           {showSim && (
@@ -726,7 +762,7 @@ function AdminWorkspace({
 
           {/* Device Management */}
           {deviceSubTab === 'management' && (
-            <DeviceManagement user={{ role: 'admin' }} />
+            <DeviceManagement />
           )}
 
           {/* Device Reports */}
