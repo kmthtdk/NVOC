@@ -3,7 +3,11 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
+    // Unit suite only — fast, no Docker. The integration tests live under
+    // __tests__/integration and need a real MySQL, so they run from
+    // vitest.integration.config.ts (`npm run test:integration`) instead.
     include: ['src/**/*.test.ts'],
+    exclude: ['src/__tests__/integration/**'],
     // Satisfy env.ts's zod validation without a real DB. The DB-touching modules
     // are mocked in the tests, so these values are never used to connect.
     env: {

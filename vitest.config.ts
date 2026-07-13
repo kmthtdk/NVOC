@@ -36,13 +36,14 @@ export default defineConfig({
       // top level, so the previous 40/35 numbers were never actually enforced.
       // These are set to the real measured floor so the build fails on a
       // regression; raise them as coverage is added (project standard: 80).
-      // Real measured coverage as of 2026-07-13: 3.39% lines / 4.31% funcs.
-      // Only src/api/client.ts is exercised; all 20 components are untested.
+      // Real measured coverage as of 2026-07-13: 5.94% lines. api/client.ts and
+      // StatusDashboard are exercised; the other 19 components are not. This is
+      // the honest floor, not the goal — the project standard is 80.
       thresholds: {
-        lines: 3,
-        functions: 4,
-        branches: 2,
-        statements: 3,
+        lines: 5,
+        functions: 6,
+        branches: 3,
+        statements: 5,
       },
     },
 
