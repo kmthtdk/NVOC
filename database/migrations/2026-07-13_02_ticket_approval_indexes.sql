@@ -12,14 +12,22 @@
 --              composite beats two single-column indexes merged.
 -- Idempotent: each ADD INDEX is guarded on information_schema.
 
--- 1. tickets.assigned_to
+-- 1. tickets (status, assigned_to) — composite, not a bare assigned_to index.
+--    Measured with EXPLAIN on a 10K-row tickets table:
+--      * status + assigned_to (the admin queue filter): composite is chosen,
+--        rows=1, filtered=100. This is the case that earns the index.
+--      * assigned_to alone: the planner ignores BOTH a bare assigned_to index
+--        and this composite, preferring a backward scan of idx_t_created to
+--        satisfy ORDER BY created_at DESC LIMIT. So a bare index would be dead
+--        weight — that is why this is a composite and there is no bare one.
+--    listUnassignedPending likewise rides idx_t_created (139 rows examined).
 SET @has_idx := (
   SELECT COUNT(*) FROM information_schema.STATISTICS
   WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'tickets' AND INDEX_NAME = 'idx_tickets_assigned_to'
+    AND TABLE_NAME = 'tickets' AND INDEX_NAME = 'idx_tickets_status_assigned'
 );
 SET @sql := IF(@has_idx = 0,
-  'ALTER TABLE tickets ADD INDEX idx_tickets_assigned_to (assigned_to)',
+  'ALTER TABLE tickets ADD INDEX idx_tickets_status_assigned (status, assigned_to)',
   'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 

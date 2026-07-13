@@ -111,7 +111,11 @@ CREATE TABLE tickets (
   INDEX idx_t_category (category_id),
   INDEX idx_t_priority (priority),
   INDEX idx_t_created  (created_at),
-  INDEX idx_tickets_assigned_to (assigned_to),
+  -- Composite, not a bare assigned_to index. Measured on 10K rows: the admin
+  -- queue filter (status + assigned_to) uses this one, rows=1. A standalone
+  -- assigned_to index is never chosen — ORDER BY created_at DESC LIMIT makes
+  -- the planner prefer a backward scan of idx_t_created instead.
+  INDEX idx_tickets_status_assigned (status, assigned_to),
   -- Functional index: the "my tickets" filter compares LOWER(requester_email),
   -- which a plain column index cannot serve.
   INDEX idx_tickets_requester_email_lower ((LOWER(requester_email))),

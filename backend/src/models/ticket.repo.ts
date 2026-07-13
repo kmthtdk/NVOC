@@ -149,13 +149,15 @@ export const ticketRepo = {
 
   /**
    * Submitted tickets nobody has picked up yet. `assigned_to` is free text and
-   * the seed/UI both use the literal 'Unassigned' alongside NULL, so match both.
+   * NOT NULL DEFAULT 'Unassigned', so an IS NULL branch would be dead — the
+   * unpicked states are the literal 'Unassigned' and the empty string.
+   * An IN(...) on the two lets the (status, assigned_to) composite serve this.
    */
   async listUnassignedPending(limit: number): Promise<Ticket[]> {
     const [rows] = await pool.query<TicketRow[]>(
       `SELECT * FROM tickets
         WHERE status = 'submitted'
-          AND (assigned_to IS NULL OR assigned_to = '' OR assigned_to = 'Unassigned')
+          AND assigned_to IN ('Unassigned', '')
         ORDER BY created_at DESC, id DESC
         LIMIT ?`,
       [limit],

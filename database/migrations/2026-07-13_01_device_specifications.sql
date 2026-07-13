@@ -6,6 +6,14 @@
 --         hard-fails every device create with "Unknown column 'cpu'"
 --         (device.repo.ts create() INSERTs all six columns unconditionally).
 --         Guarded on `cpu` so it is idempotent (safe to re-run; skips if applied).
+--
+-- OPS WARNING — this ALTER blocks writes to `devices` for its whole duration.
+-- `devices` already carries a FULLTEXT index (ft_devices_search), and InnoDB
+-- drops the instant-ADD-COLUMN path for any table that has one, so neither
+-- ALGORITHM=INSTANT nor LOCK=NONE is accepted here (measured: ~26s of blocked
+-- INSERTs on a 60K-row table). At this app's inventory size that is well under
+-- a second, but run it in a maintenance window — or use gh-ost /
+-- pt-online-schema-change — if `devices` has grown large.
 
 SET @has_cpu := (
   SELECT COUNT(*) FROM information_schema.COLUMNS
