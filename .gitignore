@@ -6,3 +6,15 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Test artifacts
+playwright-report/
+playwright-results.xml
+test-results/
+tests/e2e/.auth/
+
+# Runtime uploads
+backend/uploads/
+
+# Design asset drops (kept locally, not versioned)
+*.zip
