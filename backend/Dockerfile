@@ -3,10 +3,12 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Install all deps (incl. dev) for the build.
-# `npm install` (not `npm ci`) because package-lock.json is gitignored repo-wide,
-# so a fresh clone has no committed lockfile for `npm ci` to consume.
-COPY package.json package-lock.json* ./
-RUN npm install --no-audit --no-fund
+# `npm ci` — the lockfile is committed (un-ignored for this project in the repo
+# root .gitignore), so the image builds from exactly the pinned tree. `npm
+# install` would silently float every rebuild to the latest semver-compatible
+# versions, which is how a build that passed yesterday breaks today.
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
 COPY tsconfig.json ./
 COPY src ./src
