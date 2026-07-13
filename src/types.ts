@@ -12,6 +12,19 @@ export type TicketStatus =
   | 'resolved'
   | 'rejected';
 
+/**
+ * "Open" = not closed out, whoever is holding it. Defined once: every place that
+ * hand-rolled `status === 'submitted' || status === 'waiting'` silently dropped
+ * gated tickets the moment `pending_approval` was added.
+ */
+export const OPEN_TICKET_STATUSES: readonly TicketStatus[] = [
+  'submitted',
+  'pending_approval',
+  'waiting',
+];
+
+export const isOpenStatus = (s: TicketStatus): boolean => OPEN_TICKET_STATUSES.includes(s);
+
 export interface TicketComment {
   id: string;
   author: string;

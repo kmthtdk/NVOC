@@ -148,6 +148,22 @@ export const ticketRepo = {
   },
 
   /**
+   * Newly-arrived tickets, gated or not. A `status = 'submitted'` filter would
+   * hide every ticket routed into the approval chain, so new requests would
+   * silently vanish from the admin's "recent" panel the moment approval is on.
+   */
+  async listRecentIncoming(limit: number): Promise<Ticket[]> {
+    const [rows] = await pool.query<TicketRow[]>(
+      `SELECT * FROM tickets
+        WHERE status IN ('submitted', 'pending_approval')
+        ORDER BY created_at DESC, id DESC
+        LIMIT ?`,
+      [limit],
+    );
+    return rows.map((r) => mapTicket(r, [], []));
+  },
+
+  /**
    * Submitted tickets nobody has picked up yet. `assigned_to` is free text and
    * NOT NULL DEFAULT 'Unassigned', so an IS NULL branch would be dead — the
    * unpicked states are the literal 'Unassigned' and the empty string.

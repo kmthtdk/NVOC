@@ -6,6 +6,7 @@
 // ============================================================================
 
 import { useMemo } from 'react';
+import { isOpenStatus } from '../types';
 import type { Ticket, TicketStatus, TicketPriority } from '../types';
 import type { TicketStatsSummary } from '../api/client';
 import { IT_CATEGORIES } from '../data/categories';
@@ -102,7 +103,7 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
       byCategory[t.category] = (byCategory[t.category] ?? 0) + 1;
     }
 
-    const open = byStatus.submitted + byStatus.waiting;
+    const open = byStatus.submitted + byStatus.pending_approval + byStatus.waiting;
     const closed = byStatus.resolved + byStatus.rejected;
     const resolutionRate = tickets.length ? Math.round((byStatus.resolved / tickets.length) * 100) : 0;
 
@@ -113,7 +114,7 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
   const priorityQueue = useMemo(
     () =>
       [...tickets]
-        .filter((t) => t.status === 'submitted' || t.status === 'waiting')
+        .filter((t) => isOpenStatus(t.status))
         .sort(
           (a, b) =>
             PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] ||

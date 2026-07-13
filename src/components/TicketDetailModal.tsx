@@ -82,6 +82,9 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
 
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  /** Parked on an approver: IT must not hand-edit it until the chain resolves. */
+  const isGated = ticket?.status === 'pending_approval';
+
   // Device workflow state
   const [deviceWorkflow, setDeviceWorkflow] = useState<{
     ticketId: string;
@@ -346,17 +349,26 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            {/* A gated ticket cannot be driven by hand — the approval chain owns it.
+                The server enforces this, but letting IT open the editor and only
+                fail on save is the exact "find out by clicking" problem the
+                pending_approval state exists to remove. Disable it up front. */}
             {isITSupport && ticket && (
               <button
                 type="button"
+                disabled={isGated}
+                title={isGated ? 'Awaiting approval — IT cannot change this ticket yet' : undefined}
                 onClick={() => setShowEdit((s) => !s)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
-                  showEdit
-                    ? 'bg-amber-100 dark:bg-amber-950/50 border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300'
-                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-300'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                  isGated
+                    ? 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
+                    : showEdit
+                      ? 'bg-amber-100 dark:bg-amber-950/50 border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 cursor-pointer'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-300 cursor-pointer'
                 }`}
               >
-                <Settings2 className="w-3.5 h-3.5" /> Manage
+                <Settings2 className="w-3.5 h-3.5" />
+                {isGated ? 'Awaiting Approval' : 'Manage'}
               </button>
             )}
             <button
@@ -388,7 +400,7 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
               </div>
 
               {/* Admin edit panel */}
-              {showEdit && isITSupport && (
+              {showEdit && isITSupport && !isGated && (
                 <form onSubmit={handleSaveEdit} className="p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-xl space-y-3 animate-fade-in-smooth">
                   <h4 className="text-[10px] font-extrabold text-amber-700 dark:text-amber-400 uppercase tracking-widest font-mono">Manage Ticket</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

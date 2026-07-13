@@ -344,6 +344,7 @@ export default function TicketList({ reloadKey, onSelectTicket }: TicketListProp
             >
               <option value="all">All Statuses</option>
               <option value="submitted">Submitted</option>
+              <option value="pending_approval">Awaiting Approval</option>
               <option value="waiting">Waiting for Review</option>
               <option value="resolved">Resolved</option>
               <option value="rejected">Rejected</option>

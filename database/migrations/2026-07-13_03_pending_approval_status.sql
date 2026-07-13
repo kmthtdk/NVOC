@@ -43,6 +43,21 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 -- 3. Backfill: existing tickets sitting at 'submitted' that actually have a
 --    pending approval step belong in 'pending_approval'. Without this, every
 --    ticket created before this migration keeps lying about its state.
+-- 3a. Record the correction in the audit timeline FIRST, while the rows are
+--     still identifiable by their (wrong) 'submitted' status. Without this the
+--     badge would read "Awaiting Approval" while the ticket's own history still
+--     ended at "submitted" — a timeline that contradicts the ticket.
+INSERT INTO ticket_history (ticket_id, status, status_label, updated_by, notes)
+SELECT t.id, 'pending_approval', 'Awaiting Approval', 'System',
+       'Backfilled: ticket was already gated by a pending approval step.'
+  FROM tickets t
+ WHERE t.status = 'submitted'
+   AND EXISTS (
+     SELECT 1 FROM ticket_approvals a
+      WHERE a.ticket_id = t.id AND a.status = 'pending'
+   );
+
+-- 3b. Then move the tickets themselves.
 UPDATE tickets t
    SET t.status = 'pending_approval'
  WHERE t.status = 'submitted'

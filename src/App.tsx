@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { Ticket, CategorySpec } from './types';
+import { isOpenStatus } from './types';
 import { api, ApiError } from './api/client';
 import type { TicketStatsSummary } from './api/client';
 import { useAuth } from './context/AuthContext';
@@ -354,8 +355,7 @@ function UserPortal({
     }`;
 
   const firstName = (user?.fullName ?? 'there').split(' ')[0];
-  const isOpen = (t: Ticket) =>
-    t.status === 'submitted' || t.status === 'pending_approval' || t.status === 'waiting';
+  const isOpen = (t: Ticket) => isOpenStatus(t.status);
   const openCount = listToShow.filter(isOpen).length;
   const resolvedCount = listToShow.filter((t) => t.status === 'resolved').length;
 

@@ -366,14 +366,14 @@ export const ticketController = {
     // approach sliced the 100 newest tickets by status, so recent_resolved came
     // back empty whenever none of the 100 newest happened to be resolved — even
     // with plenty of older resolved tickets in the table.
-    const [submitted, resolved, pending] = await Promise.all([
-      ticketRepo.list({ page: 1, pageSize: RECENT_LIMIT, sort: 'newest', status: 'submitted' }),
+    const [incoming, resolved, pending] = await Promise.all([
+      ticketRepo.listRecentIncoming(RECENT_LIMIT),
       ticketRepo.list({ page: 1, pageSize: RECENT_LIMIT, sort: 'newest', status: 'resolved' }),
       ticketRepo.listUnassignedPending(RECENT_LIMIT),
     ]);
 
     res.json({
-      recent_submitted: submitted.data,
+      recent_submitted: incoming,
       recent_resolved: resolved.data,
       unassigned_pending: pending,
     });
