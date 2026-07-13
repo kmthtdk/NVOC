@@ -559,6 +559,18 @@ export const deviceRepo = {
         [deviceId, 'returned', condition, notes || null, createdBy],
       );
 
+      // A checkout into In Repair/Retired/Lost is two events, not one: the device
+      // came back (logged above) AND it left circulation. Without this second row
+      // the stock-movement report never counts a repair that arrived this way.
+      const action = STATUS_HISTORY_ACTION[newStatus];
+      if (action) {
+        await conn.execute(
+          `INSERT INTO device_history (device_id, action_type, condition_state, reason, created_by)
+           VALUES (?, ?, ?, ?, ?)`,
+          [deviceId, action, condition, `Checked in as ${condition} -> ${newStatus}`, createdBy],
+        );
+      }
+
       const device = await this.getByIdFull(deviceId, conn);
       if (!device) throw new Error('Device not found after checkout');
       return device;

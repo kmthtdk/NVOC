@@ -55,12 +55,10 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
   const metrics = useMemo(() => {
     // Counts come from the server's SQL aggregate when available. Deriving them
     // from `tickets` only sees one capped page, so the breakdowns silently
-    // under-report once the table grows past that page size.
-    const byCategory: Record<string, number> = {};
-    for (const t of tickets) {
-      byCategory[t.category] = (byCategory[t.category] ?? 0) + 1;
-    }
-    const topCategories = Object.entries(byCategory).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    // under-report once the table grows past that page size. `stats.categories`
+    // is keyed by categories.id, which is the same VARCHAR code as Ticket.category.
+    const rank = (counts: Record<string, number>) =>
+      Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
     if (stats) {
       const s = stats.summary;
@@ -75,23 +73,25 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
         open: s.pending,
         closed: s.resolved + s.rejected,
         resolutionRate: s.resolutionRate,
-        topCategories,
+        topCategories: rank(stats.categories),
       };
     }
 
     // Fallback while the stats request is in flight or has failed.
     const byStatus: Record<TicketStatus, number> = { submitted: 0, waiting: 0, resolved: 0, rejected: 0 };
     const byPriority: Record<TicketPriority, number> = { low: 0, medium: 0, high: 0, urgent: 0 };
+    const byCategory: Record<string, number> = {};
     for (const t of tickets) {
       byStatus[t.status]++;
       byPriority[t.priority]++;
+      byCategory[t.category] = (byCategory[t.category] ?? 0) + 1;
     }
 
     const open = byStatus.submitted + byStatus.waiting;
     const closed = byStatus.resolved + byStatus.rejected;
     const resolutionRate = tickets.length ? Math.round((byStatus.resolved / tickets.length) * 100) : 0;
 
-    return { byStatus, byPriority, open, closed, resolutionRate, topCategories };
+    return { byStatus, byPriority, open, closed, resolutionRate, topCategories: rank(byCategory) };
   }, [tickets, stats]);
 
   // Priority queue — open tickets, highest priority first (stitch "Critical Incidents").
