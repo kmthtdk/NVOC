@@ -2,6 +2,8 @@ import type { PoolConnection } from 'mysql2/promise';
 import type { RowDataPacket } from 'mysql2';
 import { pool } from '../config/db.js';
 import { AppError } from '../utils/AppError.js';
+import { assertTransition } from '../services/ticket-status.js';
+import type { TicketStatus } from '../types/index.js';
 
 export type ApproverType = 'requester_leader' | 'it_leader' | 'user' | 'role';
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'skipped';
@@ -125,17 +127,22 @@ export const approvalRepo = {
    * with the ticket INSERT (no silently-orphaned tickets that would otherwise
    * bypass the approval gate). No-op when approval is disabled.
    */
+  /**
+   * @returns true when the ticket now has a pending approval step — i.e. it is
+   * gated and belongs in `pending_approval`, not `submitted`. The caller owns
+   * the ticket's status; this repo must not write it (see setTicketStatus).
+   */
   async instantiateForNewTicket(
     ticketId: number,
     requesterDept: string,
     conn: PoolConnection,
-  ): Promise<void> {
-    if (!(await this.isApprovalEnabled(conn))) return;
+  ): Promise<boolean> {
+    if (!(await this.isApprovalEnabled(conn))) return false;
     const rows = await this.instantiate(ticketId, requesterDept, conn);
     const active = [...rows]
       .sort((a, b) => a.step_order - b.step_order)
       .find((r) => r.status === 'pending');
-    if (!active) return;
+    if (!active) return false;
     if (active.approver_user_id) {
       await this.enqueueNotification(
         { event: 'approval_requested', recipientUserId: active.approver_user_id, ticketId, payload: { stepOrder: active.step_order } },
@@ -147,6 +154,7 @@ export const approvalRepo = {
         conn,
       );
     }
+    return true;
   },
 
   async getChain(ticketId: number, conn?: PoolConnection): Promise<TicketApprovalRow[]> {
@@ -210,13 +218,28 @@ export const approvalRepo = {
     return rows[0] ?? null;
   },
 
+  /**
+   * The approval workflow's write path into `tickets.status`. It used to issue a
+   * raw UPDATE with no reference to the status machine, so nothing structurally
+   * stopped it from driving a ticket into a state the machine forbids. It now
+   * reads the current status inside the caller's transaction and asserts the
+   * edge, exactly like the HTTP path does.
+   */
   async setTicketStatus(
     ticketId: number,
-    status: string,
+    status: TicketStatus,
     label: string,
     actor: string,
     conn: PoolConnection,
   ): Promise<void> {
+    const [rows] = await conn.query<RowDataPacket[]>(
+      'SELECT status FROM tickets WHERE id = ? FOR UPDATE',
+      [ticketId],
+    );
+    const current = rows[0]?.status as TicketStatus | undefined;
+    if (!current) throw AppError.notFound(`Ticket ${ticketId} not found`);
+    assertTransition(current, status);
+
     await conn.execute('UPDATE tickets SET status = ? WHERE id = ?', [status, ticketId]);
     await conn.execute(
       `INSERT INTO ticket_history (ticket_id, status, status_label, updated_by, notes)

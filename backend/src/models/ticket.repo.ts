@@ -291,7 +291,28 @@ export const ticketRepo = {
       // Materialize the approval chain in THIS transaction so a failure rolls the
       // whole ticket back (never leave a ticket with 0 approval rows that would
       // silently bypass the approval gate).
-      await approvalRepo.instantiateForNewTicket(ticketId, input.requesterDept, conn);
+      const isGated = await approvalRepo.instantiateForNewTicket(
+        ticketId,
+        input.requesterDept,
+        conn,
+      );
+
+      // A gated ticket is parked on an approver, not queued for IT. Saying so in
+      // `status` is what lets IT filter it out of their queue, lets the requester
+      // see who is blocking, and keeps approval latency out of IT's SLA numbers.
+      if (isGated) {
+        await conn.execute('UPDATE tickets SET status = ? WHERE id = ?', [
+          'pending_approval',
+          ticketId,
+        ]);
+        await historyRepo.append(conn, {
+          ticketId,
+          status: 'pending_approval',
+          statusLabel: 'Awaiting Approval',
+          updatedBy: 'System',
+          notes: 'Routed to the approval chain before IT fulfillment.',
+        });
+      }
 
       return ticketId;
     });
@@ -379,6 +400,7 @@ export const ticketRepo = {
 
 const STATUS_LABELS: Record<TicketStatus, string> = {
   submitted: 'VOC Submitted',
+  pending_approval: 'Awaiting Approval',
   waiting: 'Waiting for Review',
   resolved: 'Issue Resolved',
   rejected: 'Request Rejected',

@@ -47,6 +47,7 @@ import {
   Send,
   CheckCircle2,
   XCircle,
+  ShieldCheck,
 } from 'lucide-react';
 
 type PortalView = 'user' | 'admin';
@@ -319,12 +320,14 @@ function UserPortal({
 
   const getStatusBadge = (st: string) => {
     if (st === 'submitted') return 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800';
+    if (st === 'pending_approval') return 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800';
     if (st === 'waiting') return 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800';
     if (st === 'resolved') return 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
     return 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800';
   };
   const getStatusText = (st: string) =>
     st === 'submitted' ? 'Submitted'
+    : st === 'pending_approval' ? 'Awaiting Approval'
     : st === 'waiting' ? 'Waiting for Review'
     : st === 'resolved' ? 'Resolved'
     : 'Rejected';
@@ -351,14 +354,26 @@ function UserPortal({
     }`;
 
   const firstName = (user?.fullName ?? 'there').split(' ')[0];
-  const openCount = listToShow.filter((t) => t.status === 'submitted' || t.status === 'waiting').length;
+  const isOpen = (t: Ticket) =>
+    t.status === 'submitted' || t.status === 'pending_approval' || t.status === 'waiting';
+  const openCount = listToShow.filter(isOpen).length;
   const resolvedCount = listToShow.filter((t) => t.status === 'resolved').length;
 
   // Active Request Tracker: the requester's most-recent non-closed ticket.
   // `listToShow` is server-sorted newest-first, so the first open match is the latest.
-  const activeTicket = listToShow.find((t) => t.status === 'submitted' || t.status === 'waiting');
-  const trackerStepIndex = activeTicket ? (activeTicket.status === 'submitted' ? 0 : 1) : -1;
+  const activeTicket = listToShow.find(isOpen);
+
+  // The approval step only appears while the ticket is actually sitting on an
+  // approver — a request that needs no sign-off should not show a step it will
+  // never pass through.
+  const isAwaitingApproval = activeTicket?.status === 'pending_approval';
   const trackerIsWaiting = activeTicket?.status === 'waiting';
+
+  const approvalStep = {
+    label: 'Awaiting Approval',
+    icon: ShieldCheck,
+    sub: 'With your approver',
+  };
   const trackerSteps: { label: string; icon: typeof Send; sub: string }[] = [
     {
       label: 'Submitted',
@@ -367,13 +382,18 @@ function UserPortal({
         ? new Date(activeTicket.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
         : '',
     },
+    ...(isAwaitingApproval ? [approvalStep] : []),
     {
       label: 'Waiting for Review',
       icon: Clock,
-      sub: trackerStepIndex === 1 ? 'In review' : trackerStepIndex > 1 ? 'Done' : 'Pending',
+      sub: trackerIsWaiting ? 'In review' : 'Pending',
     },
     { label: 'Resolved', icon: CheckCircle2, sub: 'Pending' },
   ];
+  // Index into trackerSteps of the step the ticket is currently on. Both
+  // 'pending_approval' and 'waiting' land on index 1: the approval step is only
+  // in the array when the ticket is on it, so it never shifts 'waiting' along.
+  const trackerStepIndex = !activeTicket ? -1 : activeTicket.status === 'submitted' ? 0 : 1;
 
   return (
     <div className="space-y-6">

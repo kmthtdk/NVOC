@@ -5,23 +5,19 @@ import { categoryRepo } from '../models/category.repo.js';
 import { commentRepo } from '../models/comment.repo.js';
 import { approvalRepo } from '../models/approval.repo.js';
 import { approvalService } from '../services/approval.service.js';
+import { assertTransition } from '../services/ticket-status.js';
 import { AppError } from '../utils/AppError.js';
 import { pool } from '../config/db.js';
 
 const PRIORITY = ['low', 'medium', 'high', 'urgent'] as const;
-const STATUS = ['submitted', 'waiting', 'resolved', 'rejected'] as const;
+const STATUS = ['submitted', 'pending_approval', 'waiting', 'resolved', 'rejected'] as const;
 
 /** Rows per bucket returned by GET /stats/recent. */
 const RECENT_LIMIT = 5;
 const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD');
 
-// Valid ticket status transitions state machine
-const VALID_TRANSITIONS: Record<string, string[]> = {
-  submitted: ['waiting', 'rejected'],
-  waiting: ['resolved', 'rejected'],
-  resolved: [],
-  rejected: [],
-};
+// The status machine now lives in services/ticket-status.ts so the approval
+// workflow's write path is held to the same rules as this HTTP path.
 
 // ---- Validation schemas ----
 export const createTicketSchema = z.object({
@@ -194,12 +190,7 @@ export const ticketController = {
       if (await approvalService.isPending(id)) {
         throw AppError.badRequest('Ticket is awaiting approval and cannot change status yet');
       }
-      const validNextStates = VALID_TRANSITIONS[current.status];
-      if (!validNextStates || !validNextStates.includes(body.status)) {
-        throw AppError.badRequest(
-          `Cannot transition from '${current.status}' to '${body.status}'`
-        );
-      }
+      assertTransition(current.status, body.status);
     }
 
     const actor = req.user?.name ?? 'IT Support';
@@ -296,6 +287,7 @@ export const ticketController = {
 
     const statusCounts: Record<string, number> = {
       submitted: 0,
+      pending_approval: 0,
       waiting: 0,
       resolved: 0,
       rejected: 0,
@@ -345,13 +337,17 @@ export const ticketController = {
     const totalTickets = Object.values(statusCounts).reduce((a, b) => a + b, 0);
     const resolvedTickets = statusCounts.resolved;
     const resolutionRate = totalTickets > 0 ? Math.round((resolvedTickets / totalTickets) * 100) : 0;
-    const pendingTickets = statusCounts.submitted + statusCounts.waiting;
+    // "Pending" = still open, whoever is holding it: IT triage, an approver, or
+    // IT fulfillment.
+    const pendingTickets =
+      statusCounts.submitted + statusCounts.pending_approval + statusCounts.waiting;
 
     res.json({
       period,
       summary: {
         total: totalTickets,
         submitted: statusCounts.submitted,
+        pendingApproval: statusCounts.pending_approval,
         waiting: statusCounts.waiting,
         resolved: statusCounts.resolved,
         rejected: statusCounts.rejected,
@@ -407,16 +403,27 @@ export const ticketController = {
 
   /** GET /tickets/reports/fulfillment-time — avg time from submit to resolve. */
   async getFulfillmentTimeReport(_req: Request, res: Response): Promise<void> {
+    // Fulfillment time is IT's clock, so it starts when IT could first act — the
+    // moment the ticket entered 'waiting' — not at created_at. Measuring from
+    // created_at silently charged approval latency to IT: a request that sat on a
+    // director's desk for three days looked like a three-day IT turnaround.
+    // Ungated tickets have no approval wait, so they fall back to created_at.
     const [rows] = await pool.query<any[]>(`
       SELECT
-        category_id,
+        t.category_id,
         COUNT(*) as total_resolved,
-        ROUND(AVG(TIMESTAMPDIFF(HOUR, created_at, updated_at))) as avg_hours,
-        MIN(TIMESTAMPDIFF(HOUR, created_at, updated_at)) as min_hours,
-        MAX(TIMESTAMPDIFF(HOUR, created_at, updated_at)) as max_hours
-      FROM tickets
-      WHERE status = 'resolved' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-      GROUP BY category_id
+        ROUND(AVG(TIMESTAMPDIFF(HOUR, COALESCE(h.it_start, t.created_at), t.updated_at))) as avg_hours,
+        MIN(TIMESTAMPDIFF(HOUR, COALESCE(h.it_start, t.created_at), t.updated_at)) as min_hours,
+        MAX(TIMESTAMPDIFF(HOUR, COALESCE(h.it_start, t.created_at), t.updated_at)) as max_hours
+      FROM tickets t
+      LEFT JOIN (
+        SELECT ticket_id, MIN(created_at) AS it_start
+          FROM ticket_history
+         WHERE status = 'waiting'
+         GROUP BY ticket_id
+      ) h ON h.ticket_id = t.id
+      WHERE t.status = 'resolved' AND t.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+      GROUP BY t.category_id
       ORDER BY avg_hours DESC
     `);
     res.json({ fulfillmentStats: rows || [] });

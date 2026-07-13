@@ -1,6 +1,16 @@
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
 
-export type TicketStatus = 'submitted' | 'waiting' | 'resolved' | 'rejected';
+/**
+ * `pending_approval` means the ticket is parked on an approver, not queued for
+ * IT. Keeping it distinct from `submitted` is what lets the requester see who is
+ * actually blocking them, and keeps approval time out of IT's SLA numbers.
+ */
+export type TicketStatus =
+  | 'submitted'
+  | 'pending_approval'
+  | 'waiting'
+  | 'resolved'
+  | 'rejected';
 
 export interface TicketComment {
   id: string;

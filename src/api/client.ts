@@ -177,9 +177,12 @@ export interface TicketStatsSummary {
   summary: {
     total: number;
     submitted: number;
+    /** Parked on an approver — not yet IT's problem. */
+    pendingApproval: number;
     waiting: number;
     resolved: number;
     rejected: number;
+    /** Everything still open: submitted + pendingApproval + waiting. */
     pending: number;
     resolutionRate: number;
   };

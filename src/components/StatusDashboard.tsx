@@ -21,6 +21,11 @@ interface StatusDashboardProps {
 
 const STATUS_META: Record<TicketStatus, { label: string; dot: string; text: string }> = {
   submitted: { label: 'Submitted', dot: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400' },
+  pending_approval: {
+    label: 'Awaiting Approval',
+    dot: 'bg-indigo-500',
+    text: 'text-indigo-600 dark:text-indigo-400',
+  },
   waiting: { label: 'Waiting for Review', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
   resolved: { label: 'Resolved', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
   rejected: { label: 'Rejected', dot: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400' },
@@ -62,13 +67,17 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
 
     if (stats) {
       const s = stats.summary;
+      // No `as Record<...>` cast here: the cast is what let this object silently
+      // omit a status when the union grew. Let the compiler enforce exhaustiveness.
+      const byStatus: Record<TicketStatus, number> = {
+        submitted: s.submitted,
+        pending_approval: s.pendingApproval,
+        waiting: s.waiting,
+        resolved: s.resolved,
+        rejected: s.rejected,
+      };
       return {
-        byStatus: {
-          submitted: s.submitted,
-          waiting: s.waiting,
-          resolved: s.resolved,
-          rejected: s.rejected,
-        } as Record<TicketStatus, number>,
+        byStatus,
         byPriority: stats.priorities,
         open: s.pending,
         closed: s.resolved + s.rejected,
@@ -78,7 +87,13 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
     }
 
     // Fallback while the stats request is in flight or has failed.
-    const byStatus: Record<TicketStatus, number> = { submitted: 0, waiting: 0, resolved: 0, rejected: 0 };
+    const byStatus: Record<TicketStatus, number> = {
+      submitted: 0,
+      pending_approval: 0,
+      waiting: 0,
+      resolved: 0,
+      rejected: 0,
+    };
     const byPriority: Record<TicketPriority, number> = { low: 0, medium: 0, high: 0, urgent: 0 };
     const byCategory: Record<string, number> = {};
     for (const t of tickets) {

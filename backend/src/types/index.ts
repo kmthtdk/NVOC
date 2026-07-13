@@ -4,8 +4,16 @@
 // ============================================================================
 
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
+/**
+ * `pending_approval` is the approval gate as a first-class state: the ticket is
+ * parked on an approver's desk, not waiting on IT. Without it, IT and the
+ * requester could not distinguish "nobody has triaged this" from "your director
+ * hasn't signed", and fulfillment-time reports charged approval latency to IT.
+ * Tickets with no approval chain go straight to `submitted`.
+ */
 export type TicketStatus =
   | 'submitted'
+  | 'pending_approval'
   | 'waiting'
   | 'resolved'
   | 'rejected';
