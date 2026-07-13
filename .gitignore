@@ -18,3 +18,6 @@ backend/uploads/
 
 # Design asset drops (kept locally, not versioned)
 *.zip
+
+# Release bundles — large binary artifacts, rebuilt by scripts/build-release.sh
+release/

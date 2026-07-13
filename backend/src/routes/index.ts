@@ -7,6 +7,7 @@ import { aiRoutes } from './ai.routes.js';
 import { deviceRoutes } from './device.routes.js';
 import { adminRoutes } from './admin.routes.js';
 import { isDbUp } from '../config/db.js';
+import { buildInfo } from '../config/version.js';
 import { asyncHandler } from '../utils/helpers.js';
 
 export const apiRouter = Router();
@@ -19,6 +20,13 @@ apiRouter.get(
     res.status(dbUp ? 200 : 503).json({ status: dbUp ? 'ok' : 'degraded', db: dbUp ? 'up' : 'down' });
   }),
 );
+
+// Build identity (no auth). The airgapped Production PC has no git and no
+// registry to ask, so the running system has to be able to say what it is. The
+// update script polls this to confirm a rollout actually took.
+apiRouter.get('/version', (_req, res) => {
+  res.json(buildInfo);
+});
 
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/categories', categoryRoutes);

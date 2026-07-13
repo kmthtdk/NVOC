@@ -1,0 +1,94 @@
+# ============================================================================
+# N-VOC — PRODUCTION (airgapped) stack.
+#
+# This is the compose file that ships inside the release bundle. It differs from
+# the dev docker-compose.yml in one way that matters: it has NO `build:` blocks.
+#
+# On the Production PC there is no internet, so a build would die at `npm ci`.
+# Compose silently falls back to building whenever an image is missing, which
+# would turn a missing image into a confusing npm error instead of a clear one.
+# Here the images can only come from the bundle (scripts/install.sh loads them),
+# and they are pinned to an exact APP_VERSION — never `latest`, so a rollback
+# can name the version it is going back to.
+# ============================================================================
+
+services:
+  db:
+    image: mysql:8.4
+    container_name: voc-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${DB_NAME:-voc_system}
+      MYSQL_USER: ${DB_USER:-voc_app}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    ports:
+      # Loopback only — the DB must not be reachable off-box.
+      - "127.0.0.1:${DB_PORT:-3306}:3306"
+    volumes:
+      - voc-db-data:/var/lib/mysql
+      # Runs once, only when the data dir is empty (i.e. a fresh install).
+      # Upgrades of an existing DB go through database/migrations via update.sh.
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - voc-net
+
+  backend:
+    image: voc-backend:${APP_VERSION:?set APP_VERSION in .env (the release you are running)}
+    container_name: voc-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-voc_system}
+      DB_USER: ${DB_USER:-voc_app}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      DB_CONNECTION_LIMIT: ${DB_CONNECTION_LIMIT:-10}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (>=32 random chars) in .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      # Required in production: with NODE_ENV=production the seeded demo accounts
+      # are deactivated at boot, so without these there is no way in.
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      UPLOAD_DIR: /app/uploads
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-10485760}
+    ports:
+      - "127.0.0.1:${API_PORT:-4000}:4000"
+    volumes:
+      - voc-uploads:/app/uploads
+    networks:
+      - voc-net
+
+  frontend:
+    image: voc-frontend:${APP_VERSION:?set APP_VERSION in .env (the release you are running)}
+    container_name: voc-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    networks:
+      - voc-net
+
+networks:
+  voc-net:
+    driver: bridge
+
+volumes:
+  voc-db-data:
+  voc-uploads:

@@ -22,6 +22,16 @@ FROM node:20-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 
+# Build identity, baked into the image. The airgapped Production PC has no git
+# and no registry to interrogate, so the image must carry its own version and
+# report it at GET /api/version.
+ARG APP_VERSION=0.0.0-dev
+ARG BUILD_TIME=unknown
+ARG GIT_COMMIT=unknown
+ENV APP_VERSION=$APP_VERSION
+ENV BUILD_TIME=$BUILD_TIME
+ENV GIT_COMMIT=$GIT_COMMIT
+
 # Run as the built-in non-root "node" user
 COPY --chown=node:node package.json ./
 COPY --chown=node:node --from=builder /app/node_modules ./node_modules

@@ -1,6 +1,11 @@
 /* Fonts: Space Grotesk (display/headings) + Inter (body) + JetBrains Mono (codes/IDs).
-   Cyber-Ops design system. */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+   Cyber-Ops design system.
+
+   Self-hosted, NOT pulled from fonts.googleapis.com. The Production PC is
+   airgapped: a remote @import there does not fail loudly, it silently never
+   resolves, the browser falls back to a system font, and the type system
+   quietly collapses. Regenerate with `node scripts/vendor-fonts.mjs`. */
+@import "./fonts.css";
 @import "tailwindcss";
 
 /* Class-based dark mode: `dark:` variants apply when <html> has the `dark`

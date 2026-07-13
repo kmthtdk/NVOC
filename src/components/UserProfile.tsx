@@ -9,6 +9,10 @@ import { useTheme } from '../context/ThemeContext';
 import { LogOut, Moon, Sun, ChevronDown, ShieldCheck, Briefcase } from 'lucide-react';
 import type { UserRole } from '../types';
 
+// Inlined by Vite at image-build time (Dockerfile.frontend build args).
+const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? '0.0.0-dev';
+const BUILD_TIME = import.meta.env.VITE_BUILD_TIME ?? 'unknown';
+
 const ROLE_LABEL: Record<UserRole, string> = {
   admin: 'Administrator',
   it_support: 'IT Support Specialist',
@@ -116,6 +120,18 @@ export default function UserProfile() {
             >
               <LogOut className="w-4 h-4" /> Sign out
             </button>
+
+            {/* Build identity. On the airgapped Production PC there is no git and
+                no registry to ask — this is the only way an operator can say
+                which release is actually running. */}
+            <div className="mt-1 pt-2 border-t border-slate-100 dark:border-slate-800 px-3">
+              <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+                v{APP_VERSION}
+              </p>
+              <p className="text-[10px] font-mono text-slate-300 dark:text-slate-600">
+                built {BUILD_TIME}
+              </p>
+            </div>
           </div>
         </div>
       )}
