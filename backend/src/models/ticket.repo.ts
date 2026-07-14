@@ -256,7 +256,6 @@ export const ticketRepo = {
               model: input.deviceModel || 'Unspecified',
               serialNumber: `TEMP-${ticketId}-${Date.now()}`,
               status: 'In Stock',
-              assignedTo: null,
               department: input.requesterDept || null,
               purchaseDate: null,
               warrantyExpiry: null,

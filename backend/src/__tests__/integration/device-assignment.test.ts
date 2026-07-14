@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import type { Request, Response } from 'express';
+import type { ResultSetHeader } from 'mysql2';
 import { pool } from '../../config/db.js';
+import { deviceController } from '../../controllers/device.controller.js';
 import { deviceRepo, type CreateDeviceInput } from '../../models/device.repo.js';
 
 /**
@@ -18,7 +21,6 @@ const baseInput = (over: Partial<CreateDeviceInput> = {}): CreateDeviceInput => 
   model: 'Dell XPS 13',
   serialNumber: `SN-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
   status: 'In Stock',
-  assignedTo: null,
   department: null,
   purchaseDate: null,
   warrantyExpiry: null,
@@ -29,12 +31,12 @@ const baseInput = (over: Partial<CreateDeviceInput> = {}): CreateDeviceInput => 
 /** A real user row to hand devices to — the whole point is the foreign key. */
 const aUser = async (email: string) => {
   await pool.query('DELETE FROM users WHERE email = ?', [email]);
-  const [res] = await pool.query<{ insertId: number }[] & { insertId: number }>(
+  const [res] = await pool.query<ResultSetHeader>(
     `INSERT INTO users (full_name, email, password_hash, role, department, is_active)
      VALUES (?, ?, '$2a$10$x', 'requester', 'Engineering', 1)`,
     [`User ${email}`, email],
   );
-  return Number((res as unknown as { insertId: number }).insertId);
+  return Number(res.insertId);
 };
 
 beforeEach(async () => {
@@ -126,6 +128,153 @@ describe('assignment', () => {
 
     expect(await deviceRepo.listOpenAssignmentsByUser(a)).toHaveLength(1);
     expect(await deviceRepo.listOpenAssignmentsByUser(b)).toHaveLength(0);
+  });
+
+  it('cannot be issued to two people at once, even under a real race', async () => {
+    // The sequential test above passes on the app-level SELECT-then-INSERT check
+    // alone — it would still be green with the UNIQUE index dropped entirely.
+    // Two concurrent calls can both clear that SELECT before either commits, so
+    // only the index can decide. Assert on END STATE, not on which error shape
+    // wins: that part is genuinely racy.
+    const a = await aUser('custody9@test.local');
+    const b = await aUser('custody10@test.local');
+    const d = await deviceRepo.create(baseInput());
+
+    const results = await Promise.allSettled([
+      deviceRepo.assignToUser(d.id, a, 'A', 'custody9@test.local', 'Eng'),
+      deviceRepo.assignToUser(d.id, b, 'B', 'custody10@test.local', 'Sales'),
+    ]);
+
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+
+    const [rows] = await pool.query<any[]>(
+      'SELECT COUNT(*) AS n FROM device_assignments WHERE device_id = ? AND returned_at IS NULL',
+      [d.id],
+    );
+    expect(Number(rows[0].n)).toBe(1);
+
+    const held =
+      (await deviceRepo.listOpenAssignmentsByUser(a)).length +
+      (await deviceRepo.listOpenAssignmentsByUser(b)).length;
+    expect(held).toBe(1);
+  });
+});
+
+describe('custody has exactly one door', () => {
+  it('device create cannot set a holder', async () => {
+    // The device form used to write devices.assigned_to as free text, straight
+    // past device_assignments — so a device could be "assigned" with no hand-over
+    // row, the conflict guard would see nothing, and the next assignment would
+    // overwrite the first holder with no return event and no audit trail.
+    // CreateDeviceInput no longer has the field at all; this pins that it stays gone.
+    const d = await deviceRepo.create(baseInput());
+
+    const [rows] = await pool.query<any[]>(
+      'SELECT assigned_to, assigned_user_id FROM devices WHERE id = ?',
+      [d.id],
+    );
+    expect(rows[0].assigned_to).toBeNull();
+    expect(rows[0].assigned_user_id).toBeNull();
+    expect(await deviceRepo.getAssignmentHistory(d.id)).toHaveLength(0);
+  });
+
+  it('device update cannot change the holder out from under the record', async () => {
+    const userId = await aUser('custody11@test.local');
+    const d = await deviceRepo.create(baseInput());
+    await deviceRepo.assignToUser(d.id, userId, 'A', 'custody11@test.local', 'Eng');
+
+    // An edit touching other fields must leave custody exactly where it was.
+    await deviceRepo.update(d.id, { notes: 'edited', model: 'New Model' });
+
+    const [rows] = await pool.query<any[]>(
+      'SELECT assigned_user_id FROM devices WHERE id = ?',
+      [d.id],
+    );
+    expect(rows[0].assigned_user_id).toBe(userId);
+    expect(await deviceRepo.listOpenAssignmentsByUser(userId)).toHaveLength(1);
+  });
+});
+
+describe('the assign endpoint resolves the account itself', () => {
+  /** Minimal Express doubles — the controller only ever calls res.json(). */
+  const fakeRes = () => {
+    const captured: { body?: any } = {};
+    const res = { json: (b: any) => ((captured.body = b), res) } as unknown as Response;
+    return { res, captured };
+  };
+
+  it('writes a real user_id even when the caller sends none', async () => {
+    // THE bug this whole feature nearly died of: api.assignDevice() had no userId
+    // parameter, so no caller could send one; the schema made it optional; and the
+    // controller did `userId || null`. Every assignment through the UI therefore
+    // wrote NULL — manufacturing the exact orphan rows the backfill exists to flag.
+    // The server now resolves the account from the email, which fixes every caller
+    // at once and cannot be forgotten by the next one.
+    const userId = await aUser('custody13@test.local');
+    const d = await deviceRepo.create(baseInput());
+
+    const { res, captured } = fakeRes();
+    await deviceController.assignToUser(
+      {
+        params: { id: String(d.id) },
+        body: { userName: 'Alex', userEmail: 'custody13@test.local', userDept: 'Eng' }, // no userId
+        user: { name: 'IT Bob' },
+      } as unknown as Request,
+      res,
+    );
+
+    expect(captured.body.device.assignedUserId).toBe(userId);
+
+    const held = await deviceRepo.listOpenAssignmentsByUser(userId);
+    expect(held).toHaveLength(1);
+    expect(held[0].userId).toBe(userId); // not NULL
+  });
+
+  it('refuses to issue a device to an email with no account', async () => {
+    // Better a loud 400 than a silent NULL that quietly becomes somebody's problem
+    // to reconcile by hand on an airgapped box.
+    const d = await deviceRepo.create(baseInput());
+    const { res } = fakeRes();
+
+    await expect(
+      deviceController.assignToUser(
+        {
+          params: { id: String(d.id) },
+          body: { userName: 'Ghost', userEmail: 'nobody@test.local' },
+          user: { name: 'IT Bob' },
+        } as unknown as Request,
+        res,
+      ),
+    ).rejects.toMatchObject({ statusCode: 400 });
+
+    expect(await deviceRepo.getAssignmentHistory(d.id)).toHaveLength(0);
+  });
+});
+
+describe('resolving a backfilled row', () => {
+  it('points an unresolved hand-over at a real account', async () => {
+    // The backfill refused to guess who 'Alice Tan' was, so the row carries
+    // user_id = NULL. Without a way to close these out, the migration lands on an
+    // airgapped box with orphan rows and nothing but raw SQL to fix them.
+    const d = await deviceRepo.create(baseInput());
+    await pool.query(
+      `INSERT INTO device_assignments (device_id, user_id, user_label, assigned_by)
+       VALUES (?, NULL, 'Alice Tan', 'System (backfill)')`,
+      [d.id],
+    );
+
+    const unresolved = await deviceRepo.listUnresolvedAssignments();
+    expect(unresolved).toHaveLength(1);
+    expect(unresolved[0].userId).toBeNull();
+
+    const userId = await aUser('custody12@test.local');
+    await deviceRepo.resolveAssignmentUser(unresolved[0].id, userId, 'custody12@test.local');
+
+    expect(await deviceRepo.listUnresolvedAssignments()).toHaveLength(0);
+    expect(await deviceRepo.listOpenAssignmentsByUser(userId)).toHaveLength(1);
+
+    const [rows] = await pool.query<any[]>('SELECT assigned_user_id FROM devices WHERE id = ?', [d.id]);
+    expect(rows[0].assigned_user_id).toBe(userId);
   });
 });
 

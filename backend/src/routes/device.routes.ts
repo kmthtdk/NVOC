@@ -10,6 +10,7 @@ import {
   updateMacSchema,
   checkoutDeviceSchema,
   assignDeviceSchema,
+  resolveAssignmentSchema,
   macAddressSchema,
 } from '../controllers/device.controller.js';
 
@@ -44,6 +45,17 @@ deviceRoutes.get('/reports/by-user', authenticate, requireRole('it_support', 'ad
 // 'assignments' would be parsed as a device id.
 deviceRoutes.get('/assignments/unresolved', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getUnresolvedAssignments));
 deviceRoutes.get('/assignments/by-user/:userId', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getAssignmentsByUser));
+
+// The remediation path for backfilled rows whose holder could not be resolved.
+// Without it the migration lands on an airgapped box with orphan rows and no way
+// to close them out but raw SQL on the production console.
+deviceRoutes.patch(
+  '/assignments/:id',
+  authenticate,
+  requireRole('it_support', 'admin'),
+  validateBody(resolveAssignmentSchema),
+  asyncHandler(deviceController.resolveAssignment),
+);
 
 deviceRoutes.get('/', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.list));
 deviceRoutes.get('/:id', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.get));

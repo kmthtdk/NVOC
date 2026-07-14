@@ -14,7 +14,6 @@ const baseInput = (overrides: Partial<CreateDeviceInput> = {}): CreateDeviceInpu
   model: 'Dell XPS 13',
   serialNumber: `SN-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
   status: 'In Stock',
-  assignedTo: null,
   department: null,
   purchaseDate: null,
   warrantyExpiry: null,

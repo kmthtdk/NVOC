@@ -40,7 +40,7 @@ export interface CreateDeviceInput {
   model: string;
   serialNumber: string;
   status: DeviceStatus;
-  assignedTo: string | null;
+  // No assignedTo: custody is written only by assignToUser()/checkout(), never here.
   department: string | null;
   purchaseDate: string | null;
   warrantyExpiry: string | null;
@@ -60,7 +60,7 @@ export interface UpdateDeviceInput {
   model?: string;
   serialNumber?: string;
   status?: DeviceStatus;
-  assignedTo?: string | null;
+  // No assignedTo: see CreateDeviceInput.
   department?: string | null;
   purchaseDate?: string | null;
   warrantyExpiry?: string | null;
@@ -297,8 +297,8 @@ export const deviceRepo = {
 
       const [result] = await connection.execute(
         `INSERT INTO devices
-          (code, asset_code, device_type, model, serial_number, status, assigned_to, department, purchase_date, warranty_expiry, supplier, purchase_cost, currency, po_number, invoice_no, notes, cpu, ram_gb, storage_gb, storage_type, gpu, psu_watts, os, os_version, hostname, specs_json)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (code, asset_code, device_type, model, serial_number, status, department, purchase_date, warranty_expiry, supplier, purchase_cost, currency, po_number, invoice_no, notes, cpu, ram_gb, storage_gb, storage_type, gpu, psu_watts, os, os_version, hostname, specs_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           code,
           // Empty string must become NULL: asset_code is UNIQUE, and '' is a real
@@ -308,7 +308,6 @@ export const deviceRepo = {
           input.model,
           input.serialNumber,
           input.status,
-          input.assignedTo,
           input.department,
           input.purchaseDate,
           input.warrantyExpiry,
@@ -376,10 +375,6 @@ export const deviceRepo = {
     if (input.status !== undefined) {
       sets.push('status = ?');
       params.push(input.status);
-    }
-    if (input.assignedTo !== undefined) {
-      sets.push('assigned_to = ?');
-      params.push(input.assignedTo);
     }
     if (input.department !== undefined) {
       sets.push('department = ?');
@@ -600,14 +595,58 @@ export const deviceRepo = {
   /** Custody trail for one device: every holder, and how long each had it. */
   async getAssignmentHistory(deviceId: number): Promise<DeviceAssignment[]> {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT a.*, u.full_name AS user_full_name, u.email AS user_email
-         FROM device_assignments a
-         LEFT JOIN users u ON u.id = a.user_id
-        WHERE a.device_id = ?
-        ORDER BY a.assigned_at DESC, a.id DESC`,
+      `SELECT * FROM device_assignments
+        WHERE device_id = ?
+        ORDER BY assigned_at DESC, id DESC`,
       [deviceId],
     );
     return rows.map(mapAssignment);
+  },
+
+  /**
+   * Point an unresolved hand-over at a real account.
+   *
+   * The backfill refused to guess who 'Alice Tan' was, so those rows carry
+   * user_id = NULL. This is how a human closes them out — without it the only
+   * remediation on the airgapped box is hand-written SQL on the prod console.
+   * Also refreshes user_label so the snapshot stops showing the old free text.
+   */
+  async resolveAssignmentUser(
+    assignmentId: number,
+    userId: number,
+    userEmail: string,
+  ): Promise<DeviceAssignment> {
+    return withTransaction(async (conn) => {
+      const [rows] = await conn.query<RowDataPacket[]>(
+        'SELECT * FROM device_assignments WHERE id = ? LIMIT 1',
+        [assignmentId],
+      );
+      const row = rows[0];
+      if (!row) throw AppError.notFound(`No assignment with id ${assignmentId}`);
+
+      const label = `${row.user_label} (${userEmail})`;
+      await conn.execute(
+        `UPDATE device_assignments
+            SET user_id = ?, user_label = ?, note = CONCAT(COALESCE(note, ''), ' | Resolved to a user account.')
+          WHERE id = ?`,
+        [userId, label, assignmentId],
+      );
+
+      // Keep the denormalized pointer honest, but only while the row is open.
+      if (row.returned_at === null) {
+        await conn.execute('UPDATE devices SET assigned_user_id = ?, assigned_to = ? WHERE id = ?', [
+          userId,
+          label,
+          row.device_id,
+        ]);
+      }
+
+      const [after] = await conn.query<RowDataPacket[]>(
+        'SELECT * FROM device_assignments WHERE id = ? LIMIT 1',
+        [assignmentId],
+      );
+      return mapAssignment(after[0]);
+    });
   },
 
   /**
@@ -634,7 +673,10 @@ export const deviceRepo = {
    */
   async listUnresolvedAssignments(): Promise<DeviceAssignment[]> {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT a.*, d.code AS device_code, d.device_type, d.model, d.serial_number
+      // asset_code is the finance tag — the one field a human uses to walk over and
+      // find the physical machine. Omitting it made this report useless for the job
+      // it exists to do.
+      `SELECT a.*, d.code AS device_code, d.asset_code, d.device_type, d.model, d.serial_number
          FROM device_assignments a
          JOIN devices d ON d.id = a.device_id
         WHERE a.user_id IS NULL AND a.returned_at IS NULL

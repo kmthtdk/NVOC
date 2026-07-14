@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { deviceRepo, type ReportFilters } from '../models/device.repo.js';
+import { userRepo } from '../models/user.repo.js';
 import { AppError } from '../utils/AppError.js';
 import { withTransaction } from '../config/db.js';
 import type { DeviceStatus } from '../types/index.js';
@@ -53,7 +54,14 @@ export const createDeviceSchema = z.object({
   model: z.string().min(1, 'Model is required').max(150),
   serialNumber: z.string().min(1, 'Serial number is required').max(100),
   status: z.enum(DEVICE_STATUSES).default('In Stock'),
-  assignedTo: z.string().max(150).nullable().optional().default(null),
+  // NOTE: `assignedTo` is deliberately NOT accepted here.
+  //
+  // It used to be a free-text field on this form, writing devices.assigned_to
+  // directly — a second door into custody that walked straight past
+  // device_assignments. A device created "already assigned" had no hand-over row,
+  // so assignToUser()'s conflict guard saw nothing, happily issued it to somebody
+  // else, and overwrote the first holder with no return event and no audit trail.
+  // Custody has exactly one door now: POST /devices/:id/assign and /checkout.
   department: z.string().max(100).nullable().optional().default(null),
   purchaseDate: nullableDate.default(null),
   warrantyExpiry: nullableDate.default(null),
@@ -82,6 +90,10 @@ export const checkoutDeviceSchema = z.object({
   condition: z.enum(['good', 'damaged', 'unknown']).default('good'),
   notes: z.string().max(500).optional().default(''),
   actionType: z.enum(['return', 'replace']).default('return'),
+});
+
+export const resolveAssignmentSchema = z.object({
+  userId: z.number().int().positive(),
 });
 
 export const assignDeviceSchema = z.object({
@@ -188,7 +200,6 @@ export const deviceController = {
       model: body.model,
       serialNumber: body.serialNumber,
       status: body.status,
-      assignedTo: body.assignedTo ?? null,
       department: body.department ?? null,
       purchaseDate: body.purchaseDate ?? null,
       warrantyExpiry: body.warrantyExpiry ?? null,
@@ -326,10 +337,37 @@ export const deviceController = {
       throw AppError.notFound('Device not found');
     }
 
+    // Resolve the holder to a real account HERE, on the server.
+    //
+    // The whole point of device_assignments is that custody is a foreign key, not
+    // a name. But `userId` was optional in the schema and the API client had no
+    // parameter for it at all — so every assignment made through the UI wrote
+    // user_id = NULL, manufacturing exactly the "unresolved, needs a human" rows
+    // the backfill was meant to flag as legacy debt. The unresolved list could
+    // never reach zero, because the app itself was filling it.
+    //
+    // Resolving from the email server-side fixes every caller at once and cannot
+    // be forgotten by a new one. An explicit userId still wins when supplied.
+    let resolvedUserId: number | null = userId ?? null;
+    if (resolvedUserId == null) {
+      const account = await userRepo.findByEmail(String(userEmail).toLowerCase().trim());
+      resolvedUserId = account ? Number(account.id) : null;
+    }
+    if (resolvedUserId == null) {
+      // Not a silent NULL. If the holder has no account, the caller has to know —
+      // otherwise we quietly create the very orphan row this feature exists to
+      // eliminate. (An external contractor with no account is a real case; it just
+      // has to be a deliberate one, not an accident.)
+      throw AppError.badRequest(
+        `No active user account for "${userEmail}". A device can only be issued to a real account — ` +
+          `create the user first, or pass an explicit userId.`,
+      );
+    }
+
     // Assign device, open the hand-over record, and log history — one transaction.
     const updated = await deviceRepo.assignToUser(
       deviceId,
-      userId || null,
+      resolvedUserId,
       userName,
       userEmail,
       userDept || null,
@@ -338,6 +376,25 @@ export const deviceController = {
       req.user?.name ?? 'System',
     );
     res.json({ device: updated });
+  },
+
+  /**
+   * PATCH /devices/assignments/:id — point an unresolved hand-over at a real user.
+   *
+   * The backfill deliberately did not guess who 'Alice Tan' is, so those rows carry
+   * user_id = NULL. Without this endpoint the migration lands on an airgapped box
+   * with orphan rows and no way to close them out except hand-written SQL on the
+   * production console. That is the difference between a migration and an incident.
+   */
+  async resolveAssignment(req: Request, res: Response): Promise<void> {
+    const assignmentId = parsePositiveInt(req.params.id, 'assignment id');
+    const { userId } = req.body as { userId: number };
+
+    const account = await userRepo.findById(userId);
+    if (!account) throw AppError.badRequest(`No user with id ${userId}`);
+
+    const updated = await deviceRepo.resolveAssignmentUser(assignmentId, userId, account.email);
+    res.json({ data: updated });
   },
 
   /** GET /devices/:id/assignments — custody trail: every holder, and for how long. */

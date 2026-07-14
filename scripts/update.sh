@@ -52,9 +52,38 @@ echo "  currently running : v${CURRENT}"
 echo "  updating to       : v${NEW_VERSION}"
 if [ "$CURRENT" = "$NEW_VERSION" ]; then
   echo
-  echo "Already on v${NEW_VERSION}. Nothing to do."
-  exit 0
+  echo "NOT DEPLOYED: the running system is already v${NEW_VERSION}."
+  echo
+  echo "  This is almost always a forgotten version bump: package.json still says"
+  echo "  ${NEW_VERSION}, so build-release.sh stamped a NEW bundle with an OLD version"
+  echo "  and this script cannot tell them apart. Nothing has been installed."
+  echo
+  echo "  Bump the version, rebuild, and copy the new bundle across."
+  # Exit non-zero. This used to `exit 0`, so an operator saw a green run and
+  # believed the release had landed when nothing had been deployed at all.
+  exit 2
 fi
+
+# The bundle crossed to this box on a USB stick — the one place silent corruption
+# actually happens. install.sh verifies the checksums; this did not, and then fed
+# the unverified 300MB tarball straight into `docker load`.
+echo
+echo "[0/6] Verifying bundle integrity..."
+if [ ! -f SHA256SUMS ]; then
+  echo "ABORT: no SHA256SUMS in this bundle. Refusing to install unverified images."
+  exit 1
+fi
+if ! command -v sha256sum >/dev/null; then
+  echo "ABORT: sha256sum is not available, so the bundle cannot be verified."
+  echo "       On the release path a missing checksum tool is a stop, not a shrug."
+  exit 1
+fi
+if ! sha256sum -c SHA256SUMS --quiet; then
+  echo "ABORT: bundle checksum mismatch — the copy is corrupt or tampered with."
+  exit 1
+fi
+echo "  checksums OK"
+
 echo
 read -r -p "Proceed? [y/N] " ok
 [ "$ok" = "y" ] || { echo "Aborted."; exit 0; }

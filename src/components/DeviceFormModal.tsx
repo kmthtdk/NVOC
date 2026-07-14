@@ -391,7 +391,6 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
         model: form.model.trim(),
         serialNumber: form.serialNumber.trim(),
         status: form.status,
-        assignedTo: form.assignedTo.trim() || null,
         department: form.department.trim() || null,
         purchaseDate: form.purchaseDate || null,
         warrantyExpiry: form.warrantyExpiry || null,
@@ -596,17 +595,22 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
               )}
             </div>
 
+            {/* Custody is NOT editable here. This used to be a free-text box writing
+                devices.assigned_to straight to the row — a second door that walked
+                past device_assignments entirely, so a device could be "assigned" to
+                someone with no hand-over record, and the next assignment would
+                overwrite them with no return event and no audit trail. Issuing and
+                returning a device now happens only through Assign / Check-in. */}
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Assigned To
               </label>
-              <input
-                type="text"
-                value={form.assignedTo}
-                onChange={(e) => update('assignedTo', e.target.value)}
-                className={fieldClass('assignedTo')}
-                placeholder="(unassigned)"
-              />
+              <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+                {device?.assignedTo ?? 'Unassigned'}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">
+                Use Assign / Check-in to change who holds this device.
+              </p>
             </div>
 
             <div>

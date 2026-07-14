@@ -19,5 +19,8 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
+  // Tests are typechecked too. They were excluded, so a fixture could keep
+  // passing a field the domain type had dropped and nothing said a word — the
+  // same blind spot the frontend tsconfig had.
+  "exclude": ["node_modules", "dist"]
 }

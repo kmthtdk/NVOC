@@ -570,10 +570,38 @@ export const api = {
       method: 'DELETE',
     });
   },
-  assignDevice(id: number, userName: string, userEmail: string, userDept?: string, ticketId?: string, reason?: string): Promise<any> {
+  /**
+   * Issue a device to a person.
+   *
+   * `userId` is the link that matters, and this signature had no such parameter —
+   * so no caller could send one, every assignment made through the UI wrote
+   * user_id = NULL, and the app manufactured exactly the orphan rows the custody
+   * backfill exists to flag as legacy debt. The server now also resolves the
+   * account from `userEmail` as a backstop, but a caller that knows the id passes it.
+   */
+  assignDevice(
+    id: number,
+    userName: string,
+    userEmail: string,
+    userDept?: string,
+    ticketId?: string,
+    reason?: string,
+    userId?: number,
+  ): Promise<any> {
     return request<any>(`/devices/${id}/assign`, {
       method: 'POST',
-      body: { userName, userEmail, userDept, ticketId, reason },
+      body: { userId, userName, userEmail, userDept, ticketId, reason },
+    });
+  },
+  /** Backfilled hand-overs whose holder could not be matched to an account. */
+  listUnresolvedAssignments(signal?: AbortSignal): Promise<{ data: any[]; count: number }> {
+    return request<{ data: any[]; count: number }>('/devices/assignments/unresolved', { signal });
+  },
+  /** Point one of those unresolved hand-overs at a real account. */
+  resolveAssignment(assignmentId: number, userId: number): Promise<any> {
+    return request<any>(`/devices/assignments/${assignmentId}`, {
+      method: 'PATCH',
+      body: { userId },
     });
   },
   checkoutDevice(id: number, condition?: string, notes?: string, actionType?: 'return' | 'replace'): Promise<any> {
