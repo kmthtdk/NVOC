@@ -8,7 +8,7 @@
 export type PortalView = 'user' | 'admin';
 export type UserTab = 'new' | 'requests';
 export type AdminTab = 'tickets' | 'devices' | 'reports' | 'approval';
-export type DeviceSubTab = 'management' | 'reports';
+export type DeviceSubTab = 'management' | 'allocation' | 'reports';
 
 export const ADMIN_TAB_PATHS: Record<AdminTab, string> = {
   tickets: '/admin/tickets',

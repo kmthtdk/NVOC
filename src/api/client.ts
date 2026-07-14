@@ -206,6 +206,10 @@ export interface PendingHardwareRequest {
   created_at: string;
   priority: string;
   requester_name: string;
+  /** The allocation queue issues straight from this row; the server resolves the
+   *  holder's account from the email, so it has to come across. */
+  requester_email: string;
+  requester_dept: string | null;
   assigned_to: string;
   status: string;
 }

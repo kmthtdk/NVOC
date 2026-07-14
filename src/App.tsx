@@ -16,6 +16,7 @@ import { api } from './api/client';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import type { PortalView, UserTab } from './navigation';
+import type { DeviceSubTab } from './navigation';
 import { ADMIN_TAB_PATHS, adminTabFromPath } from './navigation';
 
 import Login from './components/Login';
@@ -46,7 +47,12 @@ export default function App() {
 
   const view: PortalView = location.pathname.startsWith('/admin') ? 'admin' : 'user';
   const adminTab = adminTabFromPath(location.pathname);
-  const deviceSubTab = location.pathname === '/admin/devices/reports' ? 'reports' : 'management';
+  const deviceSubTab: DeviceSubTab =
+    location.pathname === '/admin/devices/reports'
+      ? 'reports'
+      : location.pathname === '/admin/devices/allocation'
+        ? 'allocation'
+        : 'management';
   const userTab: UserTab = location.pathname === '/requests/new' ? 'new' : 'requests';
 
   // The open ticket rides in the query string, so any page's URL can carry it:
@@ -250,7 +256,13 @@ export default function App() {
               onAdminTabChange={(t) => navigate(ADMIN_TAB_PATHS[t])}
               deviceSubTab={deviceSubTab}
               onDeviceSubTabChange={(s) =>
-                navigate(s === 'reports' ? '/admin/devices/reports' : '/admin/devices')
+                navigate(
+                  s === 'reports'
+                    ? '/admin/devices/reports'
+                    : s === 'allocation'
+                      ? '/admin/devices/allocation'
+                      : '/admin/devices',
+                )
               }
               showSim={showAdminSimulation}
               onToggleSim={() => setShowAdminSimulation((s) => !s)}

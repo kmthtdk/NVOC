@@ -11,6 +11,7 @@ import TicketList from '../components/TicketList';
 import AdminSimulation from '../components/AdminSimulation';
 import StatusDashboard from '../components/StatusDashboard';
 import DeviceManagement from '../components/DeviceManagement';
+import DeviceAllocationQueue from '../components/DeviceAllocationQueue';
 import DeviceReportsPage from '../components/DeviceReportsPage';
 import TicketReportsPage from '../components/TicketReportsPage';
 import ApprovalSettings from '../components/ApprovalSettings';
@@ -181,6 +182,16 @@ export default function AdminWorkspace({
               Device Management
             </button>
             <button
+              onClick={() => onDeviceSubTabChange('allocation')}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                deviceSubTab === 'allocation'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              Allocation Queue
+            </button>
+            <button
               onClick={() => onDeviceSubTabChange('reports')}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 deviceSubTab === 'reports'
@@ -196,6 +207,9 @@ export default function AdminWorkspace({
           {deviceSubTab === 'management' && (
             <DeviceManagement />
           )}
+
+          {/* Allocation queue — waiting requests on the left, free devices on the right. */}
+          {deviceSubTab === 'allocation' && <DeviceAllocationQueue onMutated={onMutated} />}
 
           {/* Device Reports */}
           {deviceSubTab === 'reports' && (

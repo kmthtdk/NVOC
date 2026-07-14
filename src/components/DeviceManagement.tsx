@@ -3,10 +3,12 @@ import { Plus, AlertCircle } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import { useToast } from '../context/ToastContext';
 import DeviceFormModal from './DeviceFormModal';
+import UnresolvedCustody from './UnresolvedCustody';
 
 interface Device {
   id: number;
   code: string;
+  assetCode: string | null;
   deviceType: string;
   model: string;
   serialNumber: string;
@@ -43,9 +45,14 @@ export default function DeviceManagement() {
   }, [toast]);
 
   const filtered = devices.filter((d) => {
-    const matchesSearch = d.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.serialNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    const q = searchTerm.toLowerCase();
+    const matchesSearch =
+      d.code.toLowerCase().includes(q) ||
+      d.model.toLowerCase().includes(q) ||
+      d.serialNumber.toLowerCase().includes(q) ||
+      // The asset tag is what is physically printed on the machine, so it is the
+      // string somebody standing next to it will actually type.
+      (d.assetCode?.toLowerCase().includes(q) ?? false);
     const matchesStatus = !filterStatus || d.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -93,11 +100,14 @@ export default function DeviceManagement() {
         </button>
       </div>
 
+      {/* Custody the backfill could not resolve. Renders nothing once it is clean. */}
+      <UnresolvedCustody />
+
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1">
           <input
             type="text"
-            placeholder="Search by code, model, or serial..."
+            placeholder="Search by code, asset code, model, or serial..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
@@ -135,6 +145,7 @@ export default function DeviceManagement() {
             <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th className="px-6 py-3 text-left font-semibold">Code</th>
+                <th className="px-6 py-3 text-left font-semibold">Asset Code</th>
                 <th className="px-6 py-3 text-left font-semibold">Model</th>
                 <th className="px-6 py-3 text-left font-semibold">Serial</th>
                 <th className="px-6 py-3 text-left font-semibold">Status</th>
@@ -145,7 +156,7 @@ export default function DeviceManagement() {
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
                     No devices found
                   </td>
                 </tr>
@@ -153,6 +164,7 @@ export default function DeviceManagement() {
                 filtered.map((device) => (
                   <tr key={device.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                     <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">{device.code}</td>
+                    <td className="px-6 py-4 font-mono text-xs text-slate-600 dark:text-slate-400">{device.assetCode || <span className="text-slate-300 dark:text-slate-600">—</span>}</td>
                     <td className="px-6 py-4 text-slate-900 dark:text-white">{device.model}</td>
                     <td className="px-6 py-4 text-xs font-mono text-slate-600 dark:text-slate-400">{device.serialNumber}</td>
                     <td className="px-6 py-4">

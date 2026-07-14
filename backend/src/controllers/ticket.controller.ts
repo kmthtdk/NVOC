@@ -389,13 +389,27 @@ export const ticketController = {
         created_at,
         priority,
         requester_name,
+        -- The allocation queue issues a device straight from this row, and the
+        -- server resolves the holder's account from their email. Without these two
+        -- the queue can show a request but not fulfil it.
+        requester_email,
+        requester_dept,
         assigned_to,
         status,
         category_id,
         subcategory_id
-      FROM tickets
-      WHERE category_id = 'hardware_request' AND status NOT IN ('resolved', 'rejected')
-      ORDER BY created_at ASC
+      FROM tickets t
+      WHERE t.category_id = 'hardware_request'
+        AND t.status NOT IN ('resolved', 'rejected')
+        -- A request stops waiting for hardware the moment hardware is handed over,
+        -- not when somebody remembers to close the ticket. Without this the
+        -- allocation queue keeps showing fulfilled requests and IT hands the same
+        -- person a second machine.
+        AND NOT EXISTS (
+          SELECT 1 FROM device_assignments a
+           WHERE a.ticket_id = t.id AND a.returned_at IS NULL
+        )
+      ORDER BY t.created_at ASC
       LIMIT 500
     `);
     res.json({ pendingRequests: rows || [] });

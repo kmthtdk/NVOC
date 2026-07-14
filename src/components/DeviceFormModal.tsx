@@ -25,18 +25,33 @@ export interface MacAddress {
   updatedAt: string;
 }
 
+export type StorageType = 'SSD' | 'NVMe' | 'HDD' | 'eMMC' | 'Hybrid';
+export const STORAGE_TYPES: StorageType[] = ['SSD', 'NVMe', 'HDD', 'eMMC', 'Hybrid'];
+
+/**
+ * The named fields are real columns because they are the ones people FILTER on
+ * ("which machines are under 8GB and need an upgrade?", "how many are still on
+ * Windows 10?"). `additionalSpecs` is the long tail — individual RAM sticks,
+ * each disk, attached monitors, licences — and lives in a JSON column.
+ */
 export interface DeviceSpecifications {
   cpu?: string | null;
   ramGb?: number | null;
   storageGb?: number | null;
+  storageType?: StorageType | null;
   gpu?: string | null;
   psuWatts?: number | null;
+  os?: string | null;
+  osVersion?: string | null;
+  hostname?: string | null;
   additionalSpecs?: Record<string, string> | null;
 }
 
 export interface Device {
   id: number;
   code: string;
+  /** Finance asset tag. Separate from our own `code` and the vendor serial. */
+  assetCode: string | null;
   deviceType: string;
   model: string;
   serialNumber: string;
@@ -89,6 +104,10 @@ const DEVICE_TYPE_LABELS: Record<string, string> = {
 
 const formatDeviceTypeLabel = (type: string): string => DEVICE_TYPE_LABELS[type] || type;
 
+/** Spec inputs are locked in edit mode (specs are captured at intake). */
+const specFieldClass =
+  'rounded-md border border-slate-300 px-3 py-2 text-sm w-full disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:disabled:bg-slate-700 dark:disabled:text-slate-400';
+
 const STATUS_OPTIONS: DeviceStatus[] = ['Active', 'In Repair', 'Retired', 'Lost'];
 const MAC_ADDRESS_TYPES: MacAddressType[] = ['Ethernet', 'WiFi', 'Bluetooth', 'Other'];
 const MAC_ADDRESS_REGEX = /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/;
@@ -102,6 +121,7 @@ interface MacAddressState extends Omit<MacAddress, 'deviceId' | 'createdAt' | 'u
 }
 
 interface FormState {
+  assetCode: string;
   deviceType: string;
   model: string;
   serialNumber: string;
@@ -125,6 +145,7 @@ interface MacAddressFormState {
 
 function toFormState(device?: Device | null): FormState {
   return {
+    assetCode: device?.assetCode ?? '',
     deviceType: device?.deviceType ?? 'laptop',
     model: device?.model ?? '',
     serialNumber: device?.serialNumber ?? '',
@@ -401,12 +422,17 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
         invoiceNo: form.invoiceNo.trim() || null,
         notes: form.notes.trim() || null,
         ...(isEditMode ? {} : { macAddresses: macAddresses.filter((m) => m.isNew) }),
+        assetCode: form.assetCode.trim() || null,
         specifications: {
           cpu: specifications.cpu || null,
           ramGb: specifications.ramGb || null,
           storageGb: specifications.storageGb || null,
+          storageType: specifications.storageType || null,
           gpu: specifications.gpu || null,
           psuWatts: specifications.psuWatts || null,
+          os: specifications.os || null,
+          osVersion: specifications.osVersion || null,
+          hostname: specifications.hostname || null,
           additionalSpecs: specifications.additionalSpecs || null,
         },
       };
@@ -591,8 +617,29 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
                 placeholder="SN-XXXX-0000"
               />
               {errors.serialNumber && (
-                <p className="mt-1 text-xs text-red-500">{errors.serialNumber}</p>
+                <p className="mt-1 text-xs text-rose-500">{errors.serialNumber}</p>
               )}
+            </div>
+
+            {/* The finance asset tag — a third identifier, next to our own device
+                code and the vendor's serial. Optional on purpose: hardware turns up
+                before accounting tags it, and demanding a value here just makes
+                people invent one to get past the form. */}
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Asset Code{' '}
+                <span className="font-normal text-slate-400">(finance tag, optional)</span>
+              </label>
+              <input
+                type="text"
+                value={form.assetCode}
+                onChange={(e) => update('assetCode', e.target.value)}
+                className={`${fieldClass('assetCode')} font-mono`}
+                placeholder="FA-000123"
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                Leave blank until accounting issues one. Must be unique once set.
+              </p>
             </div>
 
             {/* Custody is NOT editable here. This used to be a free-text box writing
@@ -1042,6 +1089,79 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
                   placeholder="130"
                   disabled={isEditMode}
                   className={`rounded-md border border-slate-300 px-3 py-2 text-sm w-full ${isEditMode ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed' : 'dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100'}`}
+                />
+              </div>
+
+              {/* Storage type */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Storage Type
+                </label>
+                <select
+                  value={specifications.storageType ?? ''}
+                  onChange={(e) =>
+                    setSpecifications({
+                      ...specifications,
+                      storageType: (e.target.value || null) as StorageType | null,
+                    })
+                  }
+                  disabled={isEditMode}
+                  className={specFieldClass}
+                >
+                  <option value="">—</option>
+                  {STORAGE_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* OS — a column, not JSON, because "how many are still on Windows 10?"
+                  is a question somebody asks every time support ends. */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Operating System
+                </label>
+                <input
+                  type="text"
+                  value={specifications.os ?? ''}
+                  onChange={(e) => setSpecifications({ ...specifications, os: e.target.value || null })}
+                  placeholder="Windows"
+                  disabled={isEditMode}
+                  className={specFieldClass}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  OS Version
+                </label>
+                <input
+                  type="text"
+                  value={specifications.osVersion ?? ''}
+                  onChange={(e) =>
+                    setSpecifications({ ...specifications, osVersion: e.target.value || null })
+                  }
+                  placeholder="11 (23H2)"
+                  disabled={isEditMode}
+                  className={specFieldClass}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Hostname
+                </label>
+                <input
+                  type="text"
+                  value={specifications.hostname ?? ''}
+                  onChange={(e) =>
+                    setSpecifications({ ...specifications, hostname: e.target.value || null })
+                  }
+                  placeholder="PC-KHOATPV-DEV1"
+                  disabled={isEditMode}
+                  className={`${specFieldClass} font-mono`}
                 />
               </div>
             </div>
