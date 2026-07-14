@@ -1,6 +1,9 @@
 // ============================================================================
 // Playwright E2E configuration for N-VOC System Service Portal.
-// Targets the Vite dev server on port 3000 (backend proxy on port 4000).
+// The web origin and the API origin are BOTH env-configurable (E2E_BASE_URL /
+// E2E_API_BASE). They were hardcoded to :3000 and :4000 — ports nothing has
+// listened on for a while — so the suite could not run at all, and the specs
+// hardcoded absolute URLs on top, which defeated baseURL even when it was right.
 // Separate projects for Admin and Requester roles using stored auth state.
 // Note: uses import.meta.url instead of __dirname because package.json has
 // "type": "module" (ESM project).
@@ -26,7 +29,7 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

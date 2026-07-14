@@ -36,6 +36,23 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# A run that is interrupted (Ctrl-C, a killed CI step) never reaches the trap, so its
+# backend keeps holding :4098 and the NEXT run dies on EADDRINUSE — looking, from the
+# outside, exactly like a broken app. Take the port back first.
+freePort() {
+  local port="$1" pid
+  if command -v netstat > /dev/null 2>&1; then
+    pid="$(netstat -ano 2>/dev/null | grep ":${port} " | grep -i listening | awk '{print $NF}' | head -1)"
+    if [ -n "${pid:-}" ]; then
+      echo ">> Port ${port} still held by pid ${pid} from an earlier run — reclaiming"
+      taskkill //PID "$pid" //F > /dev/null 2>&1 || kill -9 "$pid" 2>/dev/null || true
+      sleep 1
+    fi
+  fi
+}
+freePort "$API_PORT"
+freePort "$WEB_PORT"
+
 echo ">> MySQL 8.4 on :${DB_PORT} (throwaway)"
 docker rm -f "$CONTAINER" > /dev/null 2>&1
 docker run -d --name "$CONTAINER" \
