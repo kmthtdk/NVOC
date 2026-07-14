@@ -104,6 +104,40 @@ describe('ticket search', () => {
     // Without escaping, LIKE '%%%' matches every row in the table.
     expect(found.total).toBe(0);
   });
+
+  it('treats _ as a literal, not as a single-character wildcard', async () => {
+    const ticket = await ticketRepo.create(baseTicket());
+    // `_` matches any one character in LIKE. Unescaped, a code-shaped term with
+    // an underscore where the hyphens are would match the real code — the quiet
+    // over-match, as opposed to `%`'s loud one.
+    const wildcarded = ticket.code.replace(/-/g, '_');
+
+    const found = await list(wildcarded);
+
+    expect(found.data.map((t) => t.id)).not.toContain(ticket.id);
+  });
+
+  it('does not leak another requester\'s ticket when the code matches', async () => {
+    // The LIKE fallback is OR-ed *inside* parentheses and then AND-ed with the
+    // requester filter. Lose the parentheses and the OR escapes the scope: every
+    // requester sees every ticket whose code matches. This is the test that fails
+    // if that ever happens.
+    const mine = await ticketRepo.create(baseTicket({ requesterEmail: 'alex.mercer@company.com' }));
+    const theirs = await ticketRepo.create(
+      baseTicket({ requesterEmail: 'someone.else@company.com', title: 'Not yours' }),
+    );
+
+    const found = await ticketRepo.list({
+      page: 1,
+      pageSize: 20,
+      sort: 'newest',
+      q: theirs.code,
+      requesterEmail: 'alex.mercer@company.com',
+    });
+
+    expect(found.data.map((t) => t.id)).not.toContain(theirs.id);
+    expect(found.data.map((t) => t.id)).not.toContain(mine.id); // the code does not match mine either
+  });
 });
 
 describe('device search', () => {
@@ -139,5 +173,13 @@ describe('device search', () => {
     const found = await listDevices('%');
 
     expect(found.data).toHaveLength(0);
+  });
+
+  it('treats _ as a literal, not as a single-character wildcard', async () => {
+    const device = await deviceRepo.create(baseDevice({ serialNumber: 'SN-UNDERSCORE-1' }));
+
+    const found = await listDevices('SN_UNDERSCORE_1');
+
+    expect(found.data.map((d) => d.id)).not.toContain(device.id);
   });
 });

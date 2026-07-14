@@ -41,10 +41,8 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
 
   // ---- Step 1: Create device via UI -----------------------------------------
   test('should create a new device via the Add Device form', async ({ adminPage }) => {
-    await adminPage.goto('http://localhost:3000');
-    await adminPage.getByRole('button', { name: 'IT Admin Workspace' }).click();
-    await adminPage.getByRole('button', { name: /Device/i }).click();
-    await expect(adminPage.getByText('Device Inventory')).toBeVisible();
+    await adminPage.goto('http://localhost:3000/admin/devices');
+    await expect(adminPage.getByRole('heading', { name: 'Device Inventory' })).toBeVisible();
 
     // Open the Add Device modal
     await adminPage.getByRole('button', { name: 'Add Device' }).click();
@@ -110,10 +108,8 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
     expect([200, 204]).toContain(assignRes.status());
 
     // Refresh Device Inventory and confirm row shows Active + requester name
-    await adminPage.goto('http://localhost:3000');
-    await adminPage.getByRole('button', { name: 'IT Admin Workspace' }).click();
-    await adminPage.getByRole('button', { name: /Device/i }).click();
-    await expect(adminPage.getByText('Device Inventory')).toBeVisible();
+    await adminPage.goto('http://localhost:3000/admin/devices');
+    await expect(adminPage.getByRole('heading', { name: 'Device Inventory' })).toBeVisible();
 
     const row = adminPage.locator('tr', { hasText: deviceCode });
     await expect(row).toBeVisible({ timeout: 10_000 });
@@ -177,8 +173,7 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
     expect([200, 204]).toContain(updateRes.status());
 
     // Verify in UI — open ticket detail from Admin view
-    await adminPage.goto('http://localhost:3000');
-    await adminPage.getByRole('button', { name: 'IT Admin Workspace' }).click();
+    await adminPage.goto('http://localhost:3000/admin/tickets');
     await expect(adminPage.getByText('IT Specialist Dispatch')).toBeVisible({ timeout: 10_000 });
 
     // Find and click on the ticket in the ticket list
@@ -246,9 +241,7 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
 
   // ---- Step 6: Requester sees final ticket state ------------------------------
   test('requester should see resolved ticket with device history', async ({ requesterPage }) => {
-    await requesterPage.goto('http://localhost:3000');
-    const empBtn = requesterPage.getByRole('button', { name: 'Employee Portal' });
-    if (await empBtn.isVisible()) await empBtn.click();
+    await requesterPage.goto('http://localhost:3000/requests');
 
     // Find the ticket
     await expect(

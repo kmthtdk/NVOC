@@ -39,11 +39,7 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
   test('requester should submit a hardware request ticket and receive a ticket code', async ({
     requesterPage,
   }) => {
-    await requesterPage.goto('http://localhost:3000');
-
-    // Ensure we are in the Employee Portal
-    const empBtn = requesterPage.getByRole('button', { name: 'Employee Portal' });
-    if (await empBtn.isVisible()) await empBtn.click();
+    await requesterPage.goto('http://localhost:3000/requests/new');
 
     // Select Hardware Request category
     await requesterPage.getByText('Hardware Request').click();
@@ -92,8 +88,7 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
     ticketCode = wf3Ticket!.code;
 
     // Navigate to Admin Workspace
-    await adminPage.goto('http://localhost:3000');
-    await adminPage.getByRole('button', { name: 'IT Admin Workspace' }).click();
+    await adminPage.goto('http://localhost:3000/admin/tickets');
     await expect(adminPage.getByText('IT Specialist Dispatch')).toBeVisible({ timeout: 10_000 });
 
     // The ticket should be selectable in the dispatch console
@@ -137,9 +132,7 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
   });
 
   test('requester should see updated ticket status and comment', async ({ requesterPage }) => {
-    await requesterPage.goto('http://localhost:3000');
-    const empBtn = requesterPage.getByRole('button', { name: 'Employee Portal' });
-    if (await empBtn.isVisible()) await empBtn.click();
+    await requesterPage.goto('http://localhost:3000/requests/new');
 
     // Find the ticket in the list — look for the ticket code or title
     await expect(

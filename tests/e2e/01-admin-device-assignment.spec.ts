@@ -37,15 +37,12 @@ test.describe('Workflow 1: Admin Device Assignment', () => {
   });
 
   test('should display In Stock device in Device Inventory', async ({ adminPage }) => {
-    await adminPage.goto('http://localhost:3000');
-
-    // Switch to IT Admin Workspace
-    await adminPage.getByRole('button', { name: 'IT Admin Workspace' }).click();
-    await expect(adminPage.getByText('IT Admin Workspace')).toBeVisible();
+    await adminPage.goto('http://localhost:3000/admin/tickets');
+    await expect(adminPage.getByRole('heading', { name: 'Ticket Queue' })).toBeVisible();
 
     // Switch to the Devices tab
-    await adminPage.getByRole('button', { name: /Device/i }).click();
-    await expect(adminPage.getByText('Device Inventory')).toBeVisible();
+    await adminPage.goto('http://localhost:3000/admin/devices');
+    await expect(adminPage.getByRole('heading', { name: 'Device Inventory' })).toBeVisible();
 
     // The newly created device should appear in the inventory table
     await expect(adminPage.getByText(deviceCode)).toBeVisible({ timeout: 10_000 });
@@ -78,10 +75,8 @@ test.describe('Workflow 1: Admin Device Assignment', () => {
     expect([200, 204]).toContain(assignRes.status());
 
     // Navigate to the device inventory and reload to pick up the new state
-    await adminPage.goto('http://localhost:3000');
-    await adminPage.getByRole('button', { name: 'IT Admin Workspace' }).click();
-    await adminPage.getByRole('button', { name: /Device/i }).click();
-    await expect(adminPage.getByText('Device Inventory')).toBeVisible();
+    await adminPage.goto('http://localhost:3000/admin/devices');
+    await expect(adminPage.getByRole('heading', { name: 'Device Inventory' })).toBeVisible();
 
     // Device row must now show "Active" status
     const deviceRow = adminPage.locator('tr', { hasText: deviceCode });
@@ -95,9 +90,7 @@ test.describe('Workflow 1: Admin Device Assignment', () => {
   });
 
   test('should show device in filtered Active view', async ({ adminPage }) => {
-    await adminPage.goto('http://localhost:3000');
-    await adminPage.getByRole('button', { name: 'IT Admin Workspace' }).click();
-    await adminPage.getByRole('button', { name: /Device/i }).click();
+    await adminPage.goto('http://localhost:3000/admin/devices');
 
     // Filter by Active status
     await adminPage.locator('select').selectOption('Active');
