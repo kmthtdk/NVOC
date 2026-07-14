@@ -85,8 +85,17 @@ fi
 echo "  checksums OK"
 
 echo
-read -r -p "Proceed? [y/N] " ok
-[ "$ok" = "y" ] || { echo "Aborted."; exit 0; }
+# ASSUME_YES=1 skips the prompt. This exists so the upgrade can be REHEARSED
+# automatically (scripts/rehearse-upgrade.sh) rather than only ever being run by
+# hand, once, in production. Piping `yes` into the prompt is not equivalent: the
+# writer dies of SIGPIPE when the script exits and, under `set -o pipefail`, a
+# perfectly successful update then reports failure.
+if [ "${ASSUME_YES:-}" = "1" ]; then
+  echo "Proceeding (ASSUME_YES=1)."
+else
+  read -r -p "Proceed? [y/N] " ok
+  [ "$ok" = "y" ] || { echo "Aborted."; exit 0; }
+fi
 
 # ---- 1. Back up the one thing that cannot be rebuilt ------------------------
 echo
