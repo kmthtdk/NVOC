@@ -11,7 +11,7 @@
 // ============================================================================
 
 import { test, expect } from './fixtures';
-import { getToken, createInStockDevice, deleteDevice, deleteTicket, API_BASE } from './fixtures';
+import { getToken, createInStockDevice, deleteDevice, deleteTicket, approveTicket, API_BASE } from './fixtures';
 
 const ADMIN = { email: 'admin@company.com', password: 'Passw0rd!' };
 
@@ -64,14 +64,15 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
     // for have not been issued for a long time, so it could never have matched.
     const TICKET_CODE = /[A-Z]{2,3}-\d{4}-\d{4}/;
 
-    await expect(
-      requesterPage.locator('[role="dialog"], .bg-white').getByText(TICKET_CODE),
-    ).toBeVisible({ timeout: 12_000 });
+    // Scope to the confirmation dialog. `.bg-white` matched half the page — every
+    // ticket code already on screen behind the modal — so this was a strict-mode
+    // violation, not a missing code: the ticket had been created correctly all along.
+    const confirmation = requesterPage.getByRole('dialog');
+    const codeEl = confirmation.getByText(TICKET_CODE).first();
+    await expect(codeEl).toBeVisible({ timeout: 12_000 });
 
-    // Capture ticket code for later assertions
-    const codeEl = requesterPage.getByText(TICKET_CODE).first();
-    ticketCode = (await codeEl.textContent()) ?? '';
-    expect(ticketCode).toBeTruthy();
+    ticketCode = ((await codeEl.textContent()) ?? '').trim();
+    expect(ticketCode).toMatch(TICKET_CODE);
 
     await requesterPage.screenshot({
       path: 'tests/e2e/screenshots/03-01-ticket-created.png',
@@ -83,7 +84,10 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
     request,
   }) => {
     // Fetch the ticket code via API so we can reference it regardless of UI timing
-    const res = await request.get(`${API_BASE}/tickets?category=hardware_request&status=submitted&pageSize=20`, {
+    // Do NOT filter by status here: with the approval gate on, a new request lands
+    // in 'pending_approval', not 'submitted', so the old status=submitted filter
+    // found nothing and the test blamed the UI.
+    const res = await request.get(`${API_BASE}/tickets?category=hardware_request&pageSize=50`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     expect(res.status()).toBe(200);
@@ -98,11 +102,14 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
     await adminPage.goto('/admin/tickets');
     await expect(adminPage.getByText('IT Specialist Dispatch')).toBeVisible({ timeout: 10_000 });
 
-    // The ticket should be selectable in the dispatch console
+    // The ticket must become selectable in the dispatch console. Reading
+    // allTextContents() the moment the panel's heading appeared was a race: the
+    // heading is static, the options are not — they arrive with the ticket fetch,
+    // so the list was sometimes still empty and the test blamed the app.
     const ticketSelect = adminPage.locator('select').first();
-    const options = await ticketSelect.locator('option').allTextContents();
-    const found = options.some((o) => o.includes(ticketCode));
-    expect(found).toBeTruthy();
+    await expect(ticketSelect.locator('option', { hasText: ticketCode })).toHaveCount(1, {
+      timeout: 10_000,
+    });
 
     await adminPage.screenshot({ path: 'tests/e2e/screenshots/03-02-admin-sees-ticket.png' });
   });
@@ -122,6 +129,10 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
     if (![200, 201].includes(linkRes.status())) {
       // Fallback: just assign device directly and update status
     }
+
+    // The approval chain gates every request: a new ticket sits in
+    // pending_approval, and pending_approval -> waiting is not a legal move.
+    await approveTicket(request, ticketId);
 
     // Update ticket status to "waiting" with a note
     const updateRes = await request.put(
@@ -145,27 +156,26 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
     // request and wrong for reading one back.
     await requesterPage.goto('/requests');
 
-    // Find the ticket in the list — look for the ticket code or title
-    await expect(
-      requesterPage.getByText(ticketCode, { exact: false }),
-    ).toBeVisible({ timeout: 12_000 });
-
-    // Open the ticket detail modal by clicking the row
-    await requesterPage.getByText(ticketCode, { exact: false }).click();
+    // The code appears twice on this page — in the Active Request Tracker and on
+    // the request card. Both are correct; the locator just has to say which.
+    const codeOnCard = requesterPage.getByText(ticketCode, { exact: false }).last();
+    await expect(codeOnCard).toBeVisible({ timeout: 12_000 });
+    await codeOnCard.click();
 
     // The detail modal should appear and show "waiting" status
     const modal = requesterPage.getByRole('dialog');
     await expect(modal).toBeVisible({ timeout: 8_000 });
-    await expect(modal.getByText(/waiting/i)).toBeVisible();
+    // The status appears in the badge, the timeline and the history — all correct.
+    await expect(modal.getByText(/waiting/i).first()).toBeVisible();
 
     // History/comment with the admin note should be visible
     await expect(
-      modal.getByText(/staged and ready for collection/i),
+      modal.getByText(/staged and ready for collection/i).first(),
     ).toBeVisible({ timeout: 5_000 });
 
     await requesterPage.screenshot({ path: 'tests/e2e/screenshots/03-03-requester-sees-status.png' });
 
     // Close modal
-    await modal.getByRole('button', { name: /Close/i }).click();
+    await modal.getByRole('button', { name: /Close/i }).first().click();
   });
 });

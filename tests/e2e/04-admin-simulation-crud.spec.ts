@@ -14,7 +14,7 @@
 // ============================================================================
 
 import { test, expect } from './fixtures';
-import { getToken, deleteDevice, deleteTicket, API_BASE } from './fixtures';
+import { getToken, deleteDevice, deleteTicket, approveTicket, API_BASE } from './fixtures';
 
 const ADMIN = { email: 'admin@company.com', password: 'Passw0rd!' };
 const REQUESTER = {
@@ -84,7 +84,11 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
 
     // Modal should close and the device appears in the inventory table
     await expect(adminPage.getByRole('dialog')).not.toBeVisible({ timeout: 8_000 });
-    await expect(adminPage.getByText(deviceCode)).toBeVisible({ timeout: 10_000 });
+    // The row in the table — not the success toast, which also says the code and
+    // made this a strict-mode violation rather than a real failure.
+    await expect(adminPage.getByRole('cell', { name: deviceCode })).toBeVisible({
+      timeout: 10_000,
+    });
 
     await adminPage.screenshot({ path: 'tests/e2e/screenshots/04-02-device-created.png' });
   });
@@ -141,9 +145,10 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
       },
     });
     expect(ticketRes.status()).toBe(201);
-    const ticketBody = await ticketRes.json();
-    ticketId = String(ticketBody.data.id ?? ticketBody.data.ticketId);
-    ticketCode = ticketBody.data.code;
+    // { ticket }, not { data } — see fixtures.createHardwareTicket.
+    const { ticket } = await ticketRes.json();
+    ticketId = String(ticket.id);
+    ticketCode = ticket.code;
 
     // Link device to ticket
     const linkRes = await request.post(
@@ -164,6 +169,10 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
     adminPage,
     request,
   }) => {
+    // Sign the approval chain first — the gate is real, and a brand-new ticket is
+    // in pending_approval, not submitted.
+    await approveTicket(request, ticketId);
+
     const updateRes = await request.put(`${API_BASE}/tickets/${ticketId}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
@@ -185,7 +194,7 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
       const modal = adminPage.getByRole('dialog');
       await expect(modal).toBeVisible({ timeout: 8_000 });
       await expect(modal.getByText(/waiting/i)).toBeVisible();
-      await modal.getByRole('button', { name: /Close/i }).click();
+      await modal.getByRole('button', { name: /Close/i }).first().click();
     }
 
     await adminPage.screenshot({ path: 'tests/e2e/screenshots/04-04-ticket-waiting.png' });
@@ -210,8 +219,9 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     expect(checkRes.status()).toBe(200);
-    const checkBody = await checkRes.json();
-    expect(checkBody.data.status).toBe('resolved');
+    // GET /tickets/:id answers { ticket }, like POST — not { data }.
+    const { ticket: fetched } = await checkRes.json();
+    expect(fetched.status).toBe('resolved');
 
     await adminPage.screenshot({ path: 'tests/e2e/screenshots/04-05-ticket-resolved.png' });
   });
@@ -226,8 +236,11 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
     const body = await res.json();
     const device = body.data;
 
-    // Device should currently be "Active" (it was assigned and ticket resolved)
-    expect(device.assignedTo).toBe(REQUESTER.name);
+    // Custody is recorded as "Name (email)" — the email is what makes the holder
+    // identifiable, and it is what the assignment resolves the account from. The
+    // test expected a bare name.
+    expect(device.assignedTo).toContain(REQUESTER.name);
+    expect(device.assignedTo).toContain(REQUESTER.email);
 
     // If the API returns a history array, verify actions were recorded
     if (Array.isArray(device.history) && device.history.length > 0) {
@@ -256,7 +269,8 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
     await expect(modal).toBeVisible({ timeout: 8_000 });
 
     // Should show resolved status
-    await expect(modal.getByText(/resolved/i)).toBeVisible();
+    // Badge and history both say it; either is proof.
+    await expect(modal.getByText(/resolved/i).first()).toBeVisible();
 
     // Should show admin note in comment/history section
     await expect(

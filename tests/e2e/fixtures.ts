@@ -64,9 +64,12 @@ export { expect };
  * Read it. The whole suite now costs exactly two logins — the two the setup
  * project already had to do.
  */
+const IT_LEADER_AUTH_FILE = path.join(__dirname, '.auth/it-leader.json');
+
 const AUTH_FILE_BY_EMAIL: Record<string, string> = {
   'admin@company.com': ADMIN_AUTH_FILE,
   'alex.mercer@company.com': REQUESTER_AUTH_FILE,
+  'marcus.vance@company.com': IT_LEADER_AUTH_FILE,
 };
 
 export async function getToken(
@@ -128,9 +131,62 @@ export async function createHardwareTicket(
       requesterDept: 'Engineering & Infrastructure',
     },
   });
-  expect(res.status()).toBe(201);
-  const body = await res.json();
-  return { id: String(body.data.id ?? body.data.ticketId), code: body.data.code };
+  expect(res.status(), `ticket create failed: ${await res.text()}`).toBe(201);
+  // POST /tickets answers { ticket }, not { data } — devices use { data }. The
+  // envelope is not consistent across the API and the test assumed it was.
+  const { ticket } = await res.json();
+  return { id: String(ticket.id), code: ticket.code };
+}
+
+/**
+ * API helper: walk a ticket through the approval chain.
+ *
+ * The seeded flow gates every request behind two signatures — the requester's
+ * department leader, then the IT leader. A new ticket therefore lands in
+ * `pending_approval`, and `pending_approval -> waiting` is not a legal
+ * transition, so IT cannot touch it until it has been approved. The workflow
+ * specs predate the approval gate and tried to move a brand-new ticket straight
+ * to `waiting`; the API answered 400, correctly, and the tests read that as a
+ * bug in the app.
+ *
+ * Two passes: step 2 only becomes pending once step 1 has signed.
+ */
+export async function approveTicket(
+  request: import('@playwright/test').APIRequestContext,
+  ticketId: string,
+): Promise<void> {
+  const approvers = ['admin@company.com', 'marcus.vance@company.com'];
+
+  for (let pass = 0; pass < 2; pass++) {
+    for (const email of approvers) {
+      const token = await getToken(request, email);
+      const res = await request.get(`${API_BASE}/tickets/approvals/inbox`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status() !== 200) continue;
+
+      // The inbox rows are raw SQL: the ticket is `id` and the step is `step_order`.
+      // Reading `step` gave undefined and posted to /approvals/undefined/decide.
+      const { pending = [] } = await res.json();
+      const mine = (pending as { id: unknown; step_order: number }[]).filter(
+        (p) => String(p.id) === String(ticketId),
+      );
+
+      for (const item of mine) {
+        const decided = await request.post(
+          `${API_BASE}/tickets/${ticketId}/approvals/${item.step_order}/decide`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            data: { decision: 'approve', note: 'E2E: approved' },
+          },
+        );
+        expect(
+          decided.ok(),
+          `approve step ${item.step_order} as ${email}: ${decided.status()} ${await decided.text()}`,
+        ).toBeTruthy();
+      }
+    }
+  }
 }
 
 /**

@@ -10,6 +10,10 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ADMIN_AUTH_FILE = path.join(__dirname, '.auth/admin.json');
 const REQUESTER_AUTH_FILE = path.join(__dirname, '.auth/requester.json');
+// The IT leader is step 2 of the seeded approval chain. Without his token a
+// hardware request can never leave 'pending_approval', so nothing downstream —
+// waiting, resolved, the device workflow — can be tested at all.
+const IT_LEADER_AUTH_FILE = path.join(__dirname, '.auth/it-leader.json');
 
 const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 
@@ -48,4 +52,10 @@ setup('authenticate as admin', async ({ page }) => {
 setup('authenticate as requester', async ({ page }) => {
   await loginAs(page, 'alex.mercer@company.com', 'Passw0rd!');
   await page.context().storageState({ path: REQUESTER_AUTH_FILE });
+});
+
+// ----- IT leader (step 2 of the approval chain) -----
+setup('authenticate as IT leader', async ({ page }) => {
+  await loginAs(page, 'marcus.vance@company.com', 'Passw0rd!');
+  await page.context().storageState({ path: IT_LEADER_AUTH_FILE });
 });

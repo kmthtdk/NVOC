@@ -13,7 +13,11 @@ import { api } from '../api/client';
 import { useToast } from '../context/ToastContext';
 import { Spinner } from './ui/Spinner';
 
-export type DeviceStatus = 'Active' | 'In Repair' | 'Retired' | 'Lost';
+// 'In Stock' is a device status the BACKEND has always had — it is the state the
+// Allocation Queue is built on. This union simply forgot it, so the type made the
+// one status IT needs most unrepresentable in the UI, and every screen that shares
+// this type inherited the hole.
+export type DeviceStatus = 'In Stock' | 'Active' | 'In Repair' | 'Retired' | 'Lost';
 export type MacAddressType = 'Ethernet' | 'WiFi' | 'Bluetooth' | 'Other';
 
 export interface MacAddress {
@@ -108,7 +112,16 @@ const formatDeviceTypeLabel = (type: string): string => DEVICE_TYPE_LABELS[type]
 const specFieldClass =
   'rounded-md border border-slate-300 px-3 py-2 text-sm w-full disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:disabled:bg-slate-700 dark:disabled:text-slate-400';
 
-const STATUS_OPTIONS: DeviceStatus[] = ['Active', 'In Repair', 'Retired', 'Lost'];
+// 'In Stock' was missing entirely, and the form defaulted to 'Active'. So a device
+// could not be booked into the store through the UI at all — the one state the
+// Allocation Queue looks for — and every device created here was born "Active"
+// while held by nobody, which is the orphan state device_assignments exists to
+// prevent. Stock first, and it is the default: hardware arrives before it is issued.
+//
+// 'Active' stays in the list only so an already-Active device can be edited without
+// its status silently changing under the operator. Custody is granted by /assign and
+// ended by /checkout; it is not a value you type.
+const STATUS_OPTIONS: DeviceStatus[] = ['In Stock', 'Active', 'In Repair', 'Retired', 'Lost'];
 const MAC_ADDRESS_TYPES: MacAddressType[] = ['Ethernet', 'WiFi', 'Bluetooth', 'Other'];
 const MAC_ADDRESS_REGEX = /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/;
 
@@ -149,7 +162,7 @@ function toFormState(device?: Device | null): FormState {
     deviceType: device?.deviceType ?? 'laptop',
     model: device?.model ?? '',
     serialNumber: device?.serialNumber ?? '',
-    status: device?.status ?? 'Active',
+    status: device?.status ?? 'In Stock',
     assignedTo: device?.assignedTo ?? '',
     department: device?.department ?? '',
     purchaseDate: device?.purchaseDate ?? '',
