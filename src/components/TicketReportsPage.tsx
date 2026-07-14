@@ -147,31 +147,31 @@ export default function TicketReportsPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Code</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Title</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Requester</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Created</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Priority</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Status</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Code</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Title</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Requester</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Created</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Priority</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {pendingRequests.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-3 text-center text-slate-500 dark:text-slate-400">
+                        <td colSpan={6} className="px-4 py-2 text-center text-slate-500 dark:text-slate-400">
                           No pending hardware requests
                         </td>
                       </tr>
                     ) : (
                       pendingRequests.map((req, idx) => (
                         <tr key={idx} className="border-t border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                          <td className="px-4 py-3 font-mono text-slate-900 dark:text-white">{req.code}</td>
-                          <td className="px-4 py-3 text-slate-900 dark:text-white">{req.title}</td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{req.requester_name}</td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">
+                          <td className="px-4 py-2 font-mono text-slate-900 dark:text-white">{req.code}</td>
+                          <td className="px-4 py-2 text-slate-900 dark:text-white">{req.title}</td>
+                          <td className="px-4 py-2 text-slate-600 dark:text-slate-400">{req.requester_name}</td>
+                          <td className="px-4 py-2 text-slate-600 dark:text-slate-400 text-xs">
                             {new Date(req.created_at).toLocaleDateString()}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-2">
                             <span className={`px-2 py-1 rounded text-xs font-medium ${
                               req.priority === 'urgent' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' :
                               req.priority === 'high' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
@@ -180,7 +180,7 @@ export default function TicketReportsPage() {
                               {req.priority}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{req.status}</td>
+                          <td className="px-4 py-2 text-slate-600 dark:text-slate-400">{req.status}</td>
                         </tr>
                       ))
                     )}
@@ -199,7 +199,7 @@ export default function TicketReportsPage() {
                   <div className="space-y-3">
                     <div>
                       <p className="text-slate-600 dark:text-slate-400 text-sm">Average Fulfillment</p>
-                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{formatHours(stat.avg_hours)}</p>
+                      <p className="text-2xl font-bold font-display text-blue-600 dark:text-blue-400">{formatHours(stat.avg_hours)}</p>
                     </div>
                     <div>
                       <p className="text-slate-600 dark:text-slate-400 text-sm">Min - Max</p>
@@ -244,26 +244,26 @@ export default function TicketReportsPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Month</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Category</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Count</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Visual</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Month</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Category</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Count</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Visual</th>
                     </tr>
                   </thead>
                   <tbody>
                     {categoryTrend.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-4 py-3 text-center text-slate-500 dark:text-slate-400">
+                        <td colSpan={4} className="px-4 py-2 text-center text-slate-500 dark:text-slate-400">
                           No data available
                         </td>
                       </tr>
                     ) : (
                       categoryTrend.map((item, idx) => (
                         <tr key={idx} className="border-t border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                          <td className="px-4 py-3 font-mono text-slate-900 dark:text-white">{item.month}</td>
-                          <td className="px-4 py-3 text-slate-900 dark:text-white">{item.category_id}</td>
-                          <td className="px-4 py-3 text-slate-900 dark:text-white font-semibold">{item.count}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-2 font-mono text-slate-900 dark:text-white">{item.month}</td>
+                          <td className="px-4 py-2 text-slate-900 dark:text-white">{item.category_id}</td>
+                          <td className="px-4 py-2 text-slate-900 dark:text-white font-semibold">{item.count}</td>
+                          <td className="px-4 py-2">
                             <div className="w-24 bg-slate-200 dark:bg-slate-700 rounded h-6 overflow-hidden">
                               <div
                                 className="bg-blue-500 h-full"

@@ -162,13 +162,13 @@ export default function DeviceInventoryPivotTable({ filters }: DeviceInventoryPi
         <table className="w-full text-sm">
           <thead className="bg-slate-50 dark:bg-slate-800/50">
             <tr className="border-b border-slate-200 dark:border-slate-700">
-              <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Department</th>
+              <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Department</th>
               {pivotData.allTypes.map(type => (
-                <th key={type} className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">
+                <th key={type} className="px-4 py-2 text-right font-semibold text-slate-700 dark:text-slate-300">
                   {type}
                 </th>
               ))}
-              <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50">
+              <th className="px-4 py-2 text-right font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50">
                 Total
               </th>
             </tr>
@@ -176,25 +176,25 @@ export default function DeviceInventoryPivotTable({ filters }: DeviceInventoryPi
           <tbody>
             {pivotData.allDepts.map(dept => (
               <tr key={dept} className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/30">
-                <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{dept}</td>
+                <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{dept}</td>
                 {pivotData.allTypes.map(type => (
-                  <td key={type} className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">
+                  <td key={type} className="px-4 py-2 text-right text-slate-600 dark:text-slate-400">
                     {pivotData.deptType[dept]?.[type] || 0}
                   </td>
                 ))}
-                <td className="px-4 py-3 text-right font-semibold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-700/50">
+                <td className="px-4 py-2 text-right font-semibold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-700/50">
                   {pivotData.allTypes.reduce((sum, type) => sum + (pivotData.deptType[dept]?.[type] || 0), 0)}
                 </td>
               </tr>
             ))}
             <tr className="bg-slate-100 dark:bg-slate-800/50 border-t-2 border-slate-300 dark:border-slate-600">
-              <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">Total</td>
+              <td className="px-4 py-2 font-bold text-slate-900 dark:text-white">Total</td>
               {pivotData.allTypes.map(type => (
-                <td key={type} className="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">
+                <td key={type} className="px-4 py-2 text-right font-bold text-slate-900 dark:text-white">
                   {pivotData.allDepts.reduce((sum, dept) => sum + (pivotData.deptType[dept]?.[type] || 0), 0)}
                 </td>
               ))}
-              <td className="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">{pivotData.total}</td>
+              <td className="px-4 py-2 text-right font-bold text-slate-900 dark:text-white">{pivotData.total}</td>
             </tr>
           </tbody>
         </table>
@@ -211,13 +211,13 @@ export default function DeviceInventoryPivotTable({ filters }: DeviceInventoryPi
         <table className="w-full text-sm">
           <thead className="bg-slate-50 dark:bg-slate-800/50">
             <tr className="border-b border-slate-200 dark:border-slate-700">
-              <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Department</th>
+              <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Department</th>
               {pivotData.allStatuses.map(status => (
-                <th key={status} className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">
+                <th key={status} className="px-4 py-2 text-right font-semibold text-slate-700 dark:text-slate-300">
                   {status}
                 </th>
               ))}
-              <th className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50">
+              <th className="px-4 py-2 text-right font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50">
                 Total
               </th>
             </tr>
@@ -225,25 +225,25 @@ export default function DeviceInventoryPivotTable({ filters }: DeviceInventoryPi
           <tbody>
             {pivotData.allDepts.map(dept => (
               <tr key={dept} className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/30">
-                <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{dept}</td>
+                <td className="px-4 py-2 font-medium text-slate-900 dark:text-white">{dept}</td>
                 {pivotData.allStatuses.map(status => (
-                  <td key={status} className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">
+                  <td key={status} className="px-4 py-2 text-right text-slate-600 dark:text-slate-400">
                     {pivotData.deptStatus[dept]?.[status] || 0}
                   </td>
                 ))}
-                <td className="px-4 py-3 text-right font-semibold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-700/50">
+                <td className="px-4 py-2 text-right font-semibold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-700/50">
                   {pivotData.allStatuses.reduce((sum, status) => sum + (pivotData.deptStatus[dept]?.[status] || 0), 0)}
                 </td>
               </tr>
             ))}
             <tr className="bg-slate-100 dark:bg-slate-800/50 border-t-2 border-slate-300 dark:border-slate-600">
-              <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">Total</td>
+              <td className="px-4 py-2 font-bold text-slate-900 dark:text-white">Total</td>
               {pivotData.allStatuses.map(status => (
-                <td key={status} className="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">
+                <td key={status} className="px-4 py-2 text-right font-bold text-slate-900 dark:text-white">
                   {pivotData.allDepts.reduce((sum, dept) => sum + (pivotData.deptStatus[dept]?.[status] || 0), 0)}
                 </td>
               ))}
-              <td className="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">{pivotData.total}</td>
+              <td className="px-4 py-2 text-right font-bold text-slate-900 dark:text-white">{pivotData.total}</td>
             </tr>
           </tbody>
         </table>

@@ -141,7 +141,7 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
                 </span>
                 <Icon className="w-4 h-4 text-slate-300 dark:text-slate-600" />
               </div>
-              <span className={`text-3xl font-extrabold font-sans tracking-tight mt-2 ${c.valueCls}`}>
+              <span className={`text-3xl font-extrabold font-display tracking-tight mt-2 ${c.valueCls}`}>
                 {c.value}
               </span>
             </div>

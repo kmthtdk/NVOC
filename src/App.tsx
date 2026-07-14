@@ -165,8 +165,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50/70 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans flex flex-col antialiased selection:bg-violet-100 selection:text-violet-950 pb-16 transition-colors overflow-x-hidden">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-30 shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+      {/* Header. Translucent + 12px backdrop blur, per the design spec: the fixed
+          nav is meant to keep a sense of context while you scroll through long
+          data streams, rather than sit on top of them as an opaque slab.
+          `supports-[backdrop-filter]` keeps it fully opaque where blur is not
+          available, so the text never lands on unreadable see-through white. */}
+      <header className="bg-white dark:bg-slate-900 supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-slate-900/80 backdrop-blur-[12px] border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-30 shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 gap-3">
             {/* Logo */}

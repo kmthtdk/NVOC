@@ -144,13 +144,13 @@ export default function DeviceManagement() {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
               <tr>
-                <th className="px-6 py-3 text-left font-semibold">Code</th>
-                <th className="px-6 py-3 text-left font-semibold">Asset Code</th>
-                <th className="px-6 py-3 text-left font-semibold">Model</th>
-                <th className="px-6 py-3 text-left font-semibold">Serial</th>
-                <th className="px-6 py-3 text-left font-semibold">Status</th>
-                <th className="px-6 py-3 text-left font-semibold">Assigned To</th>
-                <th className="px-6 py-3 text-left font-semibold">Department</th>
+                <th className="px-6 py-2 text-left font-semibold">Code</th>
+                <th className="px-6 py-2 text-left font-semibold">Asset Code</th>
+                <th className="px-6 py-2 text-left font-semibold">Model</th>
+                <th className="px-6 py-2 text-left font-semibold">Serial</th>
+                <th className="px-6 py-2 text-left font-semibold">Status</th>
+                <th className="px-6 py-2 text-left font-semibold">Assigned To</th>
+                <th className="px-6 py-2 text-left font-semibold">Department</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -163,17 +163,17 @@ export default function DeviceManagement() {
               ) : (
                 filtered.map((device) => (
                   <tr key={device.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                    <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">{device.code}</td>
-                    <td className="px-6 py-4 font-mono text-xs text-slate-600 dark:text-slate-400">{device.assetCode || <span className="text-slate-300 dark:text-slate-600">—</span>}</td>
-                    <td className="px-6 py-4 text-slate-900 dark:text-white">{device.model}</td>
-                    <td className="px-6 py-4 text-xs font-mono text-slate-600 dark:text-slate-400">{device.serialNumber}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-2 font-mono font-bold text-slate-900 dark:text-white">{device.code}</td>
+                    <td className="px-6 py-2 font-mono text-xs text-slate-600 dark:text-slate-400">{device.assetCode || <span className="text-slate-300 dark:text-slate-600">—</span>}</td>
+                    <td className="px-6 py-2 text-slate-900 dark:text-white">{device.model}</td>
+                    <td className="px-6 py-2 text-xs font-mono text-slate-600 dark:text-slate-400">{device.serialNumber}</td>
+                    <td className="px-6 py-2">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(device.status)}`}>
                         {device.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{device.assignedTo || '-'}</td>
-                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{device.department || '-'}</td>
+                    <td className="px-6 py-2 text-slate-600 dark:text-slate-400">{device.assignedTo || '-'}</td>
+                    <td className="px-6 py-2 text-slate-600 dark:text-slate-400">{device.department || '-'}</td>
                   </tr>
                 ))
               )}

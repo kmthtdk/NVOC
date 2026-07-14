@@ -172,7 +172,7 @@ export default function DeviceReportsPage() {
               {/* Total Devices */}
               <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
                 <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Devices</p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">{summary.total}</p>
+                <p className="text-3xl font-bold font-display text-slate-900 dark:text-white mt-2">{summary.total}</p>
               </div>
 
               {/* By Status */}
@@ -210,30 +210,30 @@ export default function DeviceReportsPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Code</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Model</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Serial</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Assigned To</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Department</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Status</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Code</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Model</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Serial</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Assigned To</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Department</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {assignments.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-3 text-center text-slate-500 dark:text-slate-400">
+                        <td colSpan={6} className="px-4 py-2 text-center text-slate-500 dark:text-slate-400">
                           No devices assigned
                         </td>
                       </tr>
                     ) : (
                       assignments.map((device) => (
                         <tr key={device.device_code} className="border-t border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                          <td className="px-4 py-3 font-mono text-slate-900 dark:text-white">{device.device_code}</td>
-                          <td className="px-4 py-3 text-slate-900 dark:text-white">{device.model}</td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs">{device.serial_number}</td>
-                          <td className="px-4 py-3 text-slate-900 dark:text-white">{device.assigned_to || '-'}</td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{device.department || '-'}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-2 font-mono text-slate-900 dark:text-white">{device.device_code}</td>
+                          <td className="px-4 py-2 text-slate-900 dark:text-white">{device.model}</td>
+                          <td className="px-4 py-2 text-slate-600 dark:text-slate-400 text-xs">{device.serial_number}</td>
+                          <td className="px-4 py-2 text-slate-900 dark:text-white">{device.assigned_to || '-'}</td>
+                          <td className="px-4 py-2 text-slate-600 dark:text-slate-400">{device.department || '-'}</td>
+                          <td className="px-4 py-2">
                             <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
                               {device.status}
                             </span>
@@ -254,17 +254,17 @@ export default function DeviceReportsPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Code</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Model</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Assigned To</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Warranty Expiry</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Days Remaining</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Code</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Model</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Assigned To</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Warranty Expiry</th>
+                      <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Days Remaining</th>
                     </tr>
                   </thead>
                   <tbody>
                     {aging.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-3 text-center text-slate-500 dark:text-slate-400">
+                        <td colSpan={5} className="px-4 py-2 text-center text-slate-500 dark:text-slate-400">
                           No devices nearing warranty expiry
                         </td>
                       </tr>
@@ -276,11 +276,11 @@ export default function DeviceReportsPage() {
                             device.days_until_expiry <= 30 ? 'bg-rose-50 dark:bg-rose-950/30' : device.days_until_expiry <= 60 ? 'bg-amber-50 dark:bg-amber-950/30' : ''
                           }`}
                         >
-                          <td className="px-4 py-3 font-mono text-slate-900 dark:text-white">{device.device_code}</td>
-                          <td className="px-4 py-3 text-slate-900 dark:text-white">{device.model}</td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{device.assigned_to || '-'}</td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{device.warranty_expiry || '-'}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-2 font-mono text-slate-900 dark:text-white">{device.device_code}</td>
+                          <td className="px-4 py-2 text-slate-900 dark:text-white">{device.model}</td>
+                          <td className="px-4 py-2 text-slate-600 dark:text-slate-400">{device.assigned_to || '-'}</td>
+                          <td className="px-4 py-2 text-slate-600 dark:text-slate-400">{device.warranty_expiry || '-'}</td>
+                          <td className="px-4 py-2">
                             <span
                               className={`px-2 py-1 rounded text-xs font-medium ${
                                 device.days_until_expiry <= 30
@@ -319,7 +319,7 @@ export default function DeviceReportsPage() {
               ].map((item) => (
                 <div key={item.label} className={`rounded-lg p-6 ${item.color}`}>
                   <p className="text-sm font-medium opacity-90">{item.label}</p>
-                  <p className="text-3xl font-bold mt-2">{item.value}</p>
+                  <p className="text-3xl font-bold font-display mt-2">{item.value}</p>
                 </div>
               ))}
             </div>
