@@ -61,9 +61,9 @@ export default function DeviceManagement() {
     const colors: Record<string, string> = {
       'In Stock': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
       'Active': 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-      'In Repair': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
+      'In Repair': 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
       'Retired': 'bg-slate-100 text-slate-700 dark:bg-slate-950 dark:text-slate-300',
-      'Lost': 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+      'Lost': 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
     };
     return colors[status] || 'bg-slate-100 text-slate-700';
   };
@@ -132,11 +132,11 @@ export default function DeviceManagement() {
           <div className="animate-spin h-12 w-12 border-b-2 border-blue-600 rounded-full"></div>
         </div>
       ) : error ? (
-        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg p-4 flex gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+        <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 rounded-lg p-4 flex gap-3">
+          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
           <div>
-            <h3 className="font-semibold text-red-800 dark:text-red-300">Error</h3>
-            <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
+            <h3 className="font-semibold text-rose-800 dark:text-rose-300">Error</h3>
+            <p className="text-rose-700 dark:text-rose-400 text-sm">{error}</p>
           </div>
         </div>
       ) : (

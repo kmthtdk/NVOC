@@ -13,6 +13,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Ticket, TicketStatus, TicketPriority } from '../types';
 import { IT_CATEGORIES } from '../data/categories';
+import { STATUS_META } from '../data/statusMeta';
 import { api, ApiError, type ListTicketsParams } from '../api/client';
 import { LoadingPanel, ErrorState } from './ui/Spinner';
 import {
@@ -45,13 +46,6 @@ for (const cat of IT_CATEGORIES) {
   for (const sub of cat.subcategories) SUBCATEGORY_NAMES[sub.id] = sub.name;
 }
 
-const STATUS_BADGE: Record<TicketStatus, { cls: string; label: string }> = {
-  submitted: { cls: 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 border-violet-100 dark:border-violet-800', label: 'Submitted' },
-  pending_approval: { cls: 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border-indigo-100 dark:border-indigo-800', label: 'Awaiting Approval' },
-  waiting: { cls: 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-100 dark:border-amber-800', label: 'Waiting for Review' },
-  resolved: { cls: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-100 dark:border-emerald-800', label: 'Resolved' },
-  rejected: { cls: 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-100 dark:border-rose-800', label: 'Rejected' },
-};
 
 // Priority → visual language (mock's P1/P2/P3 + a muted P4 for `low`).
 // urgent = rose (P1) · high = amber (P2) · medium = sky/teal (P3) · low = muted (P4).
@@ -99,9 +93,9 @@ const PRIORITY_META: Record<TicketPriority, PriorityMeta> = {
 };
 
 function StatusBadge({ status }: { status: TicketStatus }) {
-  const meta = STATUS_BADGE[status];
+  const meta = STATUS_META[status];
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold ${meta.cls}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold ${meta.badge}`}>
       <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
       {meta.label}
     </span>

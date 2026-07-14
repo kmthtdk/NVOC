@@ -111,11 +111,11 @@ export default function DeviceInventoryPivotTable({ filters }: DeviceInventoryPi
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex gap-3">
-        <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+      <div className="p-4 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-lg flex gap-3">
+        <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
         <div>
-          <h3 className="font-semibold text-red-900 dark:text-red-300">Error Loading Reports</h3>
-          <p className="text-sm text-red-700 dark:text-red-400 mt-1">{error}</p>
+          <h3 className="font-semibold text-rose-900 dark:text-rose-300">Error Loading Reports</h3>
+          <p className="text-sm text-rose-700 dark:text-rose-400 mt-1">{error}</p>
         </div>
       </div>
     );

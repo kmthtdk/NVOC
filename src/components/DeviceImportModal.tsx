@@ -293,7 +293,7 @@ export default function DeviceImportModal({
           </div>
 
           {headerError && (
-            <div className="flex items-start gap-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+            <div className="flex items-start gap-2 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-900/20 dark:text-rose-300">
               <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
               <span>{headerError}</span>
             </div>
@@ -305,7 +305,7 @@ export default function DeviceImportModal({
                 <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
                   <CheckCircle2 className="h-4 w-4" /> {validRows.length} valid
                 </span>
-                <span className="inline-flex items-center gap-1 text-red-700 dark:text-red-400">
+                <span className="inline-flex items-center gap-1 text-rose-700 dark:text-rose-400">
                   <AlertCircle className="h-4 w-4" /> {errorRows.length} with errors
                 </span>
               </div>
@@ -325,7 +325,7 @@ export default function DeviceImportModal({
                         <tr key={r.rowNumber} className="border-t border-slate-100 dark:border-slate-800">
                           <td className="px-3 py-2">{r.rowNumber}</td>
                           <td className="px-3 py-2">{r.raw.serialnumber || '—'}</td>
-                          <td className="px-3 py-2 text-red-600 dark:text-red-400">
+                          <td className="px-3 py-2 text-rose-600 dark:text-rose-400">
                             {r.errors.join('; ')}
                           </td>
                         </tr>

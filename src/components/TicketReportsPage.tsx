@@ -130,8 +130,8 @@ export default function TicketReportsPage() {
       )}
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-800 dark:text-red-300 font-medium">Error: {error}</p>
+        <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-lg p-4">
+          <p className="text-rose-800 dark:text-rose-300 font-medium">Error: {error}</p>
         </div>
       )}
 
@@ -173,7 +173,7 @@ export default function TicketReportsPage() {
                           </td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              req.priority === 'urgent' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
+                              req.priority === 'urgent' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' :
                               req.priority === 'high' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
                               'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
                             }`}>

@@ -4,6 +4,8 @@
 import { useEffect, useState } from 'react';
 import type { Ticket, CategorySpec } from '../types';
 import { isOpenStatus } from '../types';
+import type { TicketStatus } from '../types';
+import { STATUS_META } from '../data/statusMeta';
 import type { UserTab } from '../navigation';
 import { api, ApiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -59,19 +61,10 @@ export default function UserPortal({
     return () => ctrl.abort();
   }, [reloadKey, requesterEmail]);
 
-  const getStatusBadge = (st: string) => {
-    if (st === 'submitted') return 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800';
-    if (st === 'pending_approval') return 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800';
-    if (st === 'waiting') return 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800';
-    if (st === 'resolved') return 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
-    return 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800';
-  };
-  const getStatusText = (st: string) =>
-    st === 'submitted' ? 'Submitted'
-    : st === 'pending_approval' ? 'Awaiting Approval'
-    : st === 'waiting' ? 'Waiting for Review'
-    : st === 'resolved' ? 'Resolved'
-    : 'Rejected';
+  // Labels and colours come from the single status vocabulary (src/data/statusMeta.ts).
+  // This used to be a fourth private copy, and the four had already drifted.
+  const getStatusBadge = (st: TicketStatus) => STATUS_META[st].badge;
+  const getStatusText = (st: TicketStatus) => STATUS_META[st].label;
   // Priority as a subtle left accent on each request card (echoes the mock's colour-coding).
   const getPriorityAccent = (p: string) =>
     p === 'urgent' ? 'border-l-rose-400 dark:border-l-rose-500'

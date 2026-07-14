@@ -9,6 +9,7 @@ import { useMemo } from 'react';
 import { isOpenStatus } from '../types';
 import type { Ticket, TicketStatus, TicketPriority } from '../types';
 import type { TicketStatsSummary } from '../api/client';
+import { STATUS_META } from '../data/statusMeta';
 import { IT_CATEGORIES } from '../data/categories';
 import { Activity, AlertTriangle, CheckCircle2, Clock, Inbox, TrendingUp, Flame } from 'lucide-react';
 
@@ -19,18 +20,6 @@ interface StatusDashboardProps {
   stats?: TicketStatsSummary | null;
   onSelectTicket?: (t: Ticket) => void;
 }
-
-const STATUS_META: Record<TicketStatus, { label: string; dot: string; text: string }> = {
-  submitted: { label: 'Submitted', dot: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400' },
-  pending_approval: {
-    label: 'Awaiting Approval',
-    dot: 'bg-indigo-500',
-    text: 'text-indigo-600 dark:text-indigo-400',
-  },
-  waiting: { label: 'Waiting for Review', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
-  resolved: { label: 'Resolved', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
-  rejected: { label: 'Rejected', dot: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400' },
-};
 
 const PRIORITY_META: Record<TicketPriority, { label: string; cls: string; badge: string }> = {
   urgent: {

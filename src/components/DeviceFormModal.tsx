@@ -511,7 +511,7 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
     return (
       `w-full rounded-md border px-3 py-2 text-sm bg-white dark:bg-slate-800 ` +
       `text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ` +
-      (errMap[field] ? 'border-red-500' : 'border-slate-300 dark:border-slate-600')
+      (errMap[field] ? 'border-rose-500' : 'border-slate-300 dark:border-slate-600')
     );
   };
 
@@ -556,7 +556,7 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Device Type <span className="text-red-500">*</span>
+                Device Type <span className="text-rose-500">*</span>
               </label>
               <select
                 value={form.deviceType}
@@ -570,12 +570,12 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
                   </option>
                 ))}
               </select>
-              {errors.deviceType && <p className="mt-1 text-xs text-red-500">{errors.deviceType}</p>}
+              {errors.deviceType && <p className="mt-1 text-xs text-rose-500">{errors.deviceType}</p>}
             </div>
 
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Status <span className="text-red-500">*</span>
+                Status <span className="text-rose-500">*</span>
               </label>
               <select
                 value={form.status}
@@ -588,12 +588,12 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
                   </option>
                 ))}
               </select>
-              {errors.status && <p className="mt-1 text-xs text-red-500">{errors.status}</p>}
+              {errors.status && <p className="mt-1 text-xs text-rose-500">{errors.status}</p>}
             </div>
 
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Model <span className="text-red-500">*</span>
+                Model <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -602,12 +602,12 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
                 className={fieldClass('model')}
                 placeholder="Dell Latitude 7440"
               />
-              {errors.model && <p className="mt-1 text-xs text-red-500">{errors.model}</p>}
+              {errors.model && <p className="mt-1 text-xs text-rose-500">{errors.model}</p>}
             </div>
 
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Serial Number <span className="text-red-500">*</span>
+                Serial Number <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -683,7 +683,7 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
                 className={fieldClass('purchaseDate')}
               />
               {errors.purchaseDate && (
-                <p className="mt-1 text-xs text-red-500">{errors.purchaseDate}</p>
+                <p className="mt-1 text-xs text-rose-500">{errors.purchaseDate}</p>
               )}
             </div>
 
@@ -698,7 +698,7 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
                 className={fieldClass('warrantyExpiry')}
               />
               {errors.warrantyExpiry && (
-                <p className="mt-1 text-xs text-red-500">{errors.warrantyExpiry}</p>
+                <p className="mt-1 text-xs text-rose-500">{errors.warrantyExpiry}</p>
               )}
             </div>
           </div>
@@ -747,10 +747,10 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
                   />
                 </div>
                 {errors.purchaseCost && (
-                  <p className="mt-1 text-xs text-red-500">{errors.purchaseCost}</p>
+                  <p className="mt-1 text-xs text-rose-500">{errors.purchaseCost}</p>
                 )}
                 {errors.currency && (
-                  <p className="mt-1 text-xs text-red-500">{errors.currency}</p>
+                  <p className="mt-1 text-xs text-rose-500">{errors.currency}</p>
                 )}
               </div>
 
@@ -847,7 +847,7 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
                                 className={fieldClass('macAddress', macErrors)}
                               />
                               {macErrors.macAddress && (
-                                <p className="mt-1 text-xs text-red-500">
+                                <p className="mt-1 text-xs text-rose-500">
                                   {macErrors.macAddress}
                                 </p>
                               )}
@@ -909,7 +909,7 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
                               type="button"
                               onClick={() => handleDeleteMac(mac.id)}
                               disabled={saving || loading}
-                              className="rounded p-1 text-slate-500 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                              className="rounded p-1 text-slate-500 hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-900/20 dark:hover:text-rose-400"
                               aria-label="Delete MAC address"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -958,7 +958,7 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
                           className={fieldClass('macAddress', newMacErrors)}
                         />
                         {newMacErrors.macAddress && (
-                          <p className="mt-1 text-xs text-red-500">{newMacErrors.macAddress}</p>
+                          <p className="mt-1 text-xs text-rose-500">{newMacErrors.macAddress}</p>
                         )}
                       </div>
                     </div>

@@ -30,20 +30,7 @@ interface TicketDetailModalProps {
   onMutated: () => void;
 }
 
-const STATUS_COLOR: Record<TicketStatus, string> = {
-  submitted: 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800',
-  pending_approval: 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
-  waiting: 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
-  resolved: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
-  rejected: 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800',
-};
-const STATUS_LABEL: Record<TicketStatus, string> = {
-  submitted: 'Submitted - Pending Triage',
-  pending_approval: 'Awaiting Approval',
-  waiting: 'Waiting for Review',
-  resolved: 'Resolved',
-  rejected: 'Rejected',
-};
+import { STATUS_META } from '../data/statusMeta';
 
 const formatDate = (s: string) => {
   try {
@@ -343,8 +330,8 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
               {ticket?.code ?? '…'}
             </span>
             {ticket && (
-              <span className={`text-xs px-2.5 py-1 font-bold rounded border ${STATUS_COLOR[ticket.status]}`}>
-                {STATUS_LABEL[ticket.status]}
+              <span className={`text-xs px-2.5 py-1 font-bold rounded border ${STATUS_META[ticket.status].badge}`}>
+                {STATUS_META[ticket.status].longLabel}
               </span>
             )}
           </div>
