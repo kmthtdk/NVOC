@@ -99,11 +99,13 @@ export interface RequestTypeRow extends RowDataPacket {
 export interface DeviceRow extends RowDataPacket {
   id: number;
   code: string;
+  asset_code: string | null;
   device_type: string;
   model: string;
   serial_number: string;
   status: string;
   assigned_to: string | null;
+  assigned_user_id: number | null;
   department: string | null;
   purchase_date: string | null;
   warranty_expiry: string | null;
@@ -116,8 +118,12 @@ export interface DeviceRow extends RowDataPacket {
   cpu: string | null;
   ram_gb: number | null;
   storage_gb: number | null;
+  storage_type: string | null;
   gpu: string | null;
   psu_watts: number | null;
+  os: string | null;
+  os_version: string | null;
+  hostname: string | null;
   specs_json: string | null;
   created_at: string;
   updated_at: string;

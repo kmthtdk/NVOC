@@ -27,16 +27,28 @@ const macAddressSchema = z.object({
     .regex(MAC_ADDRESS_REGEX, 'MAC address must be in format 00:00:00:00:00:00'),
 });
 
+const STORAGE_TYPES = ['SSD', 'NVMe', 'HDD', 'eMMC', 'Hybrid'] as const;
+
 const specificationSchema = z.object({
   cpu: z.string().max(255).nullable().optional(),
   ramGb: z.number().int().min(1).max(1024).nullable().optional(),
   storageGb: z.number().int().min(1).max(10000).nullable().optional(),
+  storageType: z.enum(STORAGE_TYPES).nullable().optional(),
   gpu: z.string().max(255).nullable().optional(),
   psuWatts: z.number().int().min(0).max(2000).nullable().optional(),
+  os: z.string().max(60).nullable().optional(),
+  osVersion: z.string().max(60).nullable().optional(),
+  hostname: z.string().max(100).nullable().optional(),
+  // The long tail — individual RAM sticks, each disk, attached monitors,
+  // installed licences. Kept out of columns because nobody filters on them.
   additionalSpecs: z.record(z.string()).nullable().optional(),
 });
 
 export const createDeviceSchema = z.object({
+  // The finance asset tag. Optional by design: hardware arrives before
+  // accounting tags it, and demanding a value at intake just makes people
+  // invent one to get past the form.
+  assetCode: z.string().max(60).nullable().optional().default(null),
   deviceType: z.string().min(1, 'Device type is required').max(50),
   model: z.string().min(1, 'Model is required').max(150),
   serialNumber: z.string().min(1, 'Serial number is required').max(100),
@@ -171,6 +183,7 @@ export const deviceController = {
     }
 
     const device = await deviceRepo.create({
+      assetCode: body.assetCode,
       deviceType: body.deviceType,
       model: body.model,
       serialNumber: body.serialNumber,
@@ -313,7 +326,7 @@ export const deviceController = {
       throw AppError.notFound('Device not found');
     }
 
-    // Assign device and log history in a transaction
+    // Assign device, open the hand-over record, and log history — one transaction.
     const updated = await deviceRepo.assignToUser(
       deviceId,
       userId || null,
@@ -321,9 +334,38 @@ export const deviceController = {
       userEmail,
       userDept || null,
       ticketId || null,
-      reason || `Assigned to ${userName}`
+      reason || `Assigned to ${userName}`,
+      req.user?.name ?? 'System',
     );
     res.json({ device: updated });
+  },
+
+  /** GET /devices/:id/assignments — custody trail: every holder, and for how long. */
+  async getAssignmentHistory(req: Request, res: Response): Promise<void> {
+    const deviceId = parsePositiveInt(req.params.id, 'device id');
+    const assignments = await deviceRepo.getAssignmentHistory(deviceId);
+    res.json({ data: assignments });
+  },
+
+  /**
+   * GET /devices/assignments/by-user/:userId — everything one employee holds.
+   * The query this module exists for, and the one that could not be answered
+   * while custody was a name string.
+   */
+  async getAssignmentsByUser(req: Request, res: Response): Promise<void> {
+    const userId = parsePositiveInt(req.params.userId, 'user id');
+    const assignments = await deviceRepo.listOpenAssignmentsByUser(userId);
+    res.json({ data: assignments });
+  },
+
+  /**
+   * GET /devices/assignments/unresolved — backfilled hand-overs whose holder
+   * could not be matched to a user account. The migration refused to guess;
+   * this is the list a human has to work through.
+   */
+  async getUnresolvedAssignments(_req: Request, res: Response): Promise<void> {
+    const assignments = await deviceRepo.listUnresolvedAssignments();
+    res.json({ data: assignments, count: assignments.length });
   },
 
   /** POST /devices/:id/checkout — checkout/return a device. */

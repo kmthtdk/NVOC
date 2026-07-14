@@ -1,8 +1,9 @@
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { pool, withTransaction } from '../config/db.js';
 import type { DeviceRow, MacAddressRow } from './rows.js';
-import { mapDevice, mapMacAddress } from './mappers.js';
-import type { Device, DeviceStatus, DeviceActionType, MacAddress, MacAddressInput, DeviceSpecifications } from '../types/index.js';
+import { mapDevice, mapMacAddress, mapAssignment } from './mappers.js';
+import { AppError } from '../utils/AppError.js';
+import type { Device, DeviceStatus, DeviceActionType, MacAddress, MacAddressInput, DeviceSpecifications, DeviceAssignment } from '../types/index.js';
 
 /**
  * Device status -> device_history.action_type. Only the statuses that are not
@@ -33,6 +34,8 @@ export interface ReportFilters {
 }
 
 export interface CreateDeviceInput {
+  /** Finance asset tag. Optional: hardware arrives before accounting tags it. */
+  assetCode?: string | null;
   deviceType: string;
   model: string;
   serialNumber: string;
@@ -52,6 +55,7 @@ export interface CreateDeviceInput {
 }
 
 export interface UpdateDeviceInput {
+  assetCode?: string | null;
   deviceType?: string;
   model?: string;
   serialNumber?: string;
@@ -293,10 +297,13 @@ export const deviceRepo = {
 
       const [result] = await connection.execute(
         `INSERT INTO devices
-          (code, device_type, model, serial_number, status, assigned_to, department, purchase_date, warranty_expiry, supplier, purchase_cost, currency, po_number, invoice_no, notes, cpu, ram_gb, storage_gb, gpu, psu_watts, specs_json)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (code, asset_code, device_type, model, serial_number, status, assigned_to, department, purchase_date, warranty_expiry, supplier, purchase_cost, currency, po_number, invoice_no, notes, cpu, ram_gb, storage_gb, storage_type, gpu, psu_watts, os, os_version, hostname, specs_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           code,
+          // Empty string must become NULL: asset_code is UNIQUE, and '' is a real
+          // value that would collide on the second untagged device.
+          input.assetCode?.trim() || null,
           input.deviceType,
           input.model,
           input.serialNumber,
@@ -314,8 +321,12 @@ export const deviceRepo = {
           input.specifications?.cpu ?? null,
           input.specifications?.ramGb ?? null,
           input.specifications?.storageGb ?? null,
+          input.specifications?.storageType ?? null,
           input.specifications?.gpu ?? null,
           input.specifications?.psuWatts ?? null,
+          input.specifications?.os ?? null,
+          input.specifications?.osVersion ?? null,
+          input.specifications?.hostname ?? null,
           specsJson,
         ],
       );
@@ -406,6 +417,12 @@ export const deviceRepo = {
       sets.push('notes = ?');
       params.push(input.notes);
     }
+    if (input.assetCode !== undefined) {
+      sets.push('asset_code = ?');
+      // '' -> NULL: asset_code is UNIQUE, and an empty string is a real value
+      // that would collide the moment a second device is left untagged.
+      params.push(input.assetCode?.trim() || null);
+    }
 
     // Specifications
     if (input.specifications) {
@@ -421,6 +438,10 @@ export const deviceRepo = {
         sets.push('storage_gb = ?');
         params.push(input.specifications.storageGb);
       }
+      if (input.specifications.storageType !== undefined) {
+        sets.push('storage_type = ?');
+        params.push(input.specifications.storageType);
+      }
       if (input.specifications.gpu !== undefined) {
         sets.push('gpu = ?');
         params.push(input.specifications.gpu);
@@ -428,6 +449,18 @@ export const deviceRepo = {
       if (input.specifications.psuWatts !== undefined) {
         sets.push('psu_watts = ?');
         params.push(input.specifications.psuWatts);
+      }
+      if (input.specifications.os !== undefined) {
+        sets.push('os = ?');
+        params.push(input.specifications.os);
+      }
+      if (input.specifications.osVersion !== undefined) {
+        sets.push('os_version = ?');
+        params.push(input.specifications.osVersion);
+      }
+      if (input.specifications.hostname !== undefined) {
+        sets.push('hostname = ?');
+        params.push(input.specifications.hostname);
       }
       if (input.specifications.additionalSpecs !== undefined) {
         sets.push('specs_json = ?');
@@ -508,31 +541,106 @@ export const deviceRepo = {
    */
   async assignToUser(
     deviceId: number,
-    _userId: number | null,
+    userId: number | null,
     userName: string,
     userEmail: string,
     userDept: string | null,
     ticketId: number | null = null,
     reason: string | null = null,
+    assignedBy: string = 'System',
   ): Promise<Device> {
     return withTransaction(async (conn) => {
-      // Update device assignment and status
+      const label = `${userName} (${userEmail})`;
+
+      // Hand-over is a record now, not a string. `userId` used to be ignored
+      // (it was literally named _userId): custody was a free-text name, so
+      // "which assets does employee X hold?" was a string match that broke the
+      // moment anyone was renamed. This row is the answer instead.
+      //
+      // A device that is still open to somebody else must be checked in first —
+      // silently transferring it would erase the fact that the previous holder
+      // never gave it back. The UNIQUE index on the open row would reject this
+      // anyway; catching it here says why.
+      const [openRows] = await conn.query<RowDataPacket[]>(
+        'SELECT user_label FROM device_assignments WHERE device_id = ? AND returned_at IS NULL LIMIT 1',
+        [deviceId],
+      );
+      if (openRows.length > 0) {
+        throw AppError.conflict(
+          `This device is still assigned to ${openRows[0].user_label}. Check it in before re-issuing it.`,
+        );
+      }
+
       await conn.execute(
-        'UPDATE devices SET assigned_to = ?, status = ?, department = ?, updated_at = NOW() WHERE id = ?',
-        [`${userName} (${userEmail})`, 'Active', userDept || null, deviceId],
+        `INSERT INTO device_assignments
+           (device_id, user_id, user_label, department, assigned_by, ticket_id, note)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [deviceId, userId, label, userDept || null, assignedBy, ticketId, reason],
       );
 
-      // Log to device_history
+      await conn.execute(
+        `UPDATE devices
+            SET assigned_to = ?, assigned_user_id = ?, status = ?, department = ?, updated_at = NOW()
+          WHERE id = ?`,
+        [label, userId, 'Active', userDept || null, deviceId],
+      );
+
       await conn.execute(
         `INSERT INTO device_history (device_id, ticket_id, action_type, assigned_to, department, reason, created_by)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [deviceId, ticketId, 'assigned', userName, userDept || null, reason || `Assigned to ${userName}`, 'System'],
+        [deviceId, ticketId, 'assigned', label, userDept || null, reason || `Assigned to ${userName}`, assignedBy],
       );
 
       const device = await this.getByIdFull(deviceId, conn);
       if (!device) throw new Error('Device not found after assignment');
       return device;
     });
+  },
+
+  /** Custody trail for one device: every holder, and how long each had it. */
+  async getAssignmentHistory(deviceId: number): Promise<DeviceAssignment[]> {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT a.*, u.full_name AS user_full_name, u.email AS user_email
+         FROM device_assignments a
+         LEFT JOIN users u ON u.id = a.user_id
+        WHERE a.device_id = ?
+        ORDER BY a.assigned_at DESC, a.id DESC`,
+      [deviceId],
+    );
+    return rows.map(mapAssignment);
+  },
+
+  /**
+   * Everything one employee is currently holding. This is the query the whole
+   * table exists for — and the one that could not be answered reliably while
+   * custody was a name string. Matching on user_id, not on text.
+   */
+  async listOpenAssignmentsByUser(userId: number): Promise<DeviceAssignment[]> {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT a.*, d.code AS device_code, d.asset_code, d.device_type, d.model, d.serial_number
+         FROM device_assignments a
+         JOIN devices d ON d.id = a.device_id
+        WHERE a.user_id = ? AND a.returned_at IS NULL
+        ORDER BY a.assigned_at DESC`,
+      [userId],
+    );
+    return rows.map(mapAssignment);
+  },
+
+  /**
+   * Backfilled rows whose holder could not be resolved to a user account.
+   * The migration deliberately did not guess — assigning an asset to the wrong
+   * person is worse than admitting we do not know. This is the to-do list.
+   */
+  async listUnresolvedAssignments(): Promise<DeviceAssignment[]> {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT a.*, d.code AS device_code, d.device_type, d.model, d.serial_number
+         FROM device_assignments a
+         JOIN devices d ON d.id = a.device_id
+        WHERE a.user_id IS NULL AND a.returned_at IS NULL
+        ORDER BY d.code`,
+    );
+    return rows.map(mapAssignment);
   },
 
   /**
@@ -546,17 +654,45 @@ export const deviceRepo = {
     createdBy: string = 'System',
   ): Promise<Device> {
     return withTransaction(async (conn) => {
+      // Close the open hand-over. This is also what fixes the return trail: the
+      // history INSERT below used to omit assigned_to, so a device's timeline
+      // read "issued to A" -> "returned" -> "issued to B" with no way to tell who
+      // gave it back or how long they had it. `created_by` is the IT operator who
+      // pressed the button, not the holder.
+      const [openRows] = await conn.query<RowDataPacket[]>(
+        'SELECT id, user_label, department FROM device_assignments WHERE device_id = ? AND returned_at IS NULL LIMIT 1',
+        [deviceId],
+      );
+      const open = openRows[0];
+
+      if (open) {
+        await conn.execute(
+          `UPDATE device_assignments
+              SET returned_at = NOW(), returned_condition = ?, returned_by = ?
+            WHERE id = ?`,
+          [condition, createdBy, open.id],
+        );
+      }
+
       // Update device: clear assignment, set new status
       await conn.execute(
-        'UPDATE devices SET assigned_to = NULL, status = ?, updated_at = NOW() WHERE id = ?',
+        'UPDATE devices SET assigned_to = NULL, assigned_user_id = NULL, status = ?, updated_at = NOW() WHERE id = ?',
         [newStatus, deviceId],
       );
 
-      // Log to device_history
+      // Log to device_history — now naming the holder it came back from.
       await conn.execute(
-        `INSERT INTO device_history (device_id, action_type, condition_state, notes, created_by)
-         VALUES (?, ?, ?, ?, ?)`,
-        [deviceId, 'returned', condition, notes || null, createdBy],
+        `INSERT INTO device_history (device_id, action_type, assigned_to, department, condition_state, notes, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          deviceId,
+          'returned',
+          open?.user_label ?? null,
+          open?.department ?? null,
+          condition,
+          notes || null,
+          createdBy,
+        ],
       );
 
       // A checkout into In Repair/Retired/Lost is two events, not one: the device

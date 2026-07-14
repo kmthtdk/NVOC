@@ -39,8 +39,15 @@ deviceRoutes.get('/reports/stock-movement', authenticate, requireRole('it_suppor
 deviceRoutes.get('/reports/stock-by-type', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getStockByTypeReport));
 deviceRoutes.get('/reports/unassigned', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getUnassignedReport));
 deviceRoutes.get('/reports/by-user', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getByUserReport));
+
+// Custody. These sit above /:id for the same reason /search does — otherwise
+// 'assignments' would be parsed as a device id.
+deviceRoutes.get('/assignments/unresolved', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getUnresolvedAssignments));
+deviceRoutes.get('/assignments/by-user/:userId', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getAssignmentsByUser));
+
 deviceRoutes.get('/', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.list));
 deviceRoutes.get('/:id', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.get));
+deviceRoutes.get('/:id/assignments', authenticate, requireRole('it_support', 'admin'), asyncHandler(deviceController.getAssignmentHistory));
 
 // Mutations — it_support and admin.
 deviceRoutes.post(

@@ -1,4 +1,5 @@
 // snake_case row  ->  camelCase API shape. Single place where DB meets contract.
+import type { RowDataPacket } from 'mysql2';
 import { toIso, toDateOnly, parseJsonColumn } from '../utils/helpers.js';
 import type {
   Ticket,
@@ -11,6 +12,7 @@ import type {
   LinkedDevice,
   MacAddress,
   DeviceSpecifications,
+  DeviceAssignment,
 } from '../types/index.js';
 import type {
   UserRow,
@@ -136,8 +138,12 @@ export function mapDevice(
     cpu: r.cpu,
     ramGb: r.ram_gb,
     storageGb: r.storage_gb,
+    storageType: (r.storage_type as DeviceSpecifications['storageType']) ?? null,
     gpu: r.gpu,
     psuWatts: r.psu_watts,
+    os: r.os,
+    osVersion: r.os_version,
+    hostname: r.hostname,
     additionalSpecs,
   };
 
@@ -146,11 +152,13 @@ export function mapDevice(
   return {
     id: r.id,
     code: r.code,
+    assetCode: r.asset_code ?? null,
     deviceType: r.device_type,
     model: r.model,
     serialNumber: r.serial_number,
     status: r.status as any, // DeviceStatus type
     assignedTo: r.assigned_to,
+    assignedUserId: r.assigned_user_id ?? null,
     department: r.department,
     purchaseDate: toDateOnly(r.purchase_date),
     warrantyExpiry: toDateOnly(r.warranty_expiry),
@@ -165,5 +173,35 @@ export function mapDevice(
     linkedTickets,
     ...(macAddresses.length > 0 ? { macAddresses } : {}),
     ...(hasSpecs ? { specifications } : {}),
+  };
+}
+
+/**
+ * device_assignments row -> API shape. `userId` may legitimately be null: the
+ * backfill created rows for devices whose old free-text holder could not be
+ * resolved to an account, rather than dropping the fact that somebody has the
+ * machine. Those rows are surfaced for a human to fix, never guessed.
+ */
+export function mapAssignment(r: RowDataPacket): DeviceAssignment {
+  return {
+    id: r.id,
+    deviceId: r.device_id,
+    userId: r.user_id ?? null,
+    userLabel: r.user_label,
+    department: r.department ?? null,
+    assignedAt: toIso(r.assigned_at)!,
+    assignedBy: r.assigned_by ?? null,
+    ticketId: r.ticket_id ?? null,
+    returnedAt: r.returned_at ? toIso(r.returned_at) : null,
+    returnedCondition: r.returned_condition ?? null,
+    returnedBy: r.returned_by ?? null,
+    note: r.note ?? null,
+    ...(r.device_code !== undefined && {
+      deviceCode: r.device_code,
+      assetCode: r.asset_code ?? null,
+      deviceType: r.device_type,
+      model: r.model,
+      serialNumber: r.serial_number,
+    }),
   };
 }

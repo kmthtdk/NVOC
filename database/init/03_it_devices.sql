@@ -258,3 +258,68 @@ SELECT
   'System'
 FROM devices
 WHERE assigned_to IS NOT NULL;
+
+-- ============================================================================
+-- Asset tag + queryable PC/laptop configuration.
+-- asset_code is the FINANCE asset tag, a third identifier next to our own `code`
+-- and the vendor's `serial_number`. NULLABLE on purpose: hardware arrives before
+-- accounting tags it, and forcing a value at intake just makes people invent one.
+-- UNIQUE still holds for the rows that have one (MySQL allows many NULLs there).
+-- The columns below are the ones that get FILTERED on ("which machines are under
+-- 8GB", "how many still on Windows 10"); the long tail lives in specs_json.
+-- Mirrored by database/migrations/2026-07-14_01_asset_code_and_pc_specs.sql.
+-- ============================================================================
+ALTER TABLE devices
+ADD COLUMN asset_code   VARCHAR(60) NULL AFTER code,
+ADD COLUMN storage_type ENUM('SSD','NVMe','HDD','eMMC','Hybrid') NULL AFTER storage_gb,
+ADD COLUMN os           VARCHAR(60)  NULL AFTER psu_watts,
+ADD COLUMN os_version   VARCHAR(60)  NULL AFTER os,
+ADD COLUMN hostname     VARCHAR(100) NULL AFTER os_version,
+ADD UNIQUE KEY uq_devices_asset_code (asset_code),
+ADD INDEX idx_devices_os (os),
+ADD INDEX idx_devices_storage_type (storage_type),
+ADD INDEX idx_devices_hostname (hostname);
+
+-- ============================================================================
+-- DEVICE_ASSIGNMENTS — who holds which device, as a record rather than a string.
+-- An open row (returned_at IS NULL) is the current holder; closed rows are the
+-- custody history. See migrations/2026-07-14_02_device_assignments.sql for the
+-- full rationale and the backfill of the old free-text devices.assigned_to.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS device_assignments (
+  id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  device_id          INT UNSIGNED    NOT NULL,
+  user_id            BIGINT UNSIGNED NULL,
+  user_label         VARCHAR(190)    NOT NULL,
+  department         VARCHAR(100)    NULL,
+
+  assigned_at        TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  assigned_by        VARCHAR(150)    NULL,
+  ticket_id          BIGINT UNSIGNED NULL,
+
+  returned_at        TIMESTAMP       NULL,
+  returned_condition ENUM('good','damaged','unknown') NULL,
+  returned_by        VARCHAR(150)    NULL,
+  note               TEXT            NULL,
+
+  -- At most one OPEN assignment per device. VIRTUAL, not STORED: MySQL forbids
+  -- ON DELETE CASCADE on a column a STORED generated column derives from, and
+  -- this derives from device_id. VIRTUAL still takes the UNIQUE index.
+  active_device_id   INT UNSIGNED GENERATED ALWAYS AS (IF(returned_at IS NULL, device_id, NULL)) VIRTUAL,
+
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_da_active_device (active_device_id),
+  KEY idx_da_device (device_id),
+  KEY idx_da_user (user_id),
+  KEY idx_da_ticket (ticket_id),
+  KEY idx_da_open (returned_at),
+  CONSTRAINT fk_da_device FOREIGN KEY (device_id) REFERENCES devices (id) ON DELETE CASCADE,
+  CONSTRAINT fk_da_user   FOREIGN KEY (user_id)   REFERENCES users (id)   ON DELETE SET NULL,
+  CONSTRAINT fk_da_ticket FOREIGN KEY (ticket_id) REFERENCES tickets (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE devices
+ADD COLUMN assigned_user_id BIGINT UNSIGNED NULL AFTER assigned_to,
+ADD INDEX idx_devices_assigned_user (assigned_user_id),
+ADD CONSTRAINT fk_devices_assigned_user
+  FOREIGN KEY (assigned_user_id) REFERENCES users (id) ON DELETE SET NULL;

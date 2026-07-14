@@ -114,23 +114,70 @@ export interface MacAddressInput {
   macAddress: string;
 }
 
+export type StorageType = 'SSD' | 'NVMe' | 'HDD' | 'eMMC' | 'Hybrid';
+
+/**
+ * The named fields are the ones stored as real columns, because they are the ones
+ * people filter and report on ("which machines are under 8GB?", "how many are
+ * still on Windows 10?"). `additionalSpecs` carries the long tail — individual
+ * RAM sticks, each disk, attached monitors, installed licences — in specs_json.
+ */
 export interface DeviceSpecifications {
   cpu?: string | null;
   ramGb?: number | null;
   storageGb?: number | null;
+  storageType?: StorageType | null;
   gpu?: string | null;
   psuWatts?: number | null;
+  os?: string | null;
+  osVersion?: string | null;
+  hostname?: string | null;
   additionalSpecs?: Record<string, string> | null;
+}
+
+/**
+ * One hand-over of one device to one person. An open row (returnedAt === null)
+ * is the current holder; closed rows are the custody history.
+ */
+export interface DeviceAssignment {
+  id: number;
+  deviceId: number;
+  /** null only for rows the backfill could not resolve to a user — needs review. */
+  userId: number | null;
+  userLabel: string;
+  department: string | null;
+  assignedAt: string;
+  assignedBy: string | null;
+  ticketId: number | null;
+  returnedAt: string | null;
+  returnedCondition: 'good' | 'damaged' | 'unknown' | null;
+  returnedBy: string | null;
+  note: string | null;
+  /** Joined in by the queries that need them. */
+  deviceCode?: string;
+  assetCode?: string | null;
+  deviceType?: string;
+  model?: string;
+  serialNumber?: string;
 }
 
 export interface Device {
   id: number;
+  /** Our own code, system-generated: ITA-2026-0001. */
   code: string;
+  /**
+   * The finance asset tag (sổ tài sản cố định) — a third identifier alongside
+   * `code` and the vendor's `serialNumber`. Nullable: hardware arrives before
+   * accounting tags it.
+   */
+  assetCode: string | null;
   deviceType: string;
   model: string;
   serialNumber: string;
   status: DeviceStatus;
+  /** Denormalized label of the current holder. `assignedUserId` is the real link. */
   assignedTo: string | null;
+  assignedUserId: number | null;
   department: string | null;
   purchaseDate: string | null;
   warrantyExpiry: string | null;
