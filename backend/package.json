@@ -1,6 +1,6 @@
 {
   "name": "n-voc-backend",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "N-VOC Request System — Express + MySQL backend",
   "type": "module",
   "main": "dist/index.js",
