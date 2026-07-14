@@ -10,16 +10,22 @@
 // ============================================================================
 
 import { test, expect } from './fixtures';
-import { getToken, createInStockDevice, deleteDevice, createHardwareTicket } from './fixtures';
+import { getToken, createInStockDevice, deleteDevice, deleteTicket, createHardwareTicket, API_BASE } from './fixtures';
 
 const ADMIN = { email: 'admin@company.com', password: 'Passw0rd!' };
 const REQUESTER = { email: 'alex.mercer@company.com', password: 'Passw0rd!' };
 
 test.describe('Workflow 2: Device Checkout / Return', () => {
   let adminToken: string;
+  // Every ticket this file creates, so none of them are left in a real queue.
+  const createdTicketIds: string[] = [];
 
   test.beforeAll(async ({ request }) => {
     adminToken = await getToken(request, ADMIN.email, ADMIN.password);
+  });
+
+  test.afterAll(async ({ request }) => {
+    for (const id of createdTicketIds) await deleteTicket(request, adminToken, id);
   });
 
   // ---- Happy path: good condition return → In Stock ---------------------------
@@ -29,14 +35,14 @@ test.describe('Workflow 2: Device Checkout / Return', () => {
   }) => {
     // Arrange: create an Active device (assign it first)
     const device = await createInStockDevice(request, adminToken);
-    const assignRes = await request.put(
-      `http://localhost:4000/api/devices/${device.id}/assign`,
+    const assignRes = await request.post(
+      `${API_BASE}/devices/${device.id}/assign`,
       {
         headers: { Authorization: `Bearer ${adminToken}` },
         data: {
-          assignedTo: 'Alex Mercer',
-          assignedEmail: REQUESTER.email,
-          department: 'R&D',
+          userName: 'Alex Mercer',
+          userEmail: REQUESTER.email,
+          userDept: 'R&D',
           reason: 'E2E checkout test setup',
         },
       },
@@ -45,7 +51,7 @@ test.describe('Workflow 2: Device Checkout / Return', () => {
 
     // Act: checkout the device in "good" condition (return)
     const checkoutRes = await request.post(
-      `http://localhost:4000/api/devices/${device.id}/checkout`,
+      `${API_BASE}/devices/${device.id}/checkout`,
       {
         headers: { Authorization: `Bearer ${adminToken}` },
         data: {
@@ -58,7 +64,7 @@ test.describe('Workflow 2: Device Checkout / Return', () => {
     expect([200, 204]).toContain(checkoutRes.status());
 
     // Assert in UI: navigate to Device Inventory and verify status
-    await adminPage.goto('http://localhost:3000/admin/devices');
+    await adminPage.goto('/admin/devices');
     await expect(adminPage.getByRole('heading', { name: 'Device Inventory' })).toBeVisible();
 
     const row = adminPage.locator('tr', { hasText: device.code });
@@ -78,19 +84,19 @@ test.describe('Workflow 2: Device Checkout / Return', () => {
   }) => {
     // Arrange: create and assign a device
     const device = await createInStockDevice(request, adminToken, { model: 'Damaged Laptop E2E' });
-    await request.put(`http://localhost:4000/api/devices/${device.id}/assign`, {
+    await request.post(`${API_BASE}/devices/${device.id}/assign`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
-        assignedTo: 'Alex Mercer',
-        assignedEmail: REQUESTER.email,
-        department: 'R&D',
+        userName: 'Alex Mercer',
+        userEmail: REQUESTER.email,
+        userDept: 'R&D',
         reason: 'E2E damaged checkout setup',
       },
     });
 
     // Act: checkout as damaged (replace action)
     const checkoutRes = await request.post(
-      `http://localhost:4000/api/devices/${device.id}/checkout`,
+      `${API_BASE}/devices/${device.id}/checkout`,
       {
         headers: { Authorization: `Bearer ${adminToken}` },
         data: {
@@ -103,7 +109,7 @@ test.describe('Workflow 2: Device Checkout / Return', () => {
     expect([200, 204]).toContain(checkoutRes.status());
 
     // Assert in UI: device must be "In Repair"
-    await adminPage.goto('http://localhost:3000/admin/devices');
+    await adminPage.goto('/admin/devices');
     await expect(adminPage.getByRole('heading', { name: 'Device Inventory' })).toBeVisible();
 
     const row = adminPage.locator('tr', { hasText: device.code });
@@ -123,12 +129,12 @@ test.describe('Workflow 2: Device Checkout / Return', () => {
   }) => {
     // Arrange: device + active assignment + return ticket
     const device = await createInStockDevice(request, adminToken, { model: 'Modal Test Laptop' });
-    await request.put(`http://localhost:4000/api/devices/${device.id}/assign`, {
+    await request.post(`${API_BASE}/devices/${device.id}/assign`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
-        assignedTo: 'Alex Mercer',
-        assignedEmail: REQUESTER.email,
-        department: 'R&D',
+        userName: 'Alex Mercer',
+        userEmail: REQUESTER.email,
+        userDept: 'R&D',
         reason: 'Modal test setup',
       },
     });
@@ -141,10 +147,11 @@ test.describe('Workflow 2: Device Checkout / Return', () => {
       'Alex Mercer',
       REQUESTER.email,
     );
+    createdTicketIds.push(ticket.id);
 
     // Link device to ticket via API so the dispatch console can detect the workflow
     const linkRes = await request.post(
-      `http://localhost:4000/api/tickets/${ticket.id}/devices`,
+      `${API_BASE}/tickets/${ticket.id}/devices`,
       {
         headers: { Authorization: `Bearer ${adminToken}` },
         data: { deviceId: device.id, actionType: 'return' },
@@ -156,7 +163,7 @@ test.describe('Workflow 2: Device Checkout / Return', () => {
     }
 
     // Navigate to admin ticket dispatch
-    await adminPage.goto('http://localhost:3000/admin/tickets');
+    await adminPage.goto('/admin/tickets');
     await expect(adminPage.getByText('IT Specialist Dispatch')).toBeVisible({ timeout: 10_000 });
 
     // Select the ticket in the dispatch select

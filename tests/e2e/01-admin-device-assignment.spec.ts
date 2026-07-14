@@ -14,10 +14,19 @@
 // ============================================================================
 
 import { test, expect } from './fixtures';
-import { getToken, createInStockDevice, deleteDevice } from './fixtures';
+import { getToken, createInStockDevice, deleteDevice, API_BASE } from './fixtures';
 
 const ADMIN = { email: 'admin@company.com', password: 'Passw0rd!' };
-const ASSIGNEE = { name: 'Jane Doe E2E', email: 'jane.doe@company.com', dept: 'Engineering' };
+// A REAL account, from the seed. `jane.doe@company.com` was invented by this test
+// and has no user row, so the assign endpoint now — correctly — rejects it with a
+// 400: custody is a foreign key to a person, not a free-text label, and writing a
+// NULL user_id for an email nobody owns is the exact silent-orphan bug the
+// device_assignments work exists to prevent. The test was asserting the old model.
+const ASSIGNEE = {
+  name: 'Alex Mercer',
+  email: 'alex.mercer@company.com',
+  dept: 'R&D / Software Engineering',
+};
 
 test.describe('Workflow 1: Admin Device Assignment', () => {
   let deviceId: number;
@@ -37,11 +46,11 @@ test.describe('Workflow 1: Admin Device Assignment', () => {
   });
 
   test('should display In Stock device in Device Inventory', async ({ adminPage }) => {
-    await adminPage.goto('http://localhost:3000/admin/tickets');
+    await adminPage.goto('/admin/tickets');
     await expect(adminPage.getByRole('heading', { name: 'Ticket Queue' })).toBeVisible();
 
     // Switch to the Devices tab
-    await adminPage.goto('http://localhost:3000/admin/devices');
+    await adminPage.goto('/admin/devices');
     await expect(adminPage.getByRole('heading', { name: 'Device Inventory' })).toBeVisible();
 
     // The newly created device should appear in the inventory table
@@ -59,14 +68,14 @@ test.describe('Workflow 1: Admin Device Assignment', () => {
     request,
   }) => {
     // Assign device via the API (mirrors what the UI dispatch console does internally)
-    const assignRes = await request.put(
-      `http://localhost:4000/api/devices/${deviceId}/assign`,
+    const assignRes = await request.post(
+      `${API_BASE}/devices/${deviceId}/assign`,
       {
         headers: { Authorization: `Bearer ${adminToken}` },
         data: {
-          assignedTo: ASSIGNEE.name,
-          assignedEmail: ASSIGNEE.email,
-          department: ASSIGNEE.dept,
+          userName: ASSIGNEE.name,
+          userEmail: ASSIGNEE.email,
+          userDept: ASSIGNEE.dept,
           reason: 'E2E assignment test',
         },
       },
@@ -75,7 +84,7 @@ test.describe('Workflow 1: Admin Device Assignment', () => {
     expect([200, 204]).toContain(assignRes.status());
 
     // Navigate to the device inventory and reload to pick up the new state
-    await adminPage.goto('http://localhost:3000/admin/devices');
+    await adminPage.goto('/admin/devices');
     await expect(adminPage.getByRole('heading', { name: 'Device Inventory' })).toBeVisible();
 
     // Device row must now show "Active" status
@@ -90,7 +99,7 @@ test.describe('Workflow 1: Admin Device Assignment', () => {
   });
 
   test('should show device in filtered Active view', async ({ adminPage }) => {
-    await adminPage.goto('http://localhost:3000/admin/devices');
+    await adminPage.goto('/admin/devices');
 
     // Filter by Active status
     await adminPage.locator('select').selectOption('Active');

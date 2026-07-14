@@ -11,7 +11,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ADMIN_AUTH_FILE = path.join(__dirname, '.auth/admin.json');
 const REQUESTER_AUTH_FILE = path.join(__dirname, '.auth/requester.json');
 
-const BASE = 'http://localhost:3000';
+const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 
 // Shared login helper — fills the sign-in form and waits until the app
 // transitions away from the login gate (the IT Admin button or the portal
@@ -22,8 +22,20 @@ async function loginAs(page: import('@playwright/test').Page, email: string, pas
   await page.locator('input[type="password"]').fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
 
-  // Wait for the authenticated shell to appear (header contains N-VOC SYSTEM).
-  await expect(page.getByText('N-VOC SYSTEM')).toBeVisible({ timeout: 15_000 });
+  // Wait for something that exists ONLY once you are through the gate.
+  //
+  // This used to wait for "N-VOC SYSTEM" — which is the wordmark on the LOGIN
+  // PAGE ITSELF. So the setup passed even when the login had failed, and every
+  // spec then ran against a storageState containing no token at all. A failed
+  // sign-in reported success; that is how two whole runs died on 429s downstream
+  // instead of failing here, where the actual problem was.
+  await expect(page.getByRole('button', { name: /^Search tickets/ })).toBeVisible({
+    timeout: 15_000,
+  });
+
+  // And prove the token really landed, rather than trusting the DOM.
+  const token = await page.evaluate(() => localStorage.getItem('nvoc_token'));
+  expect(token, `signed in as ${email} but no nvoc_token was stored`).toBeTruthy();
 }
 
 // ----- Admin / IT Support -----

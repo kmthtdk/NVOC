@@ -14,7 +14,7 @@
 // ============================================================================
 
 import { test, expect } from './fixtures';
-import { getToken, deleteDevice } from './fixtures';
+import { getToken, deleteDevice, deleteTicket, API_BASE } from './fixtures';
 
 const ADMIN = { email: 'admin@company.com', password: 'Passw0rd!' };
 const REQUESTER = {
@@ -37,11 +37,12 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
 
   test.afterAll(async ({ request }) => {
     if (deviceId) await deleteDevice(request, adminToken, deviceId);
+    await deleteTicket(request, adminToken, ticketId);
   });
 
   // ---- Step 1: Create device via UI -----------------------------------------
   test('should create a new device via the Add Device form', async ({ adminPage }) => {
-    await adminPage.goto('http://localhost:3000/admin/devices');
+    await adminPage.goto('/admin/devices');
     await expect(adminPage.getByRole('heading', { name: 'Device Inventory' })).toBeVisible();
 
     // Open the Add Device modal
@@ -54,18 +55,19 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
     // Fill in device form fields
     await modal.locator('select').first().selectOption('laptop');
 
-    const modelInput = modal.locator('input[placeholder*="Model" i], input[placeholder*="model" i]').first();
-    await modelInput.fill('ThinkPad E2E Admin Test');
+    // The placeholders are EXAMPLES ("Dell Latitude 7440", "SN-XXXX-0000"), not the
+    // words "Model" and "Serial" — so these selectors matched nothing and the test
+    // hung for 30 seconds on a form that was on screen and perfectly fine.
+    await modal.getByPlaceholder(/Dell Latitude/i).fill('ThinkPad E2E Admin Test');
 
     deviceSerial = `SN-WF4-${Date.now()}`;
-    const serialInput = modal.locator('input[placeholder*="Serial" i], input[placeholder*="serial" i]').first();
-    await serialInput.fill(deviceSerial);
+    await modal.getByPlaceholder(/SN-XXXX/i).fill(deviceSerial);
 
-    // Set initial status to "In Stock" via the status dropdown
-    const statusSelect = modal.locator('select', { hasText: 'In Stock' }).or(
-      modal.locator('select').nth(1),
-    );
-    await statusSelect.selectOption('In Stock');
+    // Status is the second select in the modal. The old locator was
+    // `select` filtered by hasText('In Stock') OR-ed with nth(1) — hasText matches
+    // on the element's text, and a <select>'s text is all of its options, so that
+    // filter matched every select and the `.or()` resolved ambiguously.
+    await modal.locator('select').nth(1).selectOption('In Stock');
 
     await adminPage.screenshot({ path: 'tests/e2e/screenshots/04-01-add-device-form.png' });
 
@@ -93,14 +95,14 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
     request,
   }) => {
     // Assign via API (same path the DeviceAssignmentModal takes)
-    const assignRes = await request.put(
-      `http://localhost:4000/api/devices/${deviceId}/assign`,
+    const assignRes = await request.post(
+      `${API_BASE}/devices/${deviceId}/assign`,
       {
         headers: { Authorization: `Bearer ${adminToken}` },
         data: {
-          assignedTo: REQUESTER.name,
-          assignedEmail: REQUESTER.email,
-          department: 'R&D / Software Engineering',
+          userName: REQUESTER.name,
+          userEmail: REQUESTER.email,
+          userDept: 'R&D / Software Engineering',
           reason: 'Workflow 4 E2E: admin simulation assign',
         },
       },
@@ -108,7 +110,7 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
     expect([200, 204]).toContain(assignRes.status());
 
     // Refresh Device Inventory and confirm row shows Active + requester name
-    await adminPage.goto('http://localhost:3000/admin/devices');
+    await adminPage.goto('/admin/devices');
     await expect(adminPage.getByRole('heading', { name: 'Device Inventory' })).toBeVisible();
 
     const row = adminPage.locator('tr', { hasText: deviceCode });
@@ -124,7 +126,7 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
     const requesterToken = await getToken(request, REQUESTER.email, REQUESTER.password);
 
     // Create a hardware_request ticket as the requester
-    const ticketRes = await request.post('http://localhost:4000/api/tickets', {
+    const ticketRes = await request.post(`${API_BASE}/tickets`, {
       headers: { Authorization: `Bearer ${requesterToken}` },
       data: {
         title: 'WF4 E2E — ThinkPad new assignment request',
@@ -145,7 +147,7 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
 
     // Link device to ticket
     const linkRes = await request.post(
-      `http://localhost:4000/api/tickets/${ticketId}/devices`,
+      `${API_BASE}/tickets/${ticketId}/devices`,
       {
         headers: { Authorization: `Bearer ${adminToken}` },
         data: { deviceId, actionType: 'new' },
@@ -162,7 +164,7 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
     adminPage,
     request,
   }) => {
-    const updateRes = await request.put(`http://localhost:4000/api/tickets/${ticketId}`, {
+    const updateRes = await request.put(`${API_BASE}/tickets/${ticketId}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
         status: 'waiting',
@@ -173,7 +175,7 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
     expect([200, 204]).toContain(updateRes.status());
 
     // Verify in UI — open ticket detail from Admin view
-    await adminPage.goto('http://localhost:3000/admin/tickets');
+    await adminPage.goto('/admin/tickets');
     await expect(adminPage.getByText('IT Specialist Dispatch')).toBeVisible({ timeout: 10_000 });
 
     // Find and click on the ticket in the ticket list
@@ -193,7 +195,7 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
     adminPage,
     request,
   }) => {
-    const updateRes = await request.put(`http://localhost:4000/api/tickets/${ticketId}`, {
+    const updateRes = await request.put(`${API_BASE}/tickets/${ticketId}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
       data: {
         status: 'resolved',
@@ -204,7 +206,7 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
     expect([200, 204]).toContain(updateRes.status());
 
     // Verify ticket status via API
-    const checkRes = await request.get(`http://localhost:4000/api/tickets/${ticketId}`, {
+    const checkRes = await request.get(`${API_BASE}/tickets/${ticketId}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     expect(checkRes.status()).toBe(200);
@@ -217,7 +219,7 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
   // ---- Step 5: Verify device history -----------------------------------------
   test('should verify device audit history contains all actions', async ({ request }) => {
     // Fetch full device record to check history entries
-    const res = await request.get(`http://localhost:4000/api/devices/${deviceId}`, {
+    const res = await request.get(`${API_BASE}/devices/${deviceId}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     expect(res.status()).toBe(200);
@@ -241,7 +243,7 @@ test.describe('Workflow 4: Admin Simulation — Full CRUD + State Transitions', 
 
   // ---- Step 6: Requester sees final ticket state ------------------------------
   test('requester should see resolved ticket with device history', async ({ requesterPage }) => {
-    await requesterPage.goto('http://localhost:3000/requests');
+    await requesterPage.goto('/requests');
 
     // Find the ticket
     await expect(

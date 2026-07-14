@@ -11,7 +11,7 @@
 // ============================================================================
 
 import { test, expect } from './fixtures';
-import { getToken, createInStockDevice, deleteDevice } from './fixtures';
+import { getToken, createInStockDevice, deleteDevice, deleteTicket, API_BASE } from './fixtures';
 
 const ADMIN = { email: 'admin@company.com', password: 'Passw0rd!' };
 
@@ -34,19 +34,22 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
 
   test.afterAll(async ({ request }) => {
     await deleteDevice(request, adminToken, deviceId);
+    await deleteTicket(request, adminToken, ticketId);
   });
 
   test('requester should submit a hardware request ticket and receive a ticket code', async ({
     requesterPage,
   }) => {
-    await requesterPage.goto('http://localhost:3000/requests/new');
+    await requesterPage.goto('/requests/new');
 
     // Select Hardware Request category
     await requesterPage.getByText('Hardware Request').click();
     await expect(requesterPage.getByText('Hardware Request')).toBeVisible();
 
     // Fill in the request title
-    const titleInput = requesterPage.locator('input[placeholder*="title" i], input[placeholder*="subject" i]').first();
+    // The title field's placeholder is an example, not the word 'title' — the old
+    // selector matched nothing and the test sat there for 30s. Anchor on the real one.
+    const titleInput = requesterPage.getByPlaceholder(/Create Marketing shared directory/i);
     await titleInput.fill('E2E Workflow3 — Laptop for development');
 
     // Fill in description
@@ -56,13 +59,17 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
     // Submit the form
     await requesterPage.getByRole('button', { name: /Submit|Send Request/i }).click();
 
-    // A confirmation modal or success message should appear with the ticket code
+    // Ticket codes are per-category now — HW-2026-0001, GR-2026-0001 — allocated
+    // from a per-(prefix, year) counter. The old REQ-/TKT- shapes this test looked
+    // for have not been issued for a long time, so it could never have matched.
+    const TICKET_CODE = /[A-Z]{2,3}-\d{4}-\d{4}/;
+
     await expect(
-      requesterPage.locator('[role="dialog"], .bg-white').getByText(/REQ-\d{4}-\d{4}|TKT-\d+/),
+      requesterPage.locator('[role="dialog"], .bg-white').getByText(TICKET_CODE),
     ).toBeVisible({ timeout: 12_000 });
 
     // Capture ticket code for later assertions
-    const codeEl = requesterPage.locator('text=/REQ-\\d{4}-\\d{4}|TKT-\\d+/').first();
+    const codeEl = requesterPage.getByText(TICKET_CODE).first();
     ticketCode = (await codeEl.textContent()) ?? '';
     expect(ticketCode).toBeTruthy();
 
@@ -76,7 +83,7 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
     request,
   }) => {
     // Fetch the ticket code via API so we can reference it regardless of UI timing
-    const res = await request.get(`http://localhost:4000/api/tickets?category=hardware_request&status=submitted&pageSize=20`, {
+    const res = await request.get(`${API_BASE}/tickets?category=hardware_request&status=submitted&pageSize=20`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     expect(res.status()).toBe(200);
@@ -88,7 +95,7 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
     ticketCode = wf3Ticket!.code;
 
     // Navigate to Admin Workspace
-    await adminPage.goto('http://localhost:3000/admin/tickets');
+    await adminPage.goto('/admin/tickets');
     await expect(adminPage.getByText('IT Specialist Dispatch')).toBeVisible({ timeout: 10_000 });
 
     // The ticket should be selectable in the dispatch console
@@ -105,7 +112,7 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
   }) => {
     // Link the In Stock device to the ticket
     const linkRes = await request.post(
-      `http://localhost:4000/api/tickets/${ticketId}/devices`,
+      `${API_BASE}/tickets/${ticketId}/devices`,
       {
         headers: { Authorization: `Bearer ${adminToken}` },
         data: { deviceId, actionType: 'new' },
@@ -118,7 +125,7 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
 
     // Update ticket status to "waiting" with a note
     const updateRes = await request.put(
-      `http://localhost:4000/api/tickets/${ticketId}`,
+      `${API_BASE}/tickets/${ticketId}`,
       {
         headers: { Authorization: `Bearer ${adminToken}` },
         data: {
@@ -136,7 +143,7 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
     // and /new renders only the form. The regex that rewrote these navigations
     // mapped every root-goto to /requests/new, which is right for filing a
     // request and wrong for reading one back.
-    await requesterPage.goto('http://localhost:3000/requests');
+    await requesterPage.goto('/requests');
 
     // Find the ticket in the list — look for the ticket code or title
     await expect(
