@@ -3,6 +3,7 @@ import { pool, withTransaction } from '../config/db.js';
 import type { DeviceRow, MacAddressRow } from './rows.js';
 import { mapDevice, mapMacAddress, mapAssignment } from './mappers.js';
 import { AppError } from '../utils/AppError.js';
+import { likeContains } from '../utils/search.js';
 import type { Device, DeviceStatus, DeviceActionType, MacAddress, MacAddressInput, DeviceSpecifications, DeviceAssignment } from '../types/index.js';
 
 /**
@@ -209,9 +210,16 @@ export const deviceRepo = {
       params.push(filters.department);
     }
     if (filters.q && filters.q.trim()) {
-      // Search across code, model, serial number
-      where.push('MATCH(code, model, serial_number) AGAINST (? IN NATURAL LANGUAGE MODE)');
-      params.push(filters.q.trim());
+      // Fulltext over (code, model, serial_number), OR a LIKE across the three
+      // identifiers people actually paste. Fulltext tokenises on word boundaries,
+      // so a hyphenated code/serial never matched, and `asset_code` was never in
+      // the index at all — yet it is the number printed on the sticker.
+      where.push(
+        `(MATCH(code, model, serial_number) AGAINST (? IN NATURAL LANGUAGE MODE)
+          OR code LIKE ? OR serial_number LIKE ? OR asset_code LIKE ?)`,
+      );
+      const like = likeContains(filters.q);
+      params.push(filters.q.trim(), like, like, like);
     }
 
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';

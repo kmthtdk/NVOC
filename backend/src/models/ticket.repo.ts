@@ -6,6 +6,7 @@ import { commentRepo, historyRepo } from './comment.repo.js';
 import { attachmentRepo } from './attachment.repo.js';
 import { deviceRepo } from './device.repo.js';
 import { approvalRepo } from './approval.repo.js';
+import { likeContains } from '../utils/search.js';
 import type {
   Ticket,
   TicketPriority,
@@ -122,9 +123,14 @@ export const ticketRepo = {
       params.push(filters.requesterEmail);
     }
     if (filters.q && filters.q.trim()) {
-      // FULLTEXT over (title, description, requester_name); falls back gracefully.
-      where.push('MATCH(title, description, requester_name) AGAINST (? IN NATURAL LANGUAGE MODE)');
-      params.push(filters.q.trim());
+      // FULLTEXT over (title, description, requester_name), OR the code.
+      // `code` is not in the fulltext index and would not tokenise usefully if it
+      // were ("GR-2026-0001" is not a word), so pasting a ticket reference — the
+      // most common thing anyone types into a search box — found nothing at all.
+      where.push(
+        '(MATCH(title, description, requester_name) AGAINST (? IN NATURAL LANGUAGE MODE) OR code LIKE ?)',
+      );
+      params.push(filters.q.trim(), likeContains(filters.q));
     }
 
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';

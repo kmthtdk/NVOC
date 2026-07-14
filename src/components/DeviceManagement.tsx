@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, AlertCircle } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import { useToast } from '../context/ToastContext';
@@ -19,12 +20,23 @@ interface Device {
 
 export default function DeviceManagement() {
   const toast = useToast();
+  // Seeded from ?q= so the command bar can hand a device straight to this list
+  // instead of dropping you on an unfiltered inventory and wishing you luck.
+  const [searchParams] = useSearchParams();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') ?? '');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [showFormModal, setShowFormModal] = useState(false);
+
+  // The initial state above only runs on mount. Searching from the command bar
+  // while already on this page changes the URL without remounting, so without
+  // this the list would sit there ignoring the term you just picked.
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q !== null) setSearchTerm(q);
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchDevices = async () => {

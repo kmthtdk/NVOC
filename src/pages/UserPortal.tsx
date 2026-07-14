@@ -12,8 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import RequestForm from '../components/RequestForm';
 import { LoadingPanel, ErrorState } from '../components/ui/Spinner';
 import {
-  Activity, AlertCircle, CheckCircle2, Clock, FilePlus2, Inbox, MessageSquare, Send,
-  ShieldCheck, XCircle,
+  Activity, AlertCircle, CheckCircle2, Clock, MessageSquare, Send, ShieldCheck, XCircle,
 } from 'lucide-react';
 
 export default function UserPortal({
@@ -80,13 +79,6 @@ export default function UserPortal({
     onTabChange('requests');
   };
 
-  const tabCls = (t: 'new' | 'requests') =>
-    `flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 transition-colors ${
-      tab === t
-        ? 'border-violet-500 text-violet-600 dark:text-violet-400'
-        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-    }`;
-
   const firstName = (user?.fullName ?? 'there').split(' ')[0];
   const isOpen = (t: Ticket) => isOpenStatus(t.status);
   const openCount = listToShow.filter(isOpen).length;
@@ -130,37 +122,26 @@ export default function UserPortal({
 
   return (
     <div className="space-y-6">
-      {/* Welcome hero (stitch user-dashboard) */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-800 via-violet-700 to-violet-600 text-white p-6 sm:p-8 shadow-sm">
+      {/* Welcome hero (stitch user-dashboard). The tab bar that used to sit under
+          it is gone — the rail owns navigation now. */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-800 via-violet-700 to-violet-600 p-6 text-white shadow-sm sm:p-8">
         <div className="relative z-10">
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Welcome back, {firstName}!</h2>
-          <p className="mt-1.5 text-sm text-white/80 max-w-2xl leading-relaxed">
+          <h2 className="font-display text-[32px] font-bold leading-tight tracking-tight lg:text-[40px]">
+            Welcome back, {firstName}
+          </h2>
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-white/80">
             {listToShow.length === 0 ? (
-              <>You have no requests yet. Use <span className="font-semibold text-white">Create Request</span> to file your first VOC.</>
+              <>You have no requests yet. <span className="font-semibold text-white">New Request</span> files your first one.</>
             ) : (
               <>
                 You have <span className="font-bold text-white">{openCount}</span> open request{openCount === 1 ? '' : 's'}
                 {resolvedCount > 0 && <> · <span className="font-bold text-white">{resolvedCount}</span> resolved</>}.
-                Track status or chat with IT under <span className="font-semibold text-white">Your VOC Requests</span>.
               </>
             )}
           </p>
         </div>
         {/* subtle grid texture */}
         <div className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(rgba(255,255,255,.6)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.6)_1px,transparent_1px)] [background-size:22px_22px]" />
-      </div>
-
-      {/* Portal tabs — Create Request vs the requester's own VOC list */}
-      <div className="flex gap-1 border-b border-slate-200 dark:border-slate-800">
-        <button type="button" onClick={() => onTabChange('new')} className={tabCls('new')}>
-          <FilePlus2 className="w-4 h-4" /> Create Request
-        </button>
-        <button type="button" onClick={() => onTabChange('requests')} className={tabCls('requests')}>
-          <Inbox className="w-4 h-4" /> Your VOC Requests
-          <span className="ml-0.5 text-[10px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded font-mono font-bold text-slate-600 dark:text-slate-300">
-            {listToShow.length}
-          </span>
-        </button>
       </div>
 
       {tab === 'new' && <RequestForm onCreated={handleCreated} categories={categories} />}
