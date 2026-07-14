@@ -18,6 +18,7 @@
 
 import { useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
@@ -198,6 +199,11 @@ export default function Sidebar(props: SidebarProps) {
   const location = useLocation();
   const drawerRef = useRef<HTMLElement>(null);
   const openerRef = useRef<Element | null>(null);
+
+  // The drawer says `aria-modal="true"`, which promises assistive tech that the
+  // rest of the page is inert. Tab used to walk straight out of it and into the
+  // search box behind the backdrop, so the promise was a lie. Now it is not.
+  useFocusTrap(drawerRef, mobileOpen);
 
   // A drawer left open across a navigation would cover the page you just asked
   // for. Close it whenever the route changes, however the change was made.

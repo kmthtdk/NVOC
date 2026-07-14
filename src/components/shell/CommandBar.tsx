@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { api } from '../../api/client';
 import type { Ticket } from '../../types';
 import { STATUS_META } from '../../data/statusMeta';
@@ -56,6 +57,10 @@ export default function CommandBar({
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Same contract as the drawer: it claims aria-modal, so Tab must stay inside.
+  useFocusTrap(dialogRef, open);
 
   // Ctrl/Cmd+K from anywhere. Escape closes.
   useEffect(() => {
@@ -193,6 +198,7 @@ export default function CommandBar({
           role="presentation"
         >
           <div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-label="Search"
