@@ -138,6 +138,24 @@ describe('ticket search', () => {
     expect(found.data.map((t) => t.id)).not.toContain(theirs.id);
     expect(found.data.map((t) => t.id)).not.toContain(mine.id); // the code does not match mine either
   });
+
+  it('still finds your OWN ticket when the search is requester-scoped', async () => {
+    // The leak test above only asserts absence, so it would also pass if the
+    // scoped query broke and returned nothing at all — a search that finds
+    // nothing is "secure" and useless. This is its positive control.
+    const mine = await ticketRepo.create(baseTicket({ requesterEmail: 'alex.mercer@company.com' }));
+    await ticketRepo.create(baseTicket({ requesterEmail: 'someone.else@company.com' }));
+
+    const found = await ticketRepo.list({
+      page: 1,
+      pageSize: 20,
+      sort: 'newest',
+      q: mine.code,
+      requesterEmail: 'alex.mercer@company.com',
+    });
+
+    expect(found.data.map((t) => t.id)).toContain(mine.id);
+  });
 });
 
 describe('device search', () => {

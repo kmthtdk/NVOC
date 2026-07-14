@@ -18,7 +18,7 @@
 
 import { useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useFocusTrap, isTopmostTrap } from '../../hooks/useFocusTrap';
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
@@ -199,11 +199,12 @@ export default function Sidebar(props: SidebarProps) {
   const location = useLocation();
   const drawerRef = useRef<HTMLElement>(null);
   const openerRef = useRef<Element | null>(null);
+  const trapId = useRef(Symbol('nav-drawer')).current;
 
   // The drawer says `aria-modal="true"`, which promises assistive tech that the
   // rest of the page is inert. Tab used to walk straight out of it and into the
   // search box behind the backdrop, so the promise was a lie. Now it is not.
-  useFocusTrap(drawerRef, mobileOpen);
+  useFocusTrap(drawerRef, mobileOpen, trapId);
 
   // A drawer left open across a navigation would cover the page you just asked
   // for. Close it whenever the route changes, however the change was made.
@@ -212,6 +213,19 @@ export default function Sidebar(props: SidebarProps) {
   useEffect(() => {
     onCloseMobile();
   }, [location.pathname, onCloseMobile]);
+
+  // Widen past `lg` with the drawer open and it becomes a ghost: still mounted,
+  // still holding the focus trap and the scroll lock, but invisible — and the
+  // hamburger that would close it is `lg:hidden` too, so there is nothing left to
+  // click. Close it at the breakpoint instead of leaving it stranded.
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const onChange = (e: MediaQueryListEvent) => {
+      if (e.matches) onCloseMobile();
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [onCloseMobile]);
 
   useEffect(() => {
     if (!mobileOpen) {
@@ -224,10 +238,15 @@ export default function Sidebar(props: SidebarProps) {
     openerRef.current = document.activeElement;
     drawerRef.current?.focus();
 
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onCloseMobile();
+    // Escape closes only the topmost overlay. With the command bar opened on top
+    // of the drawer (Ctrl+K works from inside it), one Escape used to collapse
+    // both — so the drawer vanished when the user only meant to dismiss search.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isTopmostTrap(trapId)) onCloseMobile();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [mobileOpen, onCloseMobile]);
+  }, [mobileOpen, onCloseMobile, trapId]);
 
   return (
     <>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Clock, ListTodo } from 'lucide-react';
 import { api } from '../api/client';
+import { priorityBadge } from '../data/statusMeta';
 
 interface PendingRequest {
   id: string;
@@ -137,7 +138,7 @@ export default function TicketReportsPage() {
                 <h2 className="font-semibold text-slate-900 dark:text-white">Open Hardware Requests ({pendingRequests.length})</h2>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="data-table w-full text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                     <tr>
                       <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Code</th>
@@ -165,11 +166,10 @@ export default function TicketReportsPage() {
                             {new Date(req.created_at).toLocaleDateString()}
                           </td>
                           <td className="px-4 py-2">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              req.priority === 'urgent' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' :
-                              req.priority === 'high' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
-                              'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-                            }`}>
+                            {/* One priority vocabulary, from src/data/statusMeta.ts. The
+                                inline map that used to live here had no `low` branch, so a
+                                low-priority request rendered as a medium one. */}
+                            <span className={`rounded-sm px-2 py-1 text-xs font-medium ${priorityBadge(req.priority)}`}>
                               {req.priority}
                             </span>
                           </td>
@@ -234,7 +234,7 @@ export default function TicketReportsPage() {
                 <h2 className="font-semibold text-slate-900 dark:text-white">6-Month Category Trends</h2>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="data-table w-full text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                     <tr>
                       <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Month</th>

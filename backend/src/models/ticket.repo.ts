@@ -6,7 +6,7 @@ import { commentRepo, historyRepo } from './comment.repo.js';
 import { attachmentRepo } from './attachment.repo.js';
 import { deviceRepo } from './device.repo.js';
 import { approvalRepo } from './approval.repo.js';
-import { likeContains } from '../utils/search.js';
+import { likeContains, LIKE_ESCAPE } from '../utils/search.js';
 import type {
   Ticket,
   TicketPriority,
@@ -129,9 +129,9 @@ export const ticketRepo = {
       // most common thing anyone types into a search box — found nothing at all.
       where.push(
         `(MATCH(title, description, requester_name) AGAINST (? IN NATURAL LANGUAGE MODE)
-          OR code LIKE ? ESCAPE '\\\\')`,
+          OR code LIKE ? ESCAPE ?)`,
       );
-      params.push(filters.q.trim(), likeContains(filters.q));
+      params.push(filters.q.trim(), likeContains(filters.q), LIKE_ESCAPE);
     }
 
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';

@@ -244,7 +244,7 @@ export default function App() {
           onCloseMobile={closeNav}
         />
 
-        <main className="animate-fade-in-smooth min-w-0 flex-1 space-y-6 px-4 py-6 pb-16 sm:px-6 lg:px-8">
+        <main className="animate-fade-in-smooth mx-auto min-w-0 w-full max-w-[1440px] flex-1 space-y-6 px-4 py-6 pb-16 sm:px-6 lg:px-8">
         {view === 'user' ? (
           <UserPortal
             reloadKey={reloadKey}

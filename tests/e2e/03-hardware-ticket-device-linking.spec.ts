@@ -132,7 +132,11 @@ test.describe('Workflow 3: Hardware Ticket → Device Linking', () => {
   });
 
   test('requester should see updated ticket status and comment', async ({ requesterPage }) => {
-    await requesterPage.goto('http://localhost:3000/requests/new');
+    // /requests, not /requests/new: this test needs the LIST to find the ticket,
+    // and /new renders only the form. The regex that rewrote these navigations
+    // mapped every root-goto to /requests/new, which is right for filing a
+    // request and wrong for reading one back.
+    await requesterPage.goto('http://localhost:3000/requests');
 
     // Find the ticket in the list — look for the ticket code or title
     await expect(

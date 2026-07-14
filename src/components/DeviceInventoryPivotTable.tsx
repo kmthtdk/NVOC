@@ -159,7 +159,7 @@ export default function DeviceInventoryPivotTable({ filters }: DeviceInventoryPi
             Department × Device Type
           </h3>
         </div>
-        <table className="w-full text-sm">
+        <table className="data-table w-full text-sm">
           <thead className="bg-slate-50 dark:bg-slate-800/50">
             <tr className="border-b border-slate-200 dark:border-slate-700">
               <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Department</th>
@@ -208,7 +208,7 @@ export default function DeviceInventoryPivotTable({ filters }: DeviceInventoryPi
             Department × Device Status
           </h3>
         </div>
-        <table className="w-full text-sm">
+        <table className="data-table w-full text-sm">
           <thead className="bg-slate-50 dark:bg-slate-800/50">
             <tr className="border-b border-slate-200 dark:border-slate-700">
               <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300">Department</th>

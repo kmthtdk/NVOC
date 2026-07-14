@@ -66,7 +66,7 @@ export default function Login() {
         </div>
 
         {/* Card */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl p-7 sm:p-8">
+        <div className="surface-3 p-7 sm:p-8">
           <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight mb-1">
             Sign in
           </h2>

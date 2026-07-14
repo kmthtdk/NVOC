@@ -317,7 +317,7 @@ export default function TicketList({ reloadKey, onSelectTicket }: TicketListProp
       </div>
 
       {/* Filter + search bar */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-4 sm:p-5">
+      <div className="surface p-4 sm:p-5">
         <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -375,7 +375,7 @@ export default function TicketList({ reloadKey, onSelectTicket }: TicketListProp
       </div>
 
       {/* Priority-stream list / states */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.02)] overflow-hidden">
+      <div className="surface overflow-hidden">
         {/* Stream sub-header with a priority legend */}
         <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">

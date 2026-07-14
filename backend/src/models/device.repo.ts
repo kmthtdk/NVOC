@@ -3,7 +3,7 @@ import { pool, withTransaction } from '../config/db.js';
 import type { DeviceRow, MacAddressRow } from './rows.js';
 import { mapDevice, mapMacAddress, mapAssignment } from './mappers.js';
 import { AppError } from '../utils/AppError.js';
-import { likeContains } from '../utils/search.js';
+import { likeContains, LIKE_ESCAPE } from '../utils/search.js';
 import type { Device, DeviceStatus, DeviceActionType, MacAddress, MacAddressInput, DeviceSpecifications, DeviceAssignment } from '../types/index.js';
 
 /**
@@ -216,12 +216,17 @@ export const deviceRepo = {
       // the index at all — yet it is the number printed on the sticker.
       where.push(
         `(MATCH(code, model, serial_number) AGAINST (? IN NATURAL LANGUAGE MODE)
-          OR code LIKE ? ESCAPE '\\\\'
-          OR serial_number LIKE ? ESCAPE '\\\\'
-          OR asset_code LIKE ? ESCAPE '\\\\')`,
+          OR code LIKE ? ESCAPE ?
+          OR serial_number LIKE ? ESCAPE ?
+          OR asset_code LIKE ? ESCAPE ?)`,
       );
       const like = likeContains(filters.q);
-      params.push(filters.q.trim(), like, like, like);
+      params.push(
+        filters.q.trim(),
+        like, LIKE_ESCAPE,
+        like, LIKE_ESCAPE,
+        like, LIKE_ESCAPE,
+      );
     }
 
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';

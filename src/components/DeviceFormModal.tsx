@@ -522,7 +522,7 @@ export default function DeviceFormModal({ device, onClose, onSaved }: DeviceForm
       aria-modal="true"
       aria-labelledby="device-form-title"
     >
-      <div className="w-full max-w-2xl rounded-lg bg-white dark:bg-slate-900 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div className="surface-3 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-6 py-4">
           <h2 id="device-form-title" className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             {isEditMode ? 'Edit Device' : 'Add Device'}

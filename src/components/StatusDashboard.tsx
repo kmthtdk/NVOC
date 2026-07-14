@@ -156,7 +156,7 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
       {/* Main: priority queue table (2/3) + insight side panel (1/3) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Priority queue */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div className="surface lg:col-span-2 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-800">
             <h4 className="text-[11px] font-extrabold text-slate-700 dark:text-slate-200 uppercase tracking-widest font-mono flex items-center gap-1.5">
               <Flame className="w-3.5 h-3.5 text-rose-500" /> Priority Queue · Open
@@ -203,8 +203,8 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
 
         {/* Insight side panel: status distribution + priority mix */}
         <div className="space-y-4">
-          <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-5">
-            <h4 className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest font-mono mb-3.5">
+          <div className="surface p-5">
+            <h4 className="surface-header -mx-5 mb-3.5 px-5 pb-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 font-mono dark:text-slate-400">
               Status Distribution
             </h4>
             <div className="space-y-2.5">
@@ -229,8 +229,8 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-5">
-            <h4 className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest font-mono mb-3.5 flex items-center gap-1.5">
+          <div className="surface p-5">
+            <h4 className="surface-header -mx-5 mb-3.5 flex items-center gap-1.5 px-5 pb-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 font-mono dark:text-slate-400">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Priority Mix
             </h4>
             <div className="grid grid-cols-2 gap-2.5">
@@ -246,8 +246,8 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
       </div>
 
       {/* Category breakdown — full width */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-5">
-        <h4 className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest font-mono mb-3.5">
+      <div className="surface p-5">
+        <h4 className="surface-header -mx-5 mb-3.5 px-5 pb-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 font-mono dark:text-slate-400">
           Top Categories
         </h4>
         {metrics.topCategories.length === 0 ? (

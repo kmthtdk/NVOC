@@ -47,7 +47,7 @@ export default function ConfirmationModal({ ticket, onClose, onViewTicket }: Con
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-md overflow-hidden animate-scaleUp"
+        className="surface-3 w-full max-w-md overflow-hidden animate-scaleUp"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative p-7 text-center">

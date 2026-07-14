@@ -16,7 +16,7 @@
 // stock-Tailwind indigo/red/yellow leaked in before.
 // ============================================================================
 
-import type { TicketStatus } from '../types';
+import type { TicketStatus, TicketPriority } from '../types';
 
 export interface StatusMeta {
   /** Human label. */
@@ -76,3 +76,46 @@ export const STATUS_META: Record<TicketStatus, StatusMeta> = {
 
 export const statusLabel = (s: TicketStatus): string => STATUS_META[s].label;
 export const statusBadge = (s: TicketStatus): string => STATUS_META[s].badge;
+
+// ---------------------------------------------------------------------------
+// Priority, same treatment, same reason.
+//
+// This vocabulary had drifted into a third private copy in TicketReportsPage,
+// where `low` had no branch at all and fell through into the `medium` bucket —
+// so a low-priority row was rendered as if it were medium. That is precisely the
+// class of bug moving `STATUS_META` here was supposed to end, recurring one file
+// over. P1..P4 mirror TicketList's stream codes.
+// ---------------------------------------------------------------------------
+
+export interface PriorityMeta {
+  code: string;
+  label: string;
+  badge: string;
+}
+
+export const PRIORITY_META: Record<TicketPriority, PriorityMeta> = {
+  urgent: {
+    code: 'P1',
+    label: 'Urgent',
+    badge: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+  },
+  high: {
+    code: 'P2',
+    label: 'High',
+    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  },
+  medium: {
+    code: 'P3',
+    label: 'Medium',
+    badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
+  },
+  low: {
+    code: 'P4',
+    label: 'Low',
+    badge: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  },
+};
+
+/** Tolerant of the raw strings the report endpoints hand back. */
+export const priorityBadge = (p: string): string =>
+  (PRIORITY_META as Record<string, PriorityMeta>)[p]?.badge ?? PRIORITY_META.low.badge;

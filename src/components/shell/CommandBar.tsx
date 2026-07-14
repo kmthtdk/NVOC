@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useFocusTrap, isTopmostTrap } from '../../hooks/useFocusTrap';
 import { api } from '../../api/client';
 import type { Ticket } from '../../types';
 import { STATUS_META } from '../../data/statusMeta';
@@ -41,12 +41,22 @@ export default function CommandBar({
 }: {
   canSeeDevices: boolean;
   /**
-   * Where a ticket hit lands. It used to be hardcoded to /admin/tickets, which
-   * a requester is not allowed to visit: the route guard bounced them to
-   * /requests with `replace`, dropping the ?ticket= query string on the way out.
-   * So the one thing the command bar exists for silently failed for the role
-   * that files most of the tickets. `?ticket=` is read independently of the
-   * path, so the base just has to be a route this user may actually be on.
+   * Where a ticket hit lands.
+   *
+   * This was hardcoded to /admin/tickets, a route a requester may not visit, and
+   * two reviewers read the code and concluded the deep-link was therefore broken
+   * for requesters — the guard would bounce them to /requests and strip the
+   * ?ticket= on the way out.
+   *
+   * It does not reproduce. Put the hardcoded path back and a requester still ends
+   * at /requests?ticket=7 with the ticket open: the guard's redirect preserves the
+   * query. Measured, twice, by reintroducing the bug and watching the test stay
+   * green — which is also why there is no test pinning this: nothing in the
+   * harness can tell the two paths apart, and a test that passes either way is
+   * worse than none.
+   *
+   * The prop stays because routing a requester through /admin even transiently is
+   * not something to do on purpose. It is hardening, not a bug fix.
    */
   ticketBasePath: string;
 }) {
@@ -58,9 +68,12 @@ export default function CommandBar({
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const openerRef = useRef<Element | null>(null);
+  // Stable identity for this overlay's entry in the trap stack.
+  const trapId = useRef(Symbol('command-bar')).current;
 
   // Same contract as the drawer: it claims aria-modal, so Tab must stay inside.
-  useFocusTrap(dialogRef, open);
+  useFocusTrap(dialogRef, open, trapId);
 
   // Ctrl/Cmd+K from anywhere. Escape closes.
   useEffect(() => {
@@ -69,15 +82,33 @@ export default function CommandBar({
         e.preventDefault();
         setOpen((v) => !v);
       }
-      if (e.key === 'Escape') setOpen(false);
+      // Escape must close the TOPMOST overlay, not every overlay that happens to
+      // be listening. This handler is always mounted, so with the nav drawer open
+      // behind it a single Escape closed both at once.
+      //
+      // Checking "am I topmost?" is necessary but NOT sufficient: React flushes
+      // this discrete event synchronously, so setOpen(false) tears this trap off
+      // the stack *before* the drawer's listener runs on the same event — at which
+      // point the drawer sees itself as topmost and closes too. Measured in a real
+      // browser; both overlays vanished on one keypress. Stop the event dead.
+      if (e.key === 'Escape' && isTopmostTrap(trapId)) {
+        e.stopImmediatePropagation();
+        setOpen(false);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [trapId]);
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 0);
-    else {
+    if (open) {
+      openerRef.current = document.activeElement;
+      setTimeout(() => inputRef.current?.focus(), 0);
+    } else {
+      // Hand the keyboard back to whatever opened the palette, rather than
+      // dropping the user at the top of the document.
+      if (openerRef.current instanceof HTMLElement) openerRef.current.focus();
+      openerRef.current = null;
       setQ('');
       setHits([]);
       setActive(0);
@@ -203,7 +234,7 @@ export default function CommandBar({
             aria-modal="true"
             aria-label="Search"
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            className="surface-2 w-full max-w-xl overflow-hidden"
           >
             <div className="flex items-center gap-3 border-b border-slate-200 px-4 dark:border-slate-800">
               <Search className="h-4 w-4 shrink-0 text-slate-400" />

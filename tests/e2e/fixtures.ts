@@ -42,33 +42,11 @@ export const test = base.extend<Fixtures>({
 
 export { expect };
 
-// ---- UI navigation helpers -------------------------------------------------
-
-// Navigation is a route now, not a tab in component state. These helpers used to
-// click their way through a horizontal tab bar; that bar is gone (the nav lives
-// in a rail, and every destination is a URL), so they go straight to the URL —
-// which is also what a user pasting a link does.
-
-const BASE = 'http://localhost:3000';
-
-/** Navigate to the IT Admin Workspace, optionally straight to a section. */
-export async function goToAdminWorkspace(
-  page: Page,
-  tab: 'tickets' | 'devices' = 'tickets',
-) {
-  await page.goto(`${BASE}${tab === 'devices' ? '/admin/devices' : '/admin/tickets'}`);
-  // The page's own display heading — not the nav label, which now reads
-  // "Employee Portal" here (it is the switch to the *other* view).
-  await expect(
-    page.getByRole('heading', { name: tab === 'devices' ? 'Device Inventory' : 'Ticket Queue' }),
-  ).toBeVisible();
-}
-
-/** Navigate to the Employee Portal (user view). */
-export async function goToEmployeePortal(page: Page) {
-  await page.goto(`${BASE}/requests/new`);
-  await expect(page.getByRole('heading', { name: /Welcome back/i })).toBeVisible();
-}
+// Navigation is a route now, not a tab in component state, so the specs simply
+// page.goto() their destination. The two helpers that used to click through the
+// horizontal tab bar are gone rather than merely rewritten: nothing called them,
+// and a dead `goToEmployeePortal` that quietly landed on /requests/new — the
+// FORM, not the list — is a trap laid for whoever reaches for it next.
 
 /** API helper: get a bearer token for a user. */
 export async function getToken(

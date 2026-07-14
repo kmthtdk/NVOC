@@ -320,7 +320,7 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-hidden flex flex-col animate-scaleUp"
+        className="surface-3 w-full max-w-4xl max-h-[92vh] overflow-hidden flex flex-col animate-scaleUp"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -419,7 +419,7 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
                     <input type="text" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="e.g. Assigned to network team, investigating…" className="w-full text-xs p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" />
                   </div>
                   <div className="flex justify-end">
-                    <button type="submit" disabled={savingEdit} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white font-bold text-xs cursor-pointer transition-colors">
+                    <button type="submit" disabled={savingEdit} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-violet-700 hover:bg-violet-800 disabled:opacity-60 text-white font-bold text-xs cursor-pointer transition-colors">
                       {savingEdit ? <Spinner label="Saving…" /> : (<><Save className="w-3.5 h-3.5" /> Save changes</>)}
                     </button>
                   </div>
@@ -512,7 +512,7 @@ export default function TicketDetailModal({ ticketId, onClose, onMutated }: Tick
                         type="button"
                         disabled={!addSignerUserId || decidingStep !== null}
                         onClick={addSigner}
-                        className="px-2.5 py-1.5 text-[11px] font-bold rounded-md bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
+                        className="px-2.5 py-1.5 text-[11px] font-bold rounded-md bg-violet-700 text-white hover:bg-violet-800 disabled:opacity-50"
                       >
                         Add
                       </button>

@@ -86,7 +86,7 @@ export default function DeviceCheckoutModal({
       onClick={onCancel}
     >
       <div
-        className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-md overflow-hidden animate-scaleUp"
+        className="surface-3 w-full max-w-md overflow-hidden animate-scaleUp"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative p-7">
@@ -184,7 +184,7 @@ export default function DeviceCheckoutModal({
             type="button"
             onClick={handleCheckoutDevice}
             disabled={completing || isLoading}
-            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white font-extrabold text-xs transition-colors cursor-pointer"
+            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-violet-700 hover:bg-violet-800 disabled:opacity-60 text-white font-extrabold text-xs transition-colors cursor-pointer"
           >
             {completing || isLoading ? (
               <Spinner label="Processing…" />

@@ -211,7 +211,7 @@ export default function AdminSimulation({ tickets, onMutated }: AdminSimulationP
           page), and it spent amber — which this product reserves for the
           `waiting` ticket state — on its primary button. It is a surface card
           like every other one now, accented with the system's own primary. */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 text-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] sm:p-7 space-y-6 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+      <div className="surface p-6 text-slate-800 sm:p-7 space-y-6 dark:text-slate-200">
         <div className="flex items-start justify-between gap-4 flex-wrap border-b border-slate-200 pb-4 dark:border-slate-800">
           <div>
             <div className="mb-3 inline-flex items-center gap-1.5 rounded-sm border border-violet-600/20 bg-violet-600/10 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-violet-700 dark:border-violet-400/20 dark:bg-violet-400/10 dark:text-violet-300">
