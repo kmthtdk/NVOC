@@ -98,11 +98,9 @@ export default function DeviceManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Device Inventory</h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-2">Manage IT devices and track assignments</p>
-        </div>
+      {/* The page title lives in the shell's PageHeader now; keeping one here too
+          printed "Device Inventory" twice, once in each type scale. */}
+      <div className="flex items-center justify-end">
         <button
           onClick={handleOpenModal}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
@@ -180,7 +178,7 @@ export default function DeviceManagement() {
                     <td className="px-6 py-2 text-slate-900 dark:text-white">{device.model}</td>
                     <td className="px-6 py-2 text-xs font-mono text-slate-600 dark:text-slate-400">{device.serialNumber}</td>
                     <td className="px-6 py-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(device.status)}`}>
+                      <span className={`px-3 py-1 rounded-sm text-xs font-semibold ${getStatusColor(device.status)}`}>
                         {device.status}
                       </span>
                     </td>

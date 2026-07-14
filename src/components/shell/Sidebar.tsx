@@ -16,7 +16,7 @@
 // Every item is a route. There is no navigation state left in a useState.
 // ============================================================================
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -196,16 +196,28 @@ function SidebarContent({
 export default function Sidebar(props: SidebarProps) {
   const { mobileOpen, onCloseMobile } = props;
   const location = useLocation();
+  const drawerRef = useRef<HTMLElement>(null);
+  const openerRef = useRef<Element | null>(null);
 
   // A drawer left open across a navigation would cover the page you just asked
   // for. Close it whenever the route changes, however the change was made.
+  // `onCloseMobile` is stable (useCallback in App), so listing it changes nothing
+  // at runtime and costs us no suppression comment.
   useEffect(() => {
     onCloseMobile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
+  }, [location.pathname, onCloseMobile]);
 
   useEffect(() => {
-    if (!mobileOpen) return;
+    if (!mobileOpen) {
+      // Hand focus back to whatever opened the drawer, rather than dropping the
+      // keyboard user at the top of the document.
+      if (openerRef.current instanceof HTMLElement) openerRef.current.focus();
+      openerRef.current = null;
+      return;
+    }
+    openerRef.current = document.activeElement;
+    drawerRef.current?.focus();
+
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onCloseMobile();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -227,7 +239,11 @@ export default function Sidebar(props: SidebarProps) {
             role="presentation"
           />
           <aside
-            className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto border-r border-slate-200 bg-white px-4 py-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900"
+            ref={drawerRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto border-r border-slate-200 bg-white px-4 py-6 shadow-2xl focus:outline-none dark:border-slate-800 dark:bg-slate-900"
             aria-label="Primary navigation"
           >
             <button

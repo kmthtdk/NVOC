@@ -206,45 +206,50 @@ export default function AdminSimulation({ tickets, onMutated }: AdminSimulationP
 
   return (
     <>
-      <div className="bg-slate-900 text-slate-200 rounded-lg border border-slate-800 shadow-md p-6 sm:p-7 space-y-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
+      {/* This panel was a black slab with amber controls: it ignored the theme
+          entirely (no `dark:` variant anywhere, so it stayed dark on a light
+          page), and it spent amber — which this product reserves for the
+          `waiting` ticket state — on its primary button. It is a surface card
+          like every other one now, accented with the system's own primary. */}
+      <div className="rounded-xl border border-slate-200 bg-white p-6 text-slate-800 shadow-[0_2px_12px_rgba(15,23,42,0.04)] sm:p-7 space-y-6 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+        <div className="flex items-start justify-between gap-4 flex-wrap border-b border-slate-200 pb-4 dark:border-slate-800">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold tracking-wider text-amber-500 uppercase bg-amber-500/10 rounded-full mb-3 border border-amber-500/20 font-mono">
+            <div className="mb-3 inline-flex items-center gap-1.5 rounded-sm border border-violet-600/20 bg-violet-600/10 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-violet-700 dark:border-violet-400/20 dark:bg-violet-400/10 dark:text-violet-300">
               <Sparkles className="w-3 h-3 animate-pulse" /> Live Dispatch Console
             </div>
-            <h3 className="text-base font-extrabold text-white tracking-tight flex items-center gap-2">
-              <Wrench className="w-5 h-5 text-amber-500" /> IT Specialist Dispatch
+            <h3 className="flex items-center gap-2 text-base font-extrabold tracking-tight text-slate-900 dark:text-white">
+              <Wrench className="h-5 w-5 text-violet-600 dark:text-violet-400" /> IT Specialist Dispatch
             </h3>
-            <p className="mt-1.5 text-xs text-slate-400 leading-relaxed">
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
               Transition ticket states, assign engineers, and append audit-trail history. Changes persist to the backend.
             </p>
           </div>
           <button
             type="button"
             onClick={handleExportReport}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs cursor-pointer transition-colors"
+            className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
           >
-            <Download className="w-3.5 h-3.5 text-amber-400" /> Export CSV Report
+            <Download className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" /> Export CSV Report
           </button>
         </div>
 
         {tickets.length === 0 ? (
-          <div className="flex items-center gap-2 p-4 bg-slate-800/50 border border-slate-700 rounded-xl text-slate-400 text-xs">
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
             <AlertCircle className="w-4 h-4 shrink-0" /> No tickets in the queue to dispatch.
           </div>
         ) : (
           <form onSubmit={handleUpdate} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1 font-mono">1. Target Ticket</label>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1 font-mono">1. Target Ticket</label>
                 <div className="relative">
                   <select
                     value={selectedTicketId}
                     onChange={(e) => handleTicketChange(e.target.value)}
-                    className="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500 appearance-none font-medium"
+                    className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 px-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 appearance-none font-medium"
                   >
                     {tickets.map((t) => (
-                      <option key={t.id} value={t.id} className="bg-slate-900">
+                      <option key={t.id} value={t.id} className="bg-white dark:bg-slate-900">
                         {t.code} — {t.requesterName} ({t.title.slice(0, 32)}…)
                       </option>
                     ))}
@@ -252,7 +257,7 @@ export default function AdminSimulation({ tickets, onMutated }: AdminSimulationP
                   <ChevronDown className="absolute inset-y-0 right-3 my-auto w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
                 {activeTicket && (
-                  <div className="mt-1.5 px-2 py-1 bg-slate-800/40 rounded text-[10px] text-slate-400 flex justify-between">
+                  <div className="mt-1.5 flex justify-between rounded-sm bg-slate-100 px-2 py-1 text-[10px] text-slate-500 dark:bg-slate-800/40 dark:text-slate-400">
                     <span>Status: <strong className="text-violet-400 uppercase font-mono">{activeTicket.status}</strong></span>
                     <span>Assigned: <strong>{activeTicket.assignedTo}</strong></span>
                   </div>
@@ -260,17 +265,17 @@ export default function AdminSimulation({ tickets, onMutated }: AdminSimulationP
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1 font-mono">2. New Status</label>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1 font-mono">2. New Status</label>
                 <div className="relative">
                   <select
                     value={newStatus}
                     onChange={(e) => setNewStatus(e.target.value as TicketStatus)}
-                    className="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500 appearance-none font-bold"
+                    className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 px-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 appearance-none font-bold"
                   >
-                    <option value="submitted" className="bg-slate-900">Submitted</option>
-                    <option value="waiting" className="bg-slate-900">Waiting for Review</option>
-                    <option value="resolved" className="bg-slate-900">Resolved</option>
-                    <option value="rejected" className="bg-slate-900">Rejected</option>
+                    <option value="submitted" className="bg-white dark:bg-slate-900">Submitted</option>
+                    <option value="waiting" className="bg-white dark:bg-slate-900">Waiting for Review</option>
+                    <option value="resolved" className="bg-white dark:bg-slate-900">Resolved</option>
+                    <option value="rejected" className="bg-white dark:bg-slate-900">Rejected</option>
                   </select>
                   <ChevronDown className="absolute inset-y-0 right-3 my-auto w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
@@ -279,11 +284,11 @@ export default function AdminSimulation({ tickets, onMutated }: AdminSimulationP
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1 font-mono">3. Assign Engineer</label>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1 font-mono">3. Assign Engineer</label>
                 <select
                   value={assignedTo}
                   onChange={(e) => setAssignedTo(e.target.value)}
-                  className="w-full text-xs bg-slate-800 border border-slate-700/80 rounded-lg py-2.5 px-3 text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 px-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
                 >
                   {ENGINEERS.map((eng) => (
                     <option key={eng} value={eng}>{eng}</option>
@@ -292,23 +297,23 @@ export default function AdminSimulation({ tickets, onMutated }: AdminSimulationP
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1 font-mono">4. Audit Note *</label>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1 font-mono">4. Audit Note *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. AD config complete, Group Policy synchronized…"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full text-xs bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 px-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
                 />
               </div>
             </div>
 
-            <div className="pt-2 border-t border-slate-800 flex justify-end">
+            <div className="flex justify-end border-t border-slate-200 pt-4 dark:border-slate-800">
               <button
                 type="submit"
                 disabled={saving}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 active:bg-amber-700 disabled:opacity-60 text-slate-950 font-extrabold text-xs shadow-md shadow-amber-500/5 cursor-pointer transition-all"
+                className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-violet-700 px-5 py-2.5 text-xs font-extrabold text-white shadow-sm transition-colors hover:bg-violet-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 disabled:opacity-60 dark:bg-violet-600 dark:hover:bg-violet-500"
               >
                 {saving ? <Spinner label="Updating…" /> : (<><FileCheck2 className="w-4 h-4" /> Update State &amp; Log Audit</>)}
               </button>

@@ -208,7 +208,10 @@ export default function App() {
               without it the search trigger refuses to shrink below its text and
               shoves the avatar and theme toggle off the right edge of a phone. */}
           <div className="flex min-w-0 flex-1 justify-center">
-            <CommandBar canSeeDevices={isITSupport} />
+            <CommandBar
+              canSeeDevices={isITSupport}
+              ticketBasePath={view === 'admin' ? '/admin/tickets' : '/requests'}
+            />
           </div>
 
           <div className="flex shrink-0 items-center gap-2">

@@ -128,7 +128,8 @@ export const ticketRepo = {
       // were ("GR-2026-0001" is not a word), so pasting a ticket reference — the
       // most common thing anyone types into a search box — found nothing at all.
       where.push(
-        '(MATCH(title, description, requester_name) AGAINST (? IN NATURAL LANGUAGE MODE) OR code LIKE ?)',
+        `(MATCH(title, description, requester_name) AGAINST (? IN NATURAL LANGUAGE MODE)
+          OR code LIKE ? ESCAPE '\\\\')`,
       );
       params.push(filters.q.trim(), likeContains(filters.q));
     }

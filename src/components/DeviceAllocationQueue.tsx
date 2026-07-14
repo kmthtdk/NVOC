@@ -145,13 +145,7 @@ export default function DeviceAllocationQueue({ onMutated }: { onMutated?: () =>
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Allocation Queue</h1>
-        <p className="mt-2 text-slate-600 dark:text-slate-400">
-          Match a waiting hardware request to a device that is free.
-        </p>
-      </div>
-
+      {/* Title comes from the shell's PageHeader — it was printed twice. */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* ---- Waiting requests -------------------------------------------- */}
         <div className={panelClass}>

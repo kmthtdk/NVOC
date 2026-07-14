@@ -216,7 +216,9 @@ export const deviceRepo = {
       // the index at all — yet it is the number printed on the sticker.
       where.push(
         `(MATCH(code, model, serial_number) AGAINST (? IN NATURAL LANGUAGE MODE)
-          OR code LIKE ? OR serial_number LIKE ? OR asset_code LIKE ?)`,
+          OR code LIKE ? ESCAPE '\\\\'
+          OR serial_number LIKE ? ESCAPE '\\\\'
+          OR asset_code LIKE ? ESCAPE '\\\\')`,
       );
       const like = likeContains(filters.q);
       params.push(filters.q.trim(), like, like, like);

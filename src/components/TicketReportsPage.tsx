@@ -87,14 +87,7 @@ export default function TicketReportsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-          <BarChart3 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-          Ticket Analytics Reports
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-2">Hardware requests, fulfillment times, and ticket aging analysis</p>
-      </div>
+      {/* Title comes from the shell's PageHeader — it was printed twice. */}
 
       {/* Tab Navigation */}
       <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 flex-wrap">

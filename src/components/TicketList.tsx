@@ -95,7 +95,9 @@ const PRIORITY_META: Record<TicketPriority, PriorityMeta> = {
 function StatusBadge({ status }: { status: TicketStatus }) {
   const meta = STATUS_META[status];
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold ${meta.badge}`}>
+    // 4px, not a pill: the spec keeps tags sharp "to maintain their technical
+    // sharpness", and this badge is the most-repeated chip in the product.
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm border text-[10px] font-bold ${meta.badge}`}>
       <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
       {meta.label}
     </span>

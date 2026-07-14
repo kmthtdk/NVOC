@@ -539,8 +539,16 @@ export const api = {
   listAvailableDevices(page = 1, pageSize = 100): Promise<any> {
     return request<any>(`/devices?page=${page}&pageSize=${pageSize}&status=In%20Stock`);
   },
-  listDevices(page = 1, pageSize = 100, filters: DeviceReportFilters = {}): Promise<any> {
-    return request<any>(`/devices${buildQuery({ page, pageSize, ...filters })}`);
+  // `signal` matters for the command bar: without it a device search could not be
+  // cancelled, so two overlapping requests resolved in network order and a stale
+  // response could overwrite the results of a newer keystroke.
+  listDevices(
+    page = 1,
+    pageSize = 100,
+    filters: DeviceReportFilters = {},
+    signal?: AbortSignal,
+  ): Promise<any> {
+    return request<any>(`/devices${buildQuery({ page, pageSize, ...filters })}`, { signal });
   },
   getDevice(id: number): Promise<any> {
     return request<any>(`/devices/${id}`);

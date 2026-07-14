@@ -34,7 +34,21 @@ type Hit =
 
 const DEBOUNCE_MS = 250;
 
-export default function CommandBar({ canSeeDevices }: { canSeeDevices: boolean }) {
+export default function CommandBar({
+  canSeeDevices,
+  ticketBasePath,
+}: {
+  canSeeDevices: boolean;
+  /**
+   * Where a ticket hit lands. It used to be hardcoded to /admin/tickets, which
+   * a requester is not allowed to visit: the route guard bounced them to
+   * /requests with `replace`, dropping the ?ticket= query string on the way out.
+   * So the one thing the command bar exists for silently failed for the role
+   * that files most of the tickets. `?ticket=` is read independently of the
+   * path, so the base just has to be a route this user may actually be on.
+   */
+  ticketBasePath: string;
+}) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
@@ -67,29 +81,28 @@ export default function CommandBar({ canSeeDevices }: { canSeeDevices: boolean }
 
   const search = useCallback(
     async (term: string, signal: AbortSignal) => {
-      const found: Hit[] = [];
-
-      const tickets = await api
-        .listTickets({ q: term, page: 1, pageSize: 5, sort: 'newest' }, signal)
-        .catch(() => null);
-      for (const t of tickets?.data ?? []) {
-        found.push({ kind: 'ticket', id: t.id, code: t.code, title: t.title, status: t.status });
-      }
-
       // Requesters have no access to the device inventory (it exposes serials,
       // personnel and procurement data), so do not even ask on their behalf —
       // it would only ever come back 403.
-      if (canSeeDevices) {
-        const devices = await api.listDevices(1, 5, { q: term }).catch(() => null);
-        for (const d of (devices?.data ?? []) as DeviceHit[]) {
-          found.push({
-            kind: 'device',
-            id: d.id,
-            code: d.code,
-            title: d.model,
-            sub: [d.assetCode, d.serialNumber].filter(Boolean).join(' · '),
-          });
-        }
+      const [tickets, devices] = await Promise.all([
+        api.listTickets({ q: term, page: 1, pageSize: 5, sort: 'newest' }, signal).catch(() => null),
+        canSeeDevices
+          ? api.listDevices(1, 5, { q: term }, signal).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+
+      const found: Hit[] = [];
+      for (const t of tickets?.data ?? []) {
+        found.push({ kind: 'ticket', id: t.id, code: t.code, title: t.title, status: t.status });
+      }
+      for (const d of (devices?.data ?? []) as DeviceHit[]) {
+        found.push({
+          kind: 'device',
+          id: d.id,
+          code: d.code,
+          title: d.model,
+          sub: [d.assetCode, d.serialNumber].filter(Boolean).join(' · '),
+        });
       }
 
       return found;
@@ -109,11 +122,21 @@ export default function CommandBar({ canSeeDevices }: { canSeeDevices: boolean }
     const timer = setTimeout(() => {
       search(term, ctrl.signal)
         .then((found) => {
+          // The API calls swallow their own errors — including AbortError — and
+          // resolve to null, so an aborted request still lands here, with an
+          // empty result. Writing that to state would blank out the hits for the
+          // keystroke that superseded it. Check the signal instead of trusting
+          // that a cancelled request simply never returns.
+          if (ctrl.signal.aborted) return;
           setHits(found);
           setActive(0);
         })
-        .catch(() => setHits([]))
-        .finally(() => setLoading(false));
+        .catch(() => {
+          if (!ctrl.signal.aborted) setHits([]);
+        })
+        .finally(() => {
+          if (!ctrl.signal.aborted) setLoading(false);
+        });
     }, DEBOUNCE_MS);
 
     return () => {
@@ -126,7 +149,7 @@ export default function CommandBar({ canSeeDevices }: { canSeeDevices: boolean }
     setOpen(false);
     if (hit.kind === 'ticket') {
       // The record rides in the query string, so these links are shareable too.
-      navigate(`/admin/tickets?ticket=${hit.id}`);
+      navigate(`${ticketBasePath}?ticket=${hit.id}`);
     } else {
       navigate(`/admin/devices?q=${encodeURIComponent(hit.code)}`);
     }
@@ -152,7 +175,7 @@ export default function CommandBar({ canSeeDevices }: { canSeeDevices: boolean }
         type="button"
         onClick={() => setOpen(true)}
         className="flex w-full min-w-0 max-w-md cursor-pointer items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-left text-sm text-slate-400 transition-colors hover:border-slate-300 hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-slate-600"
-        aria-label="Search tickets and devices"
+        aria-label={canSeeDevices ? 'Search tickets and devices' : 'Search tickets'}
       >
         <Search className="h-4 w-4 shrink-0" />
         <span className="hidden flex-1 truncate sm:block">

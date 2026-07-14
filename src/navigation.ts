@@ -10,13 +10,6 @@ export type UserTab = 'new' | 'requests';
 export type AdminTab = 'tickets' | 'devices' | 'reports' | 'approval';
 export type DeviceSubTab = 'management' | 'allocation' | 'reports';
 
-export const ADMIN_TAB_PATHS: Record<AdminTab, string> = {
-  tickets: '/admin/tickets',
-  devices: '/admin/devices',
-  reports: '/admin/reports',
-  approval: '/admin/approval',
-};
-
 export function adminTabFromPath(pathname: string): AdminTab {
   if (pathname.startsWith('/admin/devices')) return 'devices';
   if (pathname.startsWith('/admin/reports')) return 'reports';
