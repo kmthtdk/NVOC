@@ -117,11 +117,11 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
   const categoryName = (id: string) => IT_CATEGORIES.find((c) => c.id === id)?.name ?? id;
 
   const cards = [
-    { label: 'Total VOCs', value: headlineTotal, icon: Inbox, accent: 'border-t-slate-400', valueCls: 'text-slate-950 dark:text-white' },
-    { label: 'Open / Active', value: metrics.open, icon: Activity, accent: 'border-t-violet-600', valueCls: 'text-violet-700 dark:text-violet-300' },
-    { label: 'Waiting for Review', value: metrics.byStatus.waiting, icon: Clock, accent: 'border-t-amber-500', valueCls: 'text-amber-600 dark:text-amber-400' },
-    { label: 'Resolved', value: metrics.byStatus.resolved, icon: CheckCircle2, accent: 'border-t-emerald-500', valueCls: 'text-emerald-600 dark:text-emerald-400' },
-    { label: 'Resolution Rate', value: `${metrics.resolutionRate}%`, icon: TrendingUp, accent: 'border-t-violet-500', valueCls: 'text-violet-700 dark:text-violet-300' },
+    { label: 'Total VOCs', value: headlineTotal, icon: Inbox, valueCls: 'text-slate-950 dark:text-white' },
+    { label: 'Open / Active', value: metrics.open, icon: Activity, valueCls: 'text-violet-700 dark:text-violet-300' },
+    { label: 'Waiting for Review', value: metrics.byStatus.waiting, icon: Clock, valueCls: 'text-amber-600 dark:text-amber-400' },
+    { label: 'Resolved', value: metrics.byStatus.resolved, icon: CheckCircle2, valueCls: 'text-emerald-600 dark:text-emerald-400' },
+    { label: 'Resolution Rate', value: `${metrics.resolutionRate}%`, icon: TrendingUp, valueCls: 'text-violet-700 dark:text-violet-300' },
   ];
 
   return (
@@ -131,9 +131,13 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
         {cards.map((c) => {
           const Icon = c.icon;
           return (
+            // Plain Level-1 cards. The 3px coloured top border was an invention —
+            // the reference's KPI tiles carry no accent rule, and five of them in
+            // a row turned the strip into a colour chart. The number itself is
+            // still coloured, which is where the meaning actually lives.
             <div
               key={c.label}
-              className={`bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 border-t-[3px] ${c.accent} shadow-[0_1px_2px_rgba(0,0,0,0.02)] flex flex-col justify-between`}
+              className="surface flex flex-col justify-between p-4"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider font-mono">
@@ -163,8 +167,8 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
             <p className="px-5 py-10 text-center text-xs text-slate-400 italic">No open tickets in the queue.</p>
           ) : (
             <div className="divide-y divide-slate-100 dark:divide-slate-800/70">
-              {/* header row */}
-              <div className="hidden sm:grid grid-cols-[100px_1fr_90px_120px] gap-3 px-5 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+              {/* Header: slate-900 over a 2px rule, per the spec's table header. */}
+              <div className="hidden border-b-2 border-slate-200 px-5 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-slate-900 sm:grid sm:grid-cols-[100px_1fr_90px_120px] sm:gap-3 dark:border-slate-800 dark:text-white">
                 <span>Code</span><span>Summary</span><span>Priority</span><span>Status</span>
               </div>
               {priorityQueue.map((t) => {
@@ -176,7 +180,7 @@ export default function StatusDashboard({ tickets, total, stats, onSelectTicket 
                     type="button"
                     onClick={() => onSelectTicket?.(t)}
                     disabled={!onSelectTicket}
-                    className="w-full text-left grid grid-cols-[100px_1fr] sm:grid-cols-[100px_1fr_90px_120px] gap-3 px-5 py-3 items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors disabled:cursor-default"
+                    className="grid w-full grid-cols-[100px_1fr] items-center gap-3 px-5 py-2 text-left transition-colors even:bg-slate-50 hover:bg-slate-100 disabled:cursor-default sm:grid-cols-[100px_1fr_90px_120px] dark:even:bg-slate-800/40 dark:hover:bg-slate-800/70"
                   >
                     <span className="font-mono text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded w-fit">
                       {t.code}

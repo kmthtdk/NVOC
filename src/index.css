@@ -118,6 +118,83 @@
   }
 }
 
+@layer components {
+  /* ---------------------------------------------------------------------------
+     Elevation, cards and tables — the three levels the reference actually
+     specifies, defined once.
+
+     They were being improvised per component: a dozen different one-off
+     `shadow-[0_2px_12px_rgba(0,0,0,0.015)]` strings, no shared card header rule,
+     and tables with no zebra at all. DESIGN.md is precise about this, so the
+     spec lives here and the components just say `surface` / `data-table`.
+
+       Level 1 (cards)     1px #e2e8f0, 0 2px 4px rgba(15,23,42,.05)
+       Level 2 (popovers)  1px #cbd5e1, 0 10px 15px -3px rgba(15,23,42,.1)
+       Level 3 (modals)                 0 20px 25px -5px rgba(15,23,42,.1)
+
+     Radius: 8px for containers, 4px for tags. Table rows use 8px vertical
+     padding — the spec treats data density as a priority.
+     --------------------------------------------------------------------------- */
+  .surface {
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-slate-200);
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05);
+  }
+  .surface-2 {
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-slate-300);
+    background-color: #fff;
+    box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.1);
+  }
+  .surface-3 {
+    border-radius: 0.5rem;
+    background-color: #fff;
+    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1);
+  }
+
+  /* "Cards always include a distinct header area separated by a 1px horizontal
+     rule to clearly define Title vs Content." */
+  .surface-header {
+    border-bottom: 1px solid var(--color-slate-200);
+  }
+
+  /* "Use a subtle zebra-stripe effect using the Surface Background color on even
+     rows. Headers should be Slate-900 with a bottom border of 2px." */
+  .data-table thead th {
+    color: var(--color-slate-900);
+    border-bottom: 2px solid var(--color-slate-200);
+  }
+  .data-table tbody tr:nth-child(even) {
+    background-color: var(--color-slate-50);
+  }
+  .data-table tbody td,
+  .data-table thead th {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .dark .surface,
+  .dark .surface-2,
+  .dark .surface-3 {
+    background-color: var(--color-slate-900);
+    border-color: var(--color-slate-800);
+  }
+  .dark .surface-2 {
+    border-color: var(--color-slate-700);
+  }
+  .dark .surface-header {
+    border-color: var(--color-slate-800);
+  }
+  .dark .data-table thead th {
+    color: #fff;
+    border-color: var(--color-slate-800);
+  }
+  .dark .data-table tbody tr:nth-child(even) {
+    background-color: rgb(from var(--color-slate-800) r g b / 0.4);
+  }
+}
+
 @layer utilities {
   .animate-fade-in-smooth {
     animation: fadeInSmooth 0.3s ease-out forwards;

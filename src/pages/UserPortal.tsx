@@ -124,24 +124,23 @@ export default function UserPortal({
     <div className="space-y-6">
       {/* Welcome hero (stitch user-dashboard). The tab bar that used to sit under
           it is gone — the rail owns navigation now. */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-800 via-violet-700 to-violet-600 p-6 text-white shadow-sm sm:p-8">
-        <div className="relative z-10">
-          <h2 className="font-display text-[32px] font-bold leading-tight tracking-tight lg:text-[40px]">
-            Welcome back, {firstName}
-          </h2>
-          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-white/80">
-            {listToShow.length === 0 ? (
-              <>You have no requests yet. <span className="font-semibold text-white">New Request</span> files your first one.</>
-            ) : (
-              <>
-                You have <span className="font-bold text-white">{openCount}</span> open request{openCount === 1 ? '' : 's'}
-                {resolvedCount > 0 && <> · <span className="font-bold text-white">{resolvedCount}</span> resolved</>}.
-              </>
-            )}
-          </p>
-        </div>
-        {/* subtle grid texture */}
-        <div className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(rgba(255,255,255,.6)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.6)_1px,transparent_1px)] [background-size:22px_22px]" />
+      {/* Flat, single-colour panel — the reference's is exactly that. The gradient
+          and the grid texture were an invention on top of a spec that never asked
+          for either, and they were the loudest thing on the requester's screen. */}
+      <div className="rounded-lg bg-violet-700 p-6 text-white sm:p-8 dark:bg-violet-800">
+        <h2 className="font-display text-[32px] font-bold leading-tight tracking-tight lg:text-[40px]">
+          Welcome back, {firstName}
+        </h2>
+        <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-white/80">
+          {listToShow.length === 0 ? (
+            <>You have no requests yet. <span className="font-semibold text-white">New Request</span> files your first one.</>
+          ) : (
+            <>
+              You have <span className="font-bold text-white">{openCount}</span> open request{openCount === 1 ? '' : 's'}
+              {resolvedCount > 0 && <> · <span className="font-bold text-white">{resolvedCount}</span> resolved</>}.
+            </>
+          )}
+        </p>
       </div>
 
       {tab === 'new' && <RequestForm onCreated={handleCreated} categories={categories} />}
@@ -151,7 +150,7 @@ export default function UserPortal({
         {/* Active Request Tracker — mirrors the mock's "Active Incident Tracker".
             Only shown once the list has loaded so we never flash an empty tracker. */}
         {!loading && !error && (
-          <div className="relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.015)] p-6">
+          <div className="surface relative overflow-hidden p-6">
             <div className="flex items-start justify-between gap-4 mb-6">
               <div className="min-w-0">
                 <h3 className="text-xs font-extrabold text-slate-900 dark:text-white tracking-tight uppercase flex items-center gap-1.5">
@@ -242,7 +241,7 @@ export default function UserPortal({
           </div>
         )}
 
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-[0_2px_12px_rgba(0,0,0,0.015)] p-6 space-y-4">
+        <div className="surface p-6 space-y-4">
           <div className="border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center justify-between">
             <div>
               <h3 className="text-xs font-extrabold text-slate-900 dark:text-white tracking-tight uppercase">

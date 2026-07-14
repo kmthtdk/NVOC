@@ -458,7 +458,7 @@ export default function RequestForm({ onCreated, categories }: RequestFormProps)
   const currentTypeObj = currentSubcategoryObj?.types.find(t => t.id === selectedType);
 
   return (
-    <div id="request-form-container" className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-[0_2px_12px_rgba(0,0,0,0.015)] p-6 sm:p-8">
+    <div id="request-form-container" className="surface p-6 sm:p-8">
       <div className="border-b border-slate-200 dark:border-slate-800 pb-5 mb-6">
         <h3 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight font-sans">New Request</h3>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-sans">
