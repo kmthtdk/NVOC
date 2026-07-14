@@ -18,7 +18,12 @@
    dark) with no component/markup changes:
      - slate  -> blue-navy neutrals   (light surface #f8f9ff … dark #051424)
      - violet -> teal/cyan primary    (light #00647c … dark #4cd7f6)
+     - blue / sky -> the same teal (single-accent UI)
+     - indigo -> the design's desaturated "secondary" periwinkle, used only by
+       the pending_approval state
      - amber / emerald / rose kept as status colors (fit the SOC palette).
+   Any NEW colour must be added here, or it renders as stock Tailwind and lands
+   off-palette — which is exactly how indigo slipped in.
    ========================================================================== */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -50,6 +55,29 @@
   --color-violet-800: #004e61;
   --color-violet-900: #003a49;
   --color-violet-950: #001f28;
+
+  /* Approval state (replaces indigo) — the Cyber-Ops "secondary" family.
+     `pending_approval` needs a hue of its own: it must not read as the teal
+     primary (submitted), the amber (waiting on IT), or an alarm colour. Stock
+     Tailwind indigo is a vivid purple-blue that fights this palette, so indigo
+     is remapped onto the design's own secondary ramp — the desaturated
+     periwinkle the mock uses for its lower-urgency chips (MEDIUM / SECURITY),
+     sitting quietly beside the red CRITICAL and teal HIGH. A ticket parked on an
+     approver is not an alarm, and should not look like one.
+     Anchored on real tokens: 100 = secondary-container #dae2fd,
+     200 = secondary-fixed-dim #bec6e0, 600 = secondary #565e74,
+     800 = on-secondary-fixed-variant #3f465c. */
+  --color-indigo-50:  #eff1fb;
+  --color-indigo-100: #dae2fd;
+  --color-indigo-200: #bec6e0;
+  --color-indigo-300: #a3adcc;
+  --color-indigo-400: #8791b0;
+  --color-indigo-500: #6d7896;
+  --color-indigo-600: #565e74;
+  --color-indigo-700: #4a5169;
+  --color-indigo-800: #3f465c;
+  --color-indigo-900: #333a4d;
+  --color-indigo-950: #212738;
 
   /* Secondary "cool accent" (blue/sky) also unified to teal so the whole UI is
      single-accent per the Cyber-Ops design. Status colors stay distinct. */
